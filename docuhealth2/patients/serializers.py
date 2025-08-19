@@ -4,4 +4,4 @@ from .models import PatientProfile
 class PatientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
-        fields = ['dob']  # Add more patient-specific fields here
+        fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'emergency']  

@@ -6,28 +6,26 @@ from ..patients.serializers import PatientProfileSerializer
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, min_length=8)
     profile = PatientProfileSerializer(required=True)
-    # role = serializers.ChoiceField(choices=[choice[0] for choice in User.Role.choices])
     
-    house_no = serializers.CharField(write_only=True, required=True)
-
     class Meta:
         model = User
         fields = [
-            'email', 'role', 'hin',
-            'notification_settings',
-            'street', 'city', 'state', 'country',
-            'created_at', 'updated_at',
-            'profile',
-        ]
+            'email', 'role', 'hin', 'notification_settings', 'street', 'city', 'state','country', 'created_at', 'updated_at', 'profile']
+        
         read_only_fields = ['id', 'hin', 'created_at', 'updated_at']
 
 
     def create(self, validated_data):
         password = validated_data.pop('password')
-        role = validated_data.get('role')
+        email = validated_data.pop('email')
         profile_data = validated_data.pop('profile')
+        role = validated_data.get('role')
+        
+        house_no = validated_data.pop('house_no')
+        if house_no:
+            validated_data['street'] = f'{house_no}, {validated_data['street']}'
 
-        user = User.objects.create_user(password=password, **validated_data)
+        user = User.objects.create_user(email=email, password=password, **validated_data)
 
         if role == User.Role.PATIENT:
             PatientProfile.objects.create(user=user, **profile_data)
