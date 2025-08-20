@@ -32,10 +32,10 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     
     'patients',
-    'users',
+    'core',
 ]
 
-AUTH_USER_MODEL = "user.User"
+AUTH_USER_MODEL = "core.User"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

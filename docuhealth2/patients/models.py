@@ -1,10 +1,17 @@
 from django.db import models
 from django.conf import settings
 
+GENDER_CHOICES = [
+    ('male', 'Male'),
+    ('female', 'Female'),
+    ('other', 'Other'),
+    ('unknown', 'Unknown'),
+]
+
 class PatientProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     dob = models.DateField()
-    gender = models.Choices(choices=['male', 'female', 'other', 'unknown'])
+    gender = models.CharField(choices=GENDER_CHOICES)
     phone_num = models.CharField(blank=True)
     firstname = models.CharField(max_length=100)
     lastname = models.CharField(max_length=100)

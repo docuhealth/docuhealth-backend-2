@@ -1,10 +1,11 @@
 import random
-from users.models import User  
 
 def generate_HIN():
     return ''.join([str(random.randint(0, 9)) for _ in range(13)])
 
 def unique_HIN():
+    from core.models import User  
+    
     """Generate a HIN that’s unique in the database."""
     while True:
         hin = generate_HIN()
