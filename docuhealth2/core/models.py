@@ -1,10 +1,10 @@
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
 import random
-from patients.models import PatientProfile
-import uuid
+# from patients.models import PatientProfile
+# import uuid
 from utils.random_code import generate_HIN
 
 role_choices = [
@@ -14,11 +14,11 @@ role_choices = [
         ('pharmacy', 'Pharmacy'),
     ]
 
-default_notification_settings = {
-  "sign_in": { "email": True, "push": True, "dashboard": False },
-  "info_change": { "email": True, "push": False, "dashboard": True },
-  "assessment_diagnosis": { "email": True, "push": True, "dashboard": False }
-}
+def default_notification_settings():
+    return  {
+            "sign_in": { "email": True, "push": True, "dashboard": False },
+            "info_change": { "email": True, "push": False, "dashboard": True },
+            "assessment_diagnosis": { "email": True, "push": True, "dashboard": False }}
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
@@ -37,10 +37,6 @@ class UserManager(BaseUserManager):
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
-
-        role = extra_fields.get("role")
-        if role == User.Role.PATIENT:
-            PatientProfile.objects.create(user=user)
 
         return user
 
@@ -62,14 +58,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.PATIENT)
     
-    notification_settings = models.JSONField(default=dict)
-    
-    # notification_settings = models.DictField(default=lambda: default_notification_settings)
+    notification_settings = models.JSONField(default=default_notification_settings)
     
     street = models.CharField(max_length=120)
     city = models.CharField(max_length=20)
     state = models.CharField(max_length=20)
     country = models.CharField(max_length=20)
+    house_no = models.CharField(max_length=10, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
@@ -86,7 +81,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         return f"{self.email} ({self.role})"
 
 
-
 # # hospitals/models.py
 # class HospitalProfile(models.Model):
 #     user = models.OneToOneField("users.User", on_delete=models.CASCADE)
@@ -100,10 +94,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 #     inventory = models.JSONField(default=list)
 #     # pharmacy-specific fields...
 
+def default_expiry():
+    return timezone.now() + timedelta(minutes=10)
+
 class OTP(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="otps")
     otp = models.CharField(max_length=6)  
-    expiry = models.DateTimeField(default=lambda: timezone.now() + timedelta(minutes=10))
+    expiry = models.DateTimeField(default=default_expiry)
     verified = models.BooleanField(default=False)
     
     @classmethod
