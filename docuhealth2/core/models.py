@@ -3,8 +3,6 @@ from django.db import models
 from django.utils import timezone
 from datetime import timedelta
 import random
-# from patients.models import PatientProfile
-# import uuid
 from utils.random_code import generate_HIN
 
 role_choices = [
@@ -18,7 +16,8 @@ def default_notification_settings():
     return  {
             "sign_in": { "email": True, "push": True, "dashboard": False },
             "info_change": { "email": True, "push": False, "dashboard": True },
-            "assessment_diagnosis": { "email": True, "push": True, "dashboard": False }}
+            "assessment_diagnosis": { "email": True, "push": True, "dashboard": False 
+            }}
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
@@ -79,20 +78,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     def __str__(self):
         return f"{self.email} ({self.role})"
-
-
-# # hospitals/models.py
-# class HospitalProfile(models.Model):
-#     user = models.OneToOneField("users.User", on_delete=models.CASCADE)
-#     logo = models.ImageField(upload_to="hospital_logos/")
-#     departments = models.JSONField(default=list)
-#     # hospital-specific fields...
-
-# # pharmacies/models.py
-# class PharmacyProfile(models.Model):
-#     user = models.OneToOneField("users.User", on_delete=models.CASCADE)
-#     inventory = models.JSONField(default=list)
-#     # pharmacy-specific fields...
 
 def default_expiry():
     return timezone.now() + timedelta(minutes=10)

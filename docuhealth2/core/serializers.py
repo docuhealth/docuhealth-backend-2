@@ -2,6 +2,26 @@ from rest_framework import serializers
 from .models import User
 from patients.models import PatientProfile
 from patients.serializers import PatientProfileSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True, write_only=True, min_length=8)
+    
+class GetOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    otp = serializers.CharField(required=True, write_only=True, min_length=6, max_length=6)
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        token["hin"] = user.hin
+        token["role"] = user.role
+        token["email"] = user.email
+
+        return token
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, min_length=8)
