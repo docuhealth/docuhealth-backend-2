@@ -1,10 +1,6 @@
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
-
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework import serializers, status
-from rest_framework.response import Response
+from rest_framework import serializers
 
 from .models import User, OTP
 from patients.models import PatientProfile
@@ -62,25 +58,24 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, min_length=8)
+    house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
     profile = PatientProfileSerializer(required=True)
     
     class Meta:
         model = User
-        fields = ['email', 'role', 'hin', 'street', 'city', 'state','country', 'created_at', 'updated_at', 'profile', 'password' ]
+        fields = ['email', 'role', 'hin', 'street', 'city', 'state','country', 'created_at', 'updated_at', 'profile', 'password', 'house_no' ]
         
         read_only_fields = ['id', 'hin', 'created_at', 'updated_at']
 
     def create(self, validated_data):
-        password = validated_data.pop('password')
-        email = validated_data.pop('email')
         profile_data = validated_data.pop('profile')
         role = validated_data.get('role')
         
-        house_no = validated_data.pop('house_no')
+        house_no = validated_data.pop('house_no', None)
         if house_no:
             validated_data['street'] = f'{house_no}, {validated_data['street']}'
 
-        user = User.objects.create_user(email=email, password=password, **validated_data)
+        user = super().create(validated_data)
 
         if role == User.Role.PATIENT:
             PatientProfile.objects.create(user=user, **profile_data)

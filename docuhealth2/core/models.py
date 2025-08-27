@@ -17,14 +17,12 @@ def default_notification_settings():
             "sign_in": { "email": True, "push": True, "dashboard": False },
             "info_change": { "email": True, "push": False, "dashboard": True },
             "assessment_diagnosis": { "email": True, "push": True, "dashboard": False 
-            }}
+        }}
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, password, **extra_fields):
-        if not email:
-            raise ValueError("Users must have an email address")
-        if not password:
-            raise ValueError("Users must have a password")
+    def create_user(self, **extra_fields):
+        email = extra_fields.get("email")
+        password = extra_fields.pop("password")
         
         while True:
             hin = generate_HIN()
@@ -63,7 +61,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     city = models.CharField(max_length=20)
     state = models.CharField(max_length=20)
     country = models.CharField(max_length=20)
-    house_no = models.CharField(max_length=10, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)

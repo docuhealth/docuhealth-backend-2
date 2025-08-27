@@ -1,19 +1,12 @@
-from django.shortcuts import render
-from django.contrib.auth import authenticate
-
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 
 from .models import User, OTP
 from .serializers import UserSerializer, ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer
-from .tokens import PasswordResetToken, PasswordResetTokenAuthentication
-
-from datetime import timedelta
 
 class PublicGenericAPIView(GenericAPIView):
     authentication_classes = []  
@@ -36,7 +29,7 @@ def set_refresh_cookie(response):
             
     return response
 
-class UserListCreateView(generics.ListCreateAPIView):
+class UserListCreateView(generics.ListCreateAPIView, PublicGenericAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
             
@@ -95,13 +88,12 @@ class VerifyOTPAndGetTokenView(PublicGenericAPIView):
 
         response = Response({"data": {"access_token": str(access)}, "detail": "Access granted to reset password", "status": "success"}, status=status.HTTP_200_OK,)
 
-
         return response
 
 class ResetPasswordView(GenericAPIView):
     serializer_class = ResetPasswordSerializer
     
-    def post(self, request):
+    def patch(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
