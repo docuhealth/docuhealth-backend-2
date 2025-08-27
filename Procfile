@@ -1,0 +1,1 @@
+web: gunicorn docuhealth2.wsgi
