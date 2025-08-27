@@ -5,6 +5,7 @@ import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
 # Quick-start development settings - unsuitable for production
@@ -13,12 +14,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-x^n#(fmeqrw8&0bs12f&lriaqleu!9rt+)01-6325i2zanwtoq'
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-# DEBUG = False
+if DATABASE_URL:
+    DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
-
 
 # Application definition
 
@@ -81,6 +81,14 @@ DATABASES = {
     # }
     "default": dj_database_url.config(default="postgres://localhost:5432/mydb")
 }
+
+
+if DATABASE_URL:
+    DATABASES["default"] = dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,  # keeps connections alive
+        ssl_require=True   # Render requires SSL
+    )
 
 
 # Password validation
