@@ -124,9 +124,10 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         # "rest_framework.authentication.SessionAuthentication",
         # 'rest_framework_simplejwt.authentication.JWTAuthentication',
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
         ],
     "DEFAULT_PERMISSION_CLASSES": [
-        # "rest_framework.permissions.IsAuthenticatedOrReadOnly"
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly"
     ],
     # "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     # "PAGE_SIZE": 10
@@ -141,4 +142,5 @@ SIMPLE_JWT = {
     # "SIGNING_KEY": os.environ.get("DJANGO_SECRET_KEY"),
     "ALGORITHM": "HS256",
     "TOKEN_BLACKLIST_ENABLED": True,
+    "TOKEN_OBTAIN_SERIALIZER": "core.serializers.CustomTokenObtainPairSerializer",
 }

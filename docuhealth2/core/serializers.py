@@ -3,12 +3,14 @@ from .models import User
 from patients.models import PatientProfile
 from patients.serializers import PatientProfileSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import serializers
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
-class LoginSerializer(serializers.Serializer):
+class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
-    password = serializers.CharField(required=True, write_only=True, min_length=8)
     
-class GetOTPSerializer(serializers.Serializer):
+class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     otp = serializers.CharField(required=True, write_only=True, min_length=6, max_length=6)
 
@@ -79,3 +81,8 @@ class UserSerializer(serializers.ModelSerializer):
                 PatientProfile.objects.create(user=instance, **profile_data)
 
         return instance
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    new_password = serializers.CharField(write_only=True, required=True, min_length=8)
