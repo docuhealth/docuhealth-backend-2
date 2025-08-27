@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_spectacular',
     
     'patients',
     'core',
@@ -129,6 +130,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticatedOrReadOnly"
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     # "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
     # "PAGE_SIZE": 10
 }
@@ -143,4 +145,11 @@ SIMPLE_JWT = {
     "ALGORITHM": "HS256",
     "TOKEN_BLACKLIST_ENABLED": True,
     "TOKEN_OBTAIN_SERIALIZER": "core.serializers.CustomTokenObtainPairSerializer",
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Docuhealth API',
+    'DESCRIPTION': 'Docuhealth API Documentation',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
