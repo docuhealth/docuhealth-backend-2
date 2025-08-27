@@ -83,7 +83,7 @@ def default_expiry():
     return timezone.now() + timedelta(minutes=10)
 
 class OTP(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="otps")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="otp")
     otp = models.CharField(max_length=6)  
     expiry = models.DateTimeField(default=default_expiry)
     verified = models.BooleanField(default=False)

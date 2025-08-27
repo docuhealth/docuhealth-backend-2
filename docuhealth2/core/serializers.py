@@ -1,18 +1,53 @@
-from rest_framework import serializers
-from .models import User
-from patients.models import PatientProfile
-from patients.serializers import PatientProfileSerializer
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+
+from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import serializers, status
+from rest_framework.response import Response
+
+from .models import User, OTP
+from patients.models import PatientProfile
+from patients.serializers import PatientProfileSerializer
 
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        email = validated_data.get("email")
+        
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({"email": "Invalid email"})
+        
+        self.user = user
+        
+        return validated_data
+    
 class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     otp = serializers.CharField(required=True, write_only=True, min_length=6, max_length=6)
+    
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        email = validated_data.get("email")
+        
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({"email": "Invalid email"})
+        
+        try:
+            otp_instance = user.otp
+        except OTP.DoesNotExist:
+           raise serializers.ValidationError({"otp": "No OTP found"})
+
+        self.user = user
+        self.otp = otp_instance
+        
+        return validated_data
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
