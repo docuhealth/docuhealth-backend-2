@@ -5,7 +5,7 @@ import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATABASE_URL = os.environ.get("DATABASE_URL")
+production_env = os.environ.get("ENVIRONMENT") == "production"
 
 
 # Quick-start development settings - unsuitable for production
@@ -15,7 +15,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 SECRET_KEY = 'django-insecure-x^n#(fmeqrw8&0bs12f&lriaqleu!9rt+)01-6325i2zanwtoq'
 
 DEBUG = True
-if DATABASE_URL:
+if production_env:
     DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
@@ -83,9 +83,9 @@ DATABASES = {
 }
 
 
-if DATABASE_URL:
+if production_env:
     DATABASES["default"] = dj_database_url.config(
-        default=DATABASE_URL,
+        default=production_env,
         conn_max_age=600,  # keeps connections alive
         ssl_require=True   # Render requires SSL
     )
