@@ -3,7 +3,7 @@ from django.db import models
 from django.utils import timezone
 from datetime import timedelta
 import random
-from utils.random_code import generate_HIN
+from docuhealth2.utils.generate import generate_HIN, generate_otp
 
 role_choices = [
         ('patient', 'Patient'),
@@ -88,7 +88,7 @@ class OTP(models.Model):
     @classmethod
     def generate_otp(cls, user, expiry_minutes=10):
         """Create or replace OTP for a user"""
-        otp = str(random.randint(100000, 999999))  
+        otp = generate_otp()
         expiry_time = timezone.now() + timedelta(minutes=expiry_minutes)
 
         otp, created = cls.objects.update_or_create(
