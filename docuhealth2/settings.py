@@ -2,6 +2,9 @@ from pathlib import Path
 from datetime import timedelta
 import os
 import dj_database_url
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -142,7 +145,7 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,            
     "BLACKLIST_AFTER_ROTATION": True,        
     "UPDATE_LAST_LOGIN": True,
-    # "SIGNING_KEY": os.environ.get("DJANGO_SECRET_KEY"),
+    "SIGNING_KEY": os.environ.get("DJANGO_SECRET_KEY"),
     "ALGORITHM": "HS256",
     "TOKEN_BLACKLIST_ENABLED": True,
     "TOKEN_OBTAIN_SERIALIZER": "core.serializers.CustomTokenObtainPairSerializer",
@@ -154,3 +157,16 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = os.environ.get("MAIL_USERNAME")         
+EMAIL_HOST_PASSWORD = os.environ.get("MAIL_PASSWORD") 
+DEFAULT_FROM_EMAIL = "DocuHealth Support"
+SERVER_EMAIL = DEFAULT_FROM_EMAIL        
+EMAIL_TIMEOUT = 20   
+
+ 

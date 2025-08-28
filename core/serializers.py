@@ -19,6 +19,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError({"email": "Invalid email"})
         
         self.user = user
+        self.email = email
         
         return validated_data
     
@@ -29,6 +30,7 @@ class VerifyOTPSerializer(serializers.Serializer):
     def validate(self, attrs):
         validated_data = super().validate(attrs)
         email = validated_data.get("email")
+        otp = validated_data.get("otp")
         
         try:
             user = User.objects.get(email=email)
@@ -41,7 +43,8 @@ class VerifyOTPSerializer(serializers.Serializer):
            raise serializers.ValidationError({"otp": "No OTP found"})
 
         self.user = user
-        self.otp = otp_instance
+        self.otp_instance = otp_instance
+        self.otp = otp
         
         return validated_data
 
@@ -114,5 +117,5 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ResetPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
     new_password = serializers.CharField(write_only=True, required=True, min_length=8)
+    

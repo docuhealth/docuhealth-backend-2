@@ -1,3 +1,5 @@
+from django.core.mail import send_mail
+
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
@@ -37,7 +39,12 @@ class LoginView(TokenObtainPairView, PublicGenericAPIView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         
-        # Send email
+        send_mail(
+            subject="New Login Alert",
+            message= "There was a login attempt on your DOCUHEALTH account. If this was you, you can ignore this message. \n\nIf this was not you, please contact our support team at support@docuhealthservices.com \n\n\nFrom the Docuhealth Team",
+            from_email=None,
+            recipient_list=[request.data.get("email")],         
+        )
         
         if response.status_code == status.HTTP_200_OK:
             set_refresh_cookie(response)
@@ -67,7 +74,19 @@ class ForgotPassword(PublicGenericAPIView):
         
         otp = OTP.generate_otp(serializer.user)
         print(otp)
-        # send email
+        
+        send_mail(
+            subject="Account Recovery",
+            message= (
+                        f"Enter the OTP below into the required field \n"
+                        f"The OTP will expire in 10 mins\n\n"
+                        f"OTP: {otp} \n\n"
+                        f"If you did not iniate this request, please contact our support team at support@docuhealthservices.com   \n\n\n"
+                        f"From the Docuhealth Team"
+                    ),
+            recipient_list=[serializer.email],
+            from_email=None,
+        )
         
         return Response({"detail": f"OTP sent successfully"}, status=status.HTTP_200_OK)
     
@@ -78,9 +97,7 @@ class VerifyOTPAndGetTokenView(PublicGenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        otp = serializer.validated_data["otp"]
-        
-        valid, message = serializer.otp.verify(otp)
+        valid, message = serializer.otp_instance.verify(serializer.otp)
         if not valid:
             return Response({"detail": message, "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
         
