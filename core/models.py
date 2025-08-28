@@ -20,7 +20,7 @@ def default_notification_settings():
         }}
 
 class UserManager(BaseUserManager):
-    def create_user(self, **extra_fields):
+    def create(self, **extra_fields):
         email = extra_fields.get("email")
         password = extra_fields.pop("password")
         
@@ -31,7 +31,7 @@ class UserManager(BaseUserManager):
                 break
 
         email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
+        user = self.model(**extra_fields)
         user.set_password(password)
         user.save(using=self._db)
 

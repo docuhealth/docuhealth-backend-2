@@ -8,7 +8,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 
 from .models import User, OTP
-from .serializers import UserSerializer, ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer
+from .serializers import CreateUserSerializer, ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer
 
 class PublicGenericAPIView(GenericAPIView):
     authentication_classes = []  
@@ -33,7 +33,7 @@ def set_refresh_cookie(response):
 
 class UserListCreateView(generics.ListCreateAPIView, PublicGenericAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = CreateUserSerializer
             
 class LoginView(TokenObtainPairView, PublicGenericAPIView):
     def post(self, request, *args, **kwargs):
