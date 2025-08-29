@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_spectacular',
+    "corsheaders",
     
     'patients',
     'core',
@@ -36,6 +37,7 @@ AUTH_USER_MODEL = "core.User"
 APPEND_SLASH=False 
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware", 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -167,6 +169,15 @@ EMAIL_HOST_USER = os.environ.get("MAIL_USERNAME")
 EMAIL_HOST_PASSWORD = os.environ.get("MAIL_PASSWORD") 
 DEFAULT_FROM_EMAIL = "DocuHealth Support"
 SERVER_EMAIL = DEFAULT_FROM_EMAIL        
-EMAIL_TIMEOUT = 20   
+EMAIL_TIMEOUT = 20  
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",  
+    "http://127.0.0.1:5174",
+] 
+
+CORS_ALLOW_CREDENTIALS = True
 
  
