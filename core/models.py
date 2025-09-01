@@ -1,8 +1,10 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 from django.utils import timezone
+
 from datetime import timedelta
 import random
+
 from docuhealth2.utils.generate import generate_HIN, generate_otp
 
 role_choices = [

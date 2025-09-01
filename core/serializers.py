@@ -1,14 +1,10 @@
-from django.contrib.auth.hashers import make_password
-from django.core.mail import send_mail
-
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 
-from .models import User, OTP, PendingUser
+from .models import User, OTP
 from patients.models import PatientProfile
 from patients.serializers import PatientProfileSerializer
-from docuhealth2.utils.generate import generate_otp
 
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
