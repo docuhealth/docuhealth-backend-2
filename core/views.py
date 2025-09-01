@@ -31,10 +31,49 @@ def set_refresh_cookie(response):
             
     return response
 
-class UserListCreateView(generics.ListCreateAPIView, PublicGenericAPIView):
+class CreateUserView(generics.CreateAPIView, PublicGenericAPIView):
     queryset = User.objects.all()
     serializer_class = CreateUserSerializer
-            
+    
+    def perform_create(self, serializer):
+        user = serializer.save()
+        otp = OTP.generate_otp(user)
+        
+        send_mail(
+            subject="Verify your email",
+            message=(
+                f"Enter the OTP below into the required field \n"
+                f"The OTP will expire in 10 mins\n\n"
+                f"OTP: {otp}\n\n"
+                f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
+                f"From the Docuhealth Team"
+            ),
+            recipient_list=[user.email],
+            from_email=None,
+        )
+        
+class ListDeleteUserView(generics.RetrieveDestroyAPIView, PublicGenericAPIView):
+    queryset = User.objects.all()
+    serializer_class = CreateUserSerializer
+    lookup_field = 'email'
+        
+class VerifyEmailOTPView(PublicGenericAPIView):  
+    serializer_class = VerifyOTPSerializer
+    
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        valid, message = serializer.otp_instance.verify(serializer.otp)
+        if not valid:
+            return Response({"detail": message, "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer.user.is_active = True
+        serializer.user.save(update_fields=['is_active'])
+        
+        return Response({"detail": f"Email verified successfully, proceed to login"}, status=status.HTTP_200_OK)
+    
+      
 class LoginView(TokenObtainPairView, PublicGenericAPIView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -51,18 +90,21 @@ class LoginView(TokenObtainPairView, PublicGenericAPIView):
             
         return response
     
-class CustomTokenRefreshView(TokenRefreshView):
-    def post(self, request, *args, **kwargs):
-        refresh_token = request.COOKIES.get("refresh_token")
-        if refresh_token is None:
-            return Response({"detail": "Please login again"}, status=400)
-
-        request.data["refresh"] = refresh_token
-        response = super().post(request, *args, **kwargs)
+class VerifyLoginOTPView(PublicGenericAPIView):
+    serializer_class = VerifyOTPSerializer
+    
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         
-        if response.status_code == status.HTTP_200_OK:
-            set_refresh_cookie(response)
-            
+        valid, message = serializer.otp_instance.verify(serializer.otp)
+        if not valid:
+            return Response({"detail": message, "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        access = AccessToken.for_user(serializer.user)
+
+        response = Response({"data": {"access_token": str(access)}, "detail": "Access granted to reset password", "status": "success"}, status=status.HTTP_200_OK,)
+
         return response
     
 class ForgotPassword(PublicGenericAPIView):
@@ -90,23 +132,6 @@ class ForgotPassword(PublicGenericAPIView):
         
         return Response({"detail": f"OTP sent successfully"}, status=status.HTTP_200_OK)
     
-class VerifyOTPAndGetTokenView(PublicGenericAPIView):
-    serializer_class = VerifyOTPSerializer
-    
-    def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        valid, message = serializer.otp_instance.verify(serializer.otp)
-        if not valid:
-            return Response({"detail": message, "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        access = AccessToken.for_user(serializer.user)
-
-        response = Response({"data": {"access_token": str(access)}, "detail": "Access granted to reset password", "status": "success"}, status=status.HTTP_200_OK,)
-
-        return response
-
 class ResetPasswordView(GenericAPIView):
     serializer_class = ResetPasswordSerializer
     
@@ -121,3 +146,17 @@ class ResetPasswordView(GenericAPIView):
         user.save()
 
         return Response({"detail": "Password reset successfully. Please log in with your new credentials.", "status": "success"}, status=200)
+    
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get("refresh_token")
+        if refresh_token is None:
+            return Response({"detail": "Please login again"}, status=400)
+
+        request.data["refresh"] = refresh_token
+        response = super().post(request, *args, **kwargs)
+        
+        if response.status_code == status.HTTP_200_OK:
+            set_refresh_cookie(response)
+            
+        return response

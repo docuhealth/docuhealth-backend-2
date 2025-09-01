@@ -1,10 +1,14 @@
+from django.contrib.auth.hashers import make_password
+from django.core.mail import send_mail
+
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 
-from .models import User, OTP
+from .models import User, OTP, PendingUser
 from patients.models import PatientProfile
 from patients.serializers import PatientProfileSerializer
+from docuhealth2.utils.generate import generate_otp
 
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
@@ -81,7 +85,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
         if role == User.Role.PATIENT:
             PatientProfile.objects.create(user=user, **profile_data)
-
+            
         return user
 
     def update(self, instance, validated_data):
@@ -117,4 +121,9 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
 class ResetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, required=True, min_length=8)
+
+        
+        
+        
+        
     

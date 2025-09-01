@@ -18,7 +18,7 @@ def default_notification_settings():
             "info_change": { "email": True, "push": False, "dashboard": True },
             "assessment_diagnosis": { "email": True, "push": True, "dashboard": False 
         }}
-
+    
 class UserManager(BaseUserManager):
     def create(self, **extra_fields):
         email = extra_fields.get("email")
@@ -65,7 +65,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
     
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
@@ -91,7 +91,7 @@ class OTP(models.Model):
         otp = generate_otp()
         expiry_time = timezone.now() + timedelta(minutes=expiry_minutes)
 
-        otp, created = cls.objects.update_or_create(
+        otp, _ = cls.objects.update_or_create(
             user=user,
             defaults={
                 "otp": otp,
@@ -120,3 +120,4 @@ class OTP(models.Model):
     
     def __str__(self):
         return self.otp
+
