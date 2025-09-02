@@ -68,7 +68,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'role', 'hin', 'street', 'city', 'state','country', 'created_at', 'updated_at', 'profile', 'password', 'house_no']
         read_only_fields = ['id', 'hin', 'created_at', 'updated_at']
-
+        
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
         role = validated_data.get('role')
