@@ -34,7 +34,7 @@ def set_refresh_cookie(response):
 class CreateUserView(generics.CreateAPIView, PublicGenericAPIView):
     serializer_class = CreateUserSerializer
     
-    def post(self, request, *args, **kwargs): # Override post to handle existing inactive users
+    def post(self, request, *args, **kwargs):
         email = request.data.get('email')
         
         existing_inactive_user = User.objects.filter(email=email, is_active=False).first()
@@ -81,7 +81,6 @@ class VerifyEmailOTPView(PublicGenericAPIView):
         
         return Response({"detail": f"Email verified successfully, proceed to login"}, status=status.HTTP_200_OK)
     
-      
 class LoginView(TokenObtainPairView, PublicGenericAPIView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -94,7 +93,11 @@ class LoginView(TokenObtainPairView, PublicGenericAPIView):
         )
         
         if response.status_code == status.HTTP_200_OK:
+            user = User.objects.get(email=request.data.get("email"))
+            role = user.role
+            
             set_refresh_cookie(response)
+            response.data["data"]["role"] = role
             
         return response
     
