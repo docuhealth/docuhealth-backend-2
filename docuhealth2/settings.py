@@ -28,9 +28,11 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'drf_spectacular',
     "corsheaders",
+    "structured",
     
     'patients',
     'core',
+    'medicalrecords',
 ]
 
 AUTH_USER_MODEL = "core.User"
