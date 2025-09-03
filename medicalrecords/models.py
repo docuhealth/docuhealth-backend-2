@@ -1,24 +1,20 @@
 from django.db import models
-
-from structured.fields import StructuredJSONField
-from typing import List
-
-from .schemas import ValueRate, VitalSigns, DateAndTime
+from core.models import User
 
 class MedicalRecord(models.Model):
-    patient = models.ForeignKey('core.User', on_delete=models.CASCADE, related_name='patient_records')
-    hospital = models.ForeignKey('core.User', on_delete=models.CASCADE, related_name='hospital_records')
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_records')
+    hospital = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hospital_records')
     
     chief_complaint = models.TextField()
-    history = StructuredJSONField(schema=List[str])
-    vital_signs = StructuredJSONField(schema=VitalSigns)
-    physical_exam = StructuredJSONField(schema=List[str])
-    diagnosis = StructuredJSONField(schema=List[str])
-    treatment_plan = StructuredJSONField(schema=List[str])
-    care_instructions = StructuredJSONField(schema=List[str])
-    appointment = StructuredJSONField(schema=DateAndTime)
+    history = models.JSONField(default=list)
+    vital_signs = models.JSONField(default=dict)
+    physical_exam = models.JSONField(default=list)
+    diagnosis = models.JSONField(default=list)
+    treatment_plan = models.JSONField(default=list)
+    care_instructions = models.JSONField(default=list)
+    appointment = models.JSONField(default=dict)
     
-    referred_docuhealth_hosp = models.ForeignKey('core.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_medical_records')
+    referred_docuhealth_hosp = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_medical_records')
     referred_hosp = models.TextField(blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -32,8 +28,9 @@ class DrugRecord(models.Model):
     name = models.CharField(max_length=255)
     route = models.CharField(max_length=255)
     quantity = models.FloatField()
-    frequency = StructuredJSONField(schema=ValueRate)
-    duration = StructuredJSONField(schema=ValueRate)
+    
+    frequency = models.JSONField(default=dict)
+    duration = models.JSONField(default=dict)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

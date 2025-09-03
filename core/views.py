@@ -60,10 +60,9 @@ class CreateUserView(generics.CreateAPIView, PublicGenericAPIView):
             from_email=None,
         )
         
-class ListDeleteUserView(generics.RetrieveDestroyAPIView, PublicGenericAPIView):
+class ListUserView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = CreateUserSerializer
-    lookup_field = 'email'
         
 class VerifyEmailOTPView(PublicGenericAPIView):  
     serializer_class = VerifyOTPSerializer

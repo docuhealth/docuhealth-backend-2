@@ -16,3 +16,12 @@ class VitalSigns(BaseModel):
 class DateAndTime(BaseModel):
     date: date
     time: time
+    
+VALUERATEDOCSCHEMA = {
+            "type": "object",
+            "properties": {
+                "value": {"type": "float"},
+                "rate": {"type": "string"},
+            },
+            "example": {"value": 200, "rate": "mg"}
+        }
