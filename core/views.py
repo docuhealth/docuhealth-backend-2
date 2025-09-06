@@ -161,6 +161,7 @@ class ResetPasswordView(GenericAPIView):
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get("refresh_token")
+        print(refresh_token)
         if refresh_token is None:
             return Response({"detail": "Please login again"}, status=400)
 
