@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import CreateUserView, LoginView, CustomTokenRefreshView, ForgotPassword, VerifyForgotPasswordOTPView, ResetPasswordView, ListUserView, VerifyEmailOTPView
-from medicalrecords.views import MedicalRecordListView, MedicalRecordCreateView
+from medicalrecords.views import MedicalRecordListView, MedicalRecordCreateView, UploadMedicalRecordsAttachments
 
 urlpatterns = [
     path('signup', CreateUserView.as_view(), name='user-signup'),
@@ -12,5 +12,6 @@ urlpatterns = [
     path('reset-password', ResetPasswordView.as_view(), name='reset-password'),
     path('users', ListUserView.as_view(), name='users'),
     path('create-medical-records', MedicalRecordCreateView.as_view(), name='create-medical-records'),
-    path('medical-records', MedicalRecordListView.as_view(), name='medical-records')
+    path('medical-records', MedicalRecordListView.as_view(), name='medical-records'),
+    path('upload-medical-records-attachments', UploadMedicalRecordsAttachments.as_view(), name='medical-records-attachments'),
 ]

@@ -43,7 +43,7 @@ class DrugRecord(models.Model):
         return self.name
     
 class MedicalRecordAttachment(models.Model):
-    medical_record = models.ForeignKey(MedicalRecord, related_name="attachments", on_delete=models.CASCADE)
+    medical_record = models.ForeignKey(MedicalRecord, related_name="attachments", on_delete=models.CASCADE, null=True, blank=True)
     file = CloudinaryField("medical_records/") 
     uploaded_at = models.DateTimeField(auto_now_add=True)
     

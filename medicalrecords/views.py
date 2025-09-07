@@ -1,68 +1,44 @@
 from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework import status
 
-from .models import MedicalRecord
-from .serializers import MedicalRecordSerializer
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from .parsers import MultipartJsonParser
+
+from .models import MedicalRecord, MedicalRecordAttachment
+from .serializers import MedicalRecordSerializer, MedicalRecordAttachmentSerializer
 
 class MedicalRecordListView(generics.ListAPIView):
-    print("MedicalRecordListCreateView initialized")
     queryset = MedicalRecord.objects.all()
     serializer_class = MedicalRecordSerializer
 
-class MedicalRecordCreateView(generics.CreateAPIView):
+class MedicalRecordCreateView(generics.ListCreateAPIView):
     queryset = MedicalRecord.objects.all()
     serializer_class = MedicalRecordSerializer
+    
+    def post(self, request, *args, **kwargs):
+        attachments = request.FILES.getlist('attachments', [])
+        data = request.data
+        print(data)
+        return super().post(request, *args, **kwargs, attachments=attachments)
 
     def perform_create(self, serializer):
         serializer.save(hospital=self.request.user)
         
+class UploadMedicalRecordsAttachments(generics.CreateAPIView):
+    queryset = MedicalRecordAttachment.objects.all()
+    serializer_class = MedicalRecordAttachmentSerializer
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def create(self, request, *args, **kwargs):
+        files = request.FILES.getlist("files")  # expect "files" field
+        attachments = []
+
+        for file in files:
+            serializer = self.get_serializer(data={"file": file})
+            serializer.is_valid(raise_exception=True)
+            attachment = serializer.save()
+            attachments.append(serializer.data)
+
+        return Response(attachments, status=status.HTTP_201_CREATED)
         
-# {
-#   "patient": "4123252069857",
-#   "referred_docuhealth_hosp": "4123252069857",
-#   "drug_records": [
-#     {
-#       "frequency": {
-#         "value": 0.1,
-#         "rate": "string"
-#       },
-#       "duration": {
-#         "value": 0.1,
-#         "rate": "string"
-#       },
-#       "name": "string",
-#       "route": "string",
-#       "quantity": 0.1
-#     }
-#   ],
-#   "vital_signs": {
-#     "blood_pressure": "string",
-#     "temp": 0.1,
-#     "resp_rate": 0.1,
-#     "height": 0.1,
-#     "weight": 0.1,
-#     "heart_rate": 0.1
-#   },
-#   "appointment": {
-#     "date": "2019-08-24",
-#     "time": "14:15:22Z"
-#   },
-#   "history": [
-#     "string"
-#   ],
-#   "physical_exam": [
-#     "string"
-#   ],
-#   "diagnosis": [
-#     "string"
-#   ],
-#   "treatment_plan": [
-#     "string"
-#   ],
-#   "care_instructions": [
-#     "string"
-#   ],
-#   "chief_complaint": "string",
-  
-# }
-
-
