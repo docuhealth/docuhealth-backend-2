@@ -9,5 +9,5 @@ urlpatterns = [
     path('forgot-password', ForgotPassword.as_view(), name='forgot-password'),
     path('forgot-password/verify-otp', VerifyForgotPasswordOTPView.as_view(), name='verify-otp'),
     path('reset-password', ResetPasswordView.as_view(), name='reset-password'),
-    path('users', ListUserView.as_view(), name='users'),
+    path('users/all', ListUserView.as_view(), name='users'),
 ]

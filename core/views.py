@@ -5,14 +5,11 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny
 
 from .models import User, OTP
 from .serializers import CreateUserSerializer, ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer
 
-class PublicGenericAPIView(GenericAPIView):
-    authentication_classes = []  
-    permission_classes = [AllowAny]
+from docuhealth2.views import PublicGenericAPIView
 
 def set_refresh_cookie(response):
     data = response.data

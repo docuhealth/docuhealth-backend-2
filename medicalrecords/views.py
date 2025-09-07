@@ -1,9 +1,7 @@
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from .parsers import MultipartJsonParser
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import MedicalRecord, MedicalRecordAttachment
 from .serializers import MedicalRecordSerializer, MedicalRecordAttachmentSerializer
@@ -12,12 +10,20 @@ class MedicalRecordListView(generics.ListAPIView):
     queryset = MedicalRecord.objects.all()
     serializer_class = MedicalRecordSerializer
 
-class MedicalRecordCreateView(generics.ListCreateAPIView):
+class MedicalRecordCreateView(generics.CreateAPIView):
     queryset = MedicalRecord.objects.all()
     serializer_class = MedicalRecordSerializer
     
     def perform_create(self, serializer):
         serializer.save(hospital=self.request.user)
+        
+class GetMedicalrecordsView(generics.ListAPIView):
+    queryset = MedicalRecord.objects.all()
+    serializer_class = MedicalRecordSerializer
+    
+    def get_queryset(self):
+        patient_hin = self.kwargs.get("hin")
+        return MedicalRecord.objects.filter(patient__hin=patient_hin).select_related("patient", "hospital").prefetch_related("drug_records", "attachments")
         
 class UploadMedicalRecordsAttachments(generics.CreateAPIView):
     queryset = MedicalRecordAttachment.objects.all()
