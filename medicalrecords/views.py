@@ -16,12 +16,6 @@ class MedicalRecordCreateView(generics.ListCreateAPIView):
     queryset = MedicalRecord.objects.all()
     serializer_class = MedicalRecordSerializer
     
-    def post(self, request, *args, **kwargs):
-        attachments = request.FILES.getlist('attachments', [])
-        data = request.data
-        print(data)
-        return super().post(request, *args, **kwargs, attachments=attachments)
-
     def perform_create(self, serializer):
         serializer.save(hospital=self.request.user)
         
@@ -31,7 +25,7 @@ class UploadMedicalRecordsAttachments(generics.CreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
     
     def create(self, request, *args, **kwargs):
-        files = request.FILES.getlist("files")  # expect "files" field
+        files = request.FILES.getlist("files")  
         attachments = []
 
         for file in files:
@@ -39,6 +33,7 @@ class UploadMedicalRecordsAttachments(generics.CreateAPIView):
             serializer.is_valid(raise_exception=True)
             attachment = serializer.save()
             attachments.append(serializer.data)
-
-        return Response(attachments, status=status.HTTP_201_CREATED)
+            
+        attachment_ids = [attachment['id'] for attachment in attachments]
+        return Response(attachment_ids, status=status.HTTP_201_CREATED)
         
