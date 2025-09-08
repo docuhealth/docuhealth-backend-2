@@ -7,7 +7,7 @@ from .models import MedicalRecord, MedicalRecordAttachment
 from .serializers import MedicalRecordSerializer, MedicalRecordAttachmentSerializer
 
 class MedicalRecordListView(generics.ListAPIView):
-    queryset = MedicalRecord.objects.all()
+    queryset = MedicalRecord.objects.all().order_by('-created_at')
     serializer_class = MedicalRecordSerializer
 
 class MedicalRecordCreateView(generics.CreateAPIView):
@@ -18,7 +18,7 @@ class MedicalRecordCreateView(generics.CreateAPIView):
         serializer.save(hospital=self.request.user)
         
 class GetMedicalrecordsView(generics.ListAPIView):
-    queryset = MedicalRecord.objects.all()
+    queryset = MedicalRecord.objects.all().order_by('-created_at')
     serializer_class = MedicalRecordSerializer
     
     def get_queryset(self):
