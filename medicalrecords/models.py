@@ -1,9 +1,13 @@
 from django.db import models
 from core.models import User
+from patients.models import Subaccount
 from cloudinary.models import CloudinaryField
 
+from rest_framework.exceptions import ValidationError
+
 class MedicalRecord(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_med_records')
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_med_records', blank=True, null=True)
+    subaccount = models.ForeignKey(Subaccount, on_delete=models.CASCADE, related_name='med_records', blank=True, null=True)
     hospital = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hospital_med_records')
     
     chief_complaint = models.TextField()
@@ -20,6 +24,12 @@ class MedicalRecord(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def clean(self):
+        if not self.patient and not self.subaccount:
+            raise ValidationError("Either patient or subaccount must be set.")
+        if self.patient and self.subaccount:
+            raise ValidationError("Only one of patient or subaccount can be set.")
 
     def __str__(self):
         return f'Medical Record for {self.patient.email} created on {self.created_at}'

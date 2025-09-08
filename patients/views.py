@@ -32,10 +32,9 @@ class PatientDashboardView(generics.GenericAPIView):
         
 class ListCreateSubaccountView(generics.ListCreateAPIView):
     serializer_class = SubaccountSerializer
-    queryset = Subaccount.objects.all().order_by('-created_at')
     
     def get_queryset(self):
-        return Subaccount.objects.filter(parent=self.request.user).select_related("parent")
+        return Subaccount.objects.filter(parent=self.request.user).select_related("parent").order_by('-created_at')
     
     def perform_create(self, serializer):
         serializer.save(parent=self.request.user)

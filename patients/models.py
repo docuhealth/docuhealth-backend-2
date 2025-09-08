@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 
 from core.models import User
+from docuhealth2.utils.generate import generate_HIN
 
 GENDER_CHOICES = [
     ('male', 'Male'),
@@ -28,6 +29,7 @@ class Subaccount(models.Model):
     middlename = models.CharField(max_length=100, blank=True)
     dob = models.DateField()
     gender = models.CharField(choices=GENDER_CHOICES)
+    hin = models.CharField(max_length=20, unique=True)
     
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)

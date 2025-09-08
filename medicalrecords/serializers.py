@@ -3,6 +3,7 @@ from rest_framework import serializers
 from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment
 from docuhealth2.serializers import DictSerializerMixin
 from core.models import User
+from patients.models import Subaccount
 
 class ValueRateSerializer(serializers.Serializer):
     value = serializers.FloatField()
@@ -42,7 +43,8 @@ class MedicalRecordAttachmentSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'uploaded_at', 'medical_record')
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
-    patient = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.all(), required=True)
+    patient = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.all(), required=False)
+    subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=Subaccount.objects.all(), required=False)
     referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.all(), required=False, allow_null=True) # Change queryset to only hospitals
     attachments = serializers.PrimaryKeyRelatedField(many=True, queryset=MedicalRecordAttachment.objects.all(), required=False)
     
@@ -60,6 +62,13 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         model = MedicalRecord
         fields = '__all__'
         read_only_fields = ('id', 'created_at', 'updated_at', 'hospital')
+        
+    def validate(self, attrs):
+        if not attrs.get("patient") and not attrs.get("subaccount"):
+            raise serializers.ValidationError("Either patient or subaccount is required.")
+        if attrs.get("patient") and attrs.get("subaccount"):
+            raise serializers.ValidationError("Provide only one: patient or subaccount to create a patient or subaccount medical record.")
+        return attrs
         
     def create(self, validated_data):
         drug_records_data = validated_data.pop('drug_records', [])

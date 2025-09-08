@@ -25,12 +25,14 @@ class UserManager(BaseUserManager):
     def create(self, **extra_fields):
         email = extra_fields.get("email")
         password = extra_fields.pop("password")
+        hin = extra_fields.get("hin")
         
-        while True:
-            hin = generate_HIN()
-            if not User.objects.filter(hin=hin).exists():
-                extra_fields['hin'] = hin
-                break
+        if not hin:
+            while True:
+                hin = generate_HIN()
+                if not User.objects.filter(hin=hin).exists():
+                    extra_fields['hin'] = hin
+                    break
 
         email = self.normalize_email(email)
         user = self.model(**extra_fields)
