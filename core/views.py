@@ -21,7 +21,7 @@ def set_refresh_cookie(response):
         value=refresh,
         httponly=True,    
         secure=True,      
-        samesite="Lax"
+        samesite="None"
     )
 
     response.data = {"data": {"access_token": access}, "detail": "Access granted", "status": "success"}
@@ -159,13 +159,19 @@ class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get("refresh_token")
         print(refresh_token)
-        if refresh_token is None:
+        if not refresh_token:
             return Response({"detail": "Please login again"}, status=400)
 
-        request.data["refresh"] = refresh_token
-        response = super().post(request, *args, **kwargs)
+        # request.data["refresh"] = refresh_token
+        # response = super().post(request, *args, **kwargs)
         
-        if response.status_code == status.HTTP_200_OK:
-            set_refresh_cookie(response)
+        # if response.status_code == status.HTTP_200_OK:
+        #     set_refresh_cookie(response)
+        
+        serializer = self.get_serializer(data={"refresh": refresh_token})
+        serializer.is_valid(raise_exception=True)
+        response = Response(serializer.validated_data, status=status.HTTP_200_OK)
+
+        set_refresh_cookie(response)
             
         return response
