@@ -5,11 +5,13 @@ from rest_framework.pagination import PageNumberPagination
 from medicalrecords.serializers import MedicalRecordSerializer
 from medicalrecords.models import MedicalRecord
 
-class PatientDashboardView(generics.GenericAPIView):
+from .models import Subaccount
+from .serializers import SubaccountSerializer
+
+from docuhealth2.views import PaginatedView
+
+class PatientDashboardView(generics.GenericAPIView, PaginatedView):
     serializer_class = MedicalRecordSerializer  
-    pagination_class = PageNumberPagination
-    pagination_class.page_size_query_param = 'size'
-    pagination_class.max_page_size = 100
 
     def get(self, request, *args, **kwargs):
         patient = request.user  
@@ -29,3 +31,14 @@ class PatientDashboardView(generics.GenericAPIView):
             },
             **paginated_data
         })
+        
+class CreateSubaccountView(generics.CreateAPIView):
+    serializer_class = SubaccountSerializer
+    queryset = Subaccount.objects.all().order_by('-created_at')
+    
+    def get_queryset(self):
+        return Subaccount.objects.filter(parent=self.request.user).select_related("parent")
+    
+    def perform_create(self, serializer):
+        serializer.save(parent=self.request.user)
+    

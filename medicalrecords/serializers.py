@@ -76,6 +76,5 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         for attachment in attachments_data:
             attachment.medical_record = medical_record
             attachment.save()
-            # MedicalRecordAttachment.objects.create(medical_record=medical_record, **attachment)
         
         return medical_record

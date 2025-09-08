@@ -22,8 +22,7 @@ class GetMedicalrecordsView(generics.ListAPIView):
     serializer_class = MedicalRecordSerializer
     
     def get_queryset(self):
-        patient_hin = self.kwargs.get("hin")
-        return MedicalRecord.objects.filter(patient__hin=patient_hin).select_related("patient", "hospital").prefetch_related("drug_records", "attachments")
+        return MedicalRecord.objects.filter(patient=self.request.user).select_related("patient", "hospital").prefetch_related("drug_records", "attachments")
         
 class UploadMedicalRecordsAttachments(generics.CreateAPIView):
     queryset = MedicalRecordAttachment.objects.all()
