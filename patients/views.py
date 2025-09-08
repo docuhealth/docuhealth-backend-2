@@ -8,9 +8,7 @@ from medicalrecords.models import MedicalRecord
 from .models import Subaccount
 from .serializers import SubaccountSerializer
 
-from docuhealth2.views import PaginatedView
-
-class PatientDashboardView(generics.GenericAPIView, PaginatedView):
+class PatientDashboardView(generics.GenericAPIView):
     serializer_class = MedicalRecordSerializer  
 
     def get(self, request, *args, **kwargs):
@@ -32,7 +30,7 @@ class PatientDashboardView(generics.GenericAPIView, PaginatedView):
             **paginated_data
         })
         
-class CreateSubaccountView(generics.CreateAPIView):
+class ListCreateSubaccountView(generics.ListCreateAPIView):
     serializer_class = SubaccountSerializer
     queryset = Subaccount.objects.all().order_by('-created_at')
     

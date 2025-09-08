@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import PatientDashboardView, CreateSubaccountView
+from .views import PatientDashboardView, ListCreateSubaccountView
 
 urlpatterns = [
     path('dashboard', PatientDashboardView.as_view(), name='patient-dashboard'),
-    path('subaccounts', CreateSubaccountView.as_view(), name='create-subaccount'),
+    path('subaccounts', ListCreateSubaccountView.as_view(), name='create-subaccount'),
 ]
