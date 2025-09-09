@@ -1,6 +1,7 @@
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import ValidationError
 
 from medicalrecords.serializers import MedicalRecordSerializer
 from medicalrecords.models import MedicalRecord
@@ -38,4 +39,14 @@ class ListCreateSubaccountView(generics.ListCreateAPIView):
     
     def perform_create(self, serializer):
         serializer.save(parent=self.request.user)
+        
+class ListSubaccountMedicalRecordsView(generics.ListAPIView):
+    serializer_class = MedicalRecordSerializer
+    
+    def get_queryset(self):
+        hin = self.kwargs.get("hin")
+        
+        if not hin:
+            raise ValidationError("Subaccount hin should be provided")
+        return MedicalRecord.objects.filter(subaccount__hin = hin).select_related("patient", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
     
