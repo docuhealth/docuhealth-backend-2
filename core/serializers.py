@@ -60,9 +60,15 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
 class CreateUserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, required=True, min_length=8)
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
     profile = PatientProfileSerializer(required=True)
+    
+    street = serializers.CharField(required=True)
+    city = serializers.CharField(required=True)
+    state = serializers.CharField(required=True)
+    country = serializers.CharField(required=True)
     
     class Meta:
         model = User

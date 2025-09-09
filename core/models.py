@@ -24,7 +24,7 @@ def default_notification_settings():
 class UserManager(BaseUserManager):
     def create(self, **extra_fields):
         email = extra_fields.get("email")
-        password = extra_fields.pop("password")
+        password = extra_fields.pop("password", None)
         
         while True:
             hin = generate_HIN()
@@ -34,7 +34,9 @@ class UserManager(BaseUserManager):
 
         email = self.normalize_email(email)
         user = self.model(**extra_fields)
-        user.set_password(password)
+        if password:
+            user.set_password(password)
+            
         user.save(using=self._db)
 
         return user
@@ -55,7 +57,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         PHARMACY = 'pharmacy', 'Pharmacy'
     
     hin = models.CharField(max_length=20, unique=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, blank=True, null=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.PATIENT)
     
     notification_settings = models.JSONField(default=default_notification_settings)

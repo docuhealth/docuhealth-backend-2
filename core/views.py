@@ -58,7 +58,7 @@ class CreateUserView(generics.CreateAPIView, PublicGenericAPIView):
         )
         
 class ListUserView(generics.ListAPIView):
-    queryset = User.objects.all()
+    queryset = User.objects.exclude(role="subaccount").order_by("-created_at")
     serializer_class = CreateUserSerializer
         
 class VerifyEmailOTPView(PublicGenericAPIView):  
@@ -96,7 +96,6 @@ class LoginView(TokenObtainPairView, PublicGenericAPIView):
             response.data["data"]["role"] = role
             
         return response
-    
     
 class ForgotPassword(PublicGenericAPIView):
     serializer_class = ForgotPasswordSerializer

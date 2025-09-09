@@ -17,12 +17,10 @@ class SubaccountSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         parent = self.context['request'].user
-        parent_email = parent.email
-        role = "subaccount"
+        validated_data['parent'] = parent
             
-        User.objects.create(email=parent_email, role=role)
-        subaccount = super().create(parent=parent, **validated_data)
-        return subaccount
+        User.objects.create(role="subaccount")
+        return super().create(validated_data)
         
 class UpgradeSubaccountSerializer(serializers.ModelSerializer):
     subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=Subaccount.objects.all())
