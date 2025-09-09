@@ -6,8 +6,7 @@ from cloudinary.models import CloudinaryField
 from rest_framework.exceptions import ValidationError
 
 class MedicalRecord(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_med_records', blank=True, null=True)
-    subaccount = models.ForeignKey(Subaccount, on_delete=models.CASCADE, related_name='med_records', blank=True, null=True)
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='med_records')
     hospital = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hospital_med_records')
     
     chief_complaint = models.TextField()

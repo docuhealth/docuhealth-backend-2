@@ -44,7 +44,6 @@ class MedicalRecordAttachmentSerializer(serializers.ModelSerializer):
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
     patient = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.all(), required=False)
-    subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=Subaccount.objects.all(), required=False)
     referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.all(), required=False, allow_null=True) # Change queryset to only hospitals
     attachments = serializers.PrimaryKeyRelatedField(many=True, queryset=MedicalRecordAttachment.objects.all(), required=False)
     

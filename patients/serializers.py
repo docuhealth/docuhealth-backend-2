@@ -9,7 +9,8 @@ class PatientProfileSerializer(serializers.ModelSerializer):
         model = PatientProfile
         fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename', 'referred_by']
         
-class SubaccountSerializer(serializers.ModelSerializer):
+class CreateSubaccountSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = Subaccount
         fields = '__all__'
@@ -17,13 +18,15 @@ class SubaccountSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         parent = self.context['request'].user
+        user = User.objects.create(role="subaccount")
+        
         validated_data['parent'] = parent
+        validated_data['user'] = user
             
-        User.objects.create(role="subaccount")
         return super().create(validated_data)
         
 class UpgradeSubaccountSerializer(serializers.ModelSerializer):
-    subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=Subaccount.objects.all())
+    subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.all(), write_only=True)
     
     email = serializers.EmailField(required=True)
     phone_num = serializers.CharField(required=False)
@@ -38,17 +41,37 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['email', 'hin', 'street', 'city', 'state','country', 'created_at', 'updated_at', 'profile', 'password', 'house_no']
-        read_only_fields = ('id', 'created_at', 'updated_at', 'hin')
+        fields = ['email', 'street', 'city', 'state', 'country', 'password', 'house_no', 'phone_num', 'subaccount']
+        read_only_fields = ('id', 'created_at', 'updated_at')
         
     def create(self, validated_data):
-        validated_data['role'] = 'patient'
-        
         house_no = validated_data.pop('house_no', None)
         if house_no:
             validated_data['street'] = f'{house_no}, {validated_data['street']}'
-
-        user = super().create(validated_data) 
-        PatientProfile.objects.create(user=user, )
             
-        return user
+        subaccount_user = validated_data.pop('subaccount')
+        phone_num = validated_data.pop('phone_num')
+        password = validated_data.pop('password')
+        
+        subaccount_profile = subaccount_user.subaccount_profile
+        validated_data['role'] = 'patient'
+        
+        patient_profile_data = {
+            "firstname": subaccount_profile.firstname, 
+            "lastname": subaccount_profile.lastname,
+            "middlename": subaccount_profile.middlename,
+            "dob": subaccount_profile.dob,
+            "gender": subaccount_profile.gender,
+            "phone_num": phone_num
+        }
+        
+        subaccount_user.set_password(password)
+        for field, value in validated_data.items():
+            setattr(subaccount_user, field, value)
+            
+        subaccount_user.save()
+        
+        PatientProfile.objects.create(user=subaccount_user, **patient_profile_data)
+        
+        return subaccount_user
+            
