@@ -10,20 +10,19 @@ class PatientProfileSerializer(serializers.ModelSerializer):
         fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename', 'referred_by']
         
 class SubaccountSerializer(serializers.ModelSerializer):
-    
-    def create(self, validated_data):
-        while True:
-            hin = generate_HIN()
-            if not Subaccount.objects.filter(hin=hin).exists():
-                validated_data["hin"] = hin
-                break
-            
-        return super().create(validated_data)
-    
     class Meta:
         model = Subaccount
         fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at', 'parent', 'hin')
+        read_only_fields = ['id', 'created_at', 'updated_at', 'parent', 'hin']
+    
+    def create(self, validated_data):
+        parent = self.context['request'].user
+        parent_email = parent.email
+        role = "subaccount"
+            
+        User.objects.create(email=parent_email, role=role)
+        subaccount = super().create(parent=parent, **validated_data)
+        return subaccount
         
 class UpgradeSubaccountSerializer(serializers.ModelSerializer):
     subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=Subaccount.objects.all())

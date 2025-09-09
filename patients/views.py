@@ -37,8 +37,8 @@ class ListCreateSubaccountView(generics.ListCreateAPIView):
     def get_queryset(self):
         return Subaccount.objects.filter(parent=self.request.user).select_related("parent").order_by('-created_at')
     
-    def perform_create(self, serializer):
-        serializer.save(parent=self.request.user)
+    # def perform_create(self, serializer):
+    #     serializer.save(parent=self.request.user)
         
 class ListSubaccountMedicalRecordsView(generics.ListAPIView):
     serializer_class = MedicalRecordSerializer

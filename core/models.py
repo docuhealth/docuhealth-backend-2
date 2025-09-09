@@ -25,14 +25,12 @@ class UserManager(BaseUserManager):
     def create(self, **extra_fields):
         email = extra_fields.get("email")
         password = extra_fields.pop("password")
-        hin = extra_fields.get("hin")
         
-        if not hin:
-            while True:
-                hin = generate_HIN()
-                if not User.objects.filter(hin=hin).exists():
-                    extra_fields['hin'] = hin
-                    break
+        while True:
+            hin = generate_HIN()
+            if not User.objects.filter(hin=hin).exists():
+                extra_fields['hin'] = hin
+                break
 
         email = self.normalize_email(email)
         user = self.model(**extra_fields)
@@ -51,6 +49,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
         PATIENT = 'patient', 'Patient'
+        SUBACCOUNT = 'subaccount', 'Subaccount'
         HOSPITAL = 'hospital', 'Hospital'
         ADMIN = 'admin', 'Admin'
         PHARMACY = 'pharmacy', 'Pharmacy'
@@ -61,10 +60,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     notification_settings = models.JSONField(default=default_notification_settings)
     
-    street = models.CharField(max_length=120)
-    city = models.CharField(max_length=20)
-    state = models.CharField(max_length=20)
-    country = models.CharField(max_length=20)
+    street = models.CharField(max_length=120, blank=True, null=True)
+    city = models.CharField(max_length=20, blank=True, null=True)
+    state = models.CharField(max_length=20, blank=True, null=True)
+    country = models.CharField(max_length=20, blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
