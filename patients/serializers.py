@@ -10,6 +10,101 @@ class PatientProfileSerializer(serializers.ModelSerializer):
         model = PatientProfile
         fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename', 'referred_by']
         
+class UpdatePatientProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientProfile
+        fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename']
+        
+    def to_internal_value(self, data):
+        allowed_fields = set(self.fields.keys())
+        provided_fields = set(data.keys())
+        unknown_fields = provided_fields - allowed_fields
+        if unknown_fields:
+            raise serializers.ValidationError(
+                {field: f"Invalid profile field: {field}" for field in unknown_fields}
+            )
+        return super().to_internal_value(data)
+
+class CreatePatientSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, required=True, min_length=8)
+    house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
+    profile = PatientProfileSerializer(required=True)
+    
+    street = serializers.CharField(required=True)
+    city = serializers.CharField(required=True)
+    state = serializers.CharField(required=True)
+    country = serializers.CharField(required=True)
+    
+    class Meta:
+        model = User
+        fields = ['email', 'role', 'hin', 'street', 'city', 'state','country', 'created_at', 'updated_at', 'profile', 'password', 'house_no']
+        read_only_fields = ['id', 'hin', 'created_at', 'updated_at']
+        
+    def create(self, validated_data):
+        profile_data = validated_data.pop('profile')
+        role = validated_data.get('role')
+        
+        house_no = validated_data.pop('house_no', None)
+        if house_no:
+            validated_data['street'] = f'{house_no}, {validated_data['street']}'
+
+        user = super().create(validated_data) 
+
+        if role == User.Role.PATIENT:
+            PatientProfile.objects.create(user=user, **profile_data)
+            
+        return user
+    
+class UpdatePatientSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=False)
+    password = serializers.CharField(write_only=True, required=False, min_length=8)
+    profile = UpdatePatientProfileSerializer(required=False)  
+    
+    class Meta:
+        model = User
+        fields = ['email', 'password', 'profile']  
+        read_only_fields = ['id', 'hin', 'role', 'created_at', 'updated_at']
+        
+    def validate(self, attrs):
+        print(attrs)
+        validated_data = super().validate(attrs)
+        email = validated_data.get('email', None)
+        
+        if email and User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+            raise ValidationError("A user with this email already exists.")
+        
+        profile_data = validated_data.get('profile')
+        if profile_data:
+            profile_serializer = PatientProfileSerializer(
+                instance=self.instance.profile,
+                data=profile_data,
+                partial=True  
+            )
+            profile_serializer.is_valid(raise_exception=True)
+            validated_data['profile'] = profile_serializer.validated_data
+
+        return validated_data
+        
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile', None)
+
+        if 'email' in validated_data:
+            instance.email = validated_data['email']
+
+        if 'password' in validated_data:
+            instance.set_password(validated_data['password'])
+        
+        if profile_data:
+            profile = instance.profile
+            for attr, value in profile_data.items():
+                if value is not None:
+                    setattr(profile, attr, value)
+            profile.save()
+
+        instance.save()
+        return instance
+
 class CreateSubaccountSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:

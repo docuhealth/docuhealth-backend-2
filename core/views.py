@@ -7,9 +7,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.generics import GenericAPIView
 
 from .models import User, OTP
-from .serializers import CreateUserSerializer, ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer
 
 from docuhealth2.views import PublicGenericAPIView
+from patients.serializers import CreatePatientSerializer
 
 def set_refresh_cookie(response):
     data = response.data
@@ -28,38 +29,9 @@ def set_refresh_cookie(response):
             
     return response
 
-class CreateUserView(generics.CreateAPIView, PublicGenericAPIView):
-    serializer_class = CreateUserSerializer
-    
-    def post(self, request, *args, **kwargs):
-        email = request.data.get('email')
-        
-        existing_inactive_user = User.objects.filter(email=email, is_active=False).first()
-        if existing_inactive_user:
-            existing_inactive_user.delete()  
-
-        return super().post(request, *args, **kwargs)
-    
-    def perform_create(self, serializer):
-        user = serializer.save()
-        otp = OTP.generate_otp(user)
-        
-        send_mail(
-            subject="Verify your email",
-            message=(
-                f"Enter the OTP below into the required field \n"
-                f"The OTP will expire in 10 mins\n\n"
-                f"OTP: {otp}\n\n"
-                f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
-                f"From the Docuhealth Team"
-            ),
-            recipient_list=[user.email],
-            from_email=None,
-        )
-        
 class ListUserView(generics.ListAPIView):
     queryset = User.objects.exclude(role="subaccount").order_by("-created_at")
-    serializer_class = CreateUserSerializer
+    serializer_class = CreatePatientSerializer
         
 class VerifyEmailOTPView(PublicGenericAPIView):  
     serializer_class = VerifyOTPSerializer

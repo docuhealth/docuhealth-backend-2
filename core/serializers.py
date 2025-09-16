@@ -3,8 +3,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 
 from .models import User, OTP
-from patients.models import PatientProfile
-from patients.serializers import PatientProfileSerializer
 
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
@@ -58,68 +56,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["email"] = user.email
 
         return token
-
-class CreateUserSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(required=True)
-    password = serializers.CharField(write_only=True, required=True, min_length=8)
-    house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
-    profile = PatientProfileSerializer(required=True)
-    
-    street = serializers.CharField(required=True)
-    city = serializers.CharField(required=True)
-    state = serializers.CharField(required=True)
-    country = serializers.CharField(required=True)
-    
-    class Meta:
-        model = User
-        fields = ['email', 'role', 'hin', 'street', 'city', 'state','country', 'created_at', 'updated_at', 'profile', 'password', 'house_no']
-        read_only_fields = ['id', 'hin', 'created_at', 'updated_at']
-        
-    def create(self, validated_data):
-        profile_data = validated_data.pop('profile')
-        role = validated_data.get('role')
-        
-        house_no = validated_data.pop('house_no', None)
-        if house_no:
-            validated_data['street'] = f'{house_no}, {validated_data['street']}'
-
-        user = super().create(validated_data) 
-
-        if role == User.Role.PATIENT:
-            PatientProfile.objects.create(user=user, **profile_data)
-            
-        return user
-
-    def update(self, instance, validated_data):
-        """
-        Update User and optionally nested PatientProfile
-        """
-        profile_data = validated_data.pop('profile', None)
-        password = validated_data.pop('password', None)
-
-        # Update user fields
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        # Update password if provided
-        if password:
-            instance.set_password(password)
-
-        instance.save()
-
-        # Update nested profile if provided
-        if profile_data:
-            profile = getattr(instance, 'patientprofile', None)
-            if profile:
-                for attr, value in profile_data.items():
-                    setattr(profile, attr, value)
-                profile.save()
-            else:
-                # If somehow no profile exists, create it
-                PatientProfile.objects.create(user=instance, **profile_data)
-
-        return instance
-
 
 class ResetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, required=True, min_length=8)
