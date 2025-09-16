@@ -62,12 +62,12 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('id', 'created_at', 'updated_at', 'hospital')
         
-    def validate(self, attrs):
-        if not attrs.get("patient") and not attrs.get("subaccount"):
-            raise serializers.ValidationError("Either patient or subaccount is required.")
-        if attrs.get("patient") and attrs.get("subaccount"):
-            raise serializers.ValidationError("Provide only one: patient or subaccount to create a patient or subaccount medical record.")
-        return attrs
+    # def validate(self, attrs):
+    #     if not attrs.get("patient") and not attrs.get("subaccount"):
+    #         raise serializers.ValidationError("Either patient or subaccount is required.")
+    #     if attrs.get("patient") and attrs.get("subaccount"):
+    #         raise serializers.ValidationError("Provide only one: patient or subaccount to create a patient or subaccount medical record.")
+    #     return attrs
         
     def create(self, validated_data):
         drug_records_data = validated_data.pop('drug_records', [])

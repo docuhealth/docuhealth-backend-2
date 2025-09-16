@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
 from .models import PatientProfile, Subaccount
@@ -17,16 +18,13 @@ class CreateSubaccountSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at', 'parent', 'hin']
     
     def create(self, validated_data):
-        parent = self.context['request'].user
         user = User.objects.create(role="subaccount")
-        
-        validated_data['parent'] = parent
         validated_data['user'] = user
             
         return super().create(validated_data)
         
 class UpgradeSubaccountSerializer(serializers.ModelSerializer):
-    subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.all(), write_only=True)
+    subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.filter(role='subaccount'), write_only=True)
     
     email = serializers.EmailField(required=True)
     phone_num = serializers.CharField(required=False)
@@ -43,6 +41,16 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'street', 'city', 'state', 'country', 'password', 'house_no', 'phone_num', 'subaccount']
         read_only_fields = ('id', 'created_at', 'updated_at')
+        
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        email = validated_data.get('email')
+        
+        existing_user = User.objects.filter(email=email).exists()
+        if existing_user:
+            raise ValidationError("A user with this email already exists.")
+        
+        return validated_data
         
     def create(self, validated_data):
         house_no = validated_data.pop('house_no', None)

@@ -20,7 +20,7 @@ class PatientProfile(models.Model):
     emergency = models.BooleanField(default=False, blank=True)
     
 class Subaccount(models.Model):
-    parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name="subaccounts")
+    parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name="subaccounts", null=True, blank=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subaccount_profile")
     
     firstname = models.CharField(max_length=100)
@@ -31,3 +31,6 @@ class Subaccount(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.firstname} {self.lastname} ({self.user})"
