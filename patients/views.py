@@ -11,7 +11,7 @@ from medicalrecords.models import MedicalRecord
 from core.models import OTP, User, UserProfileImage
 from docuhealth2.views import PublicGenericAPIView
 
-from .models import Subaccount
+from .models import SubaccountProfile
 from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientProfileImageSerializer
 
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
@@ -81,7 +81,7 @@ class ListCreateSubaccountView(generics.ListCreateAPIView):
     serializer_class = CreateSubaccountSerializer
     
     def get_queryset(self):
-        return Subaccount.objects.filter(parent=self.request.user).select_related("parent").order_by('-created_at')
+        return SubaccountProfile.objects.filter(parent=self.request.user).select_related("parent").order_by('-created_at')
     
     def perform_create(self, serializer):
         serializer.save(parent=self.request.user)

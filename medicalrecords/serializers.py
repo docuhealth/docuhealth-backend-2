@@ -3,7 +3,8 @@ from rest_framework import serializers
 from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment
 from docuhealth2.serializers import DictSerializerMixin
 from core.models import User
-from patients.models import Subaccount
+from patients.models import SubaccountProfile, PatientProfile
+from hospitals.models import HospitalProfile
 from appointments.serializers import MedRecordAppointmentSerializer
 from appointments.models import Appointment
 
@@ -45,8 +46,8 @@ class MedicalRecordAttachmentSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at')
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
-    patient = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.all(), source='patient.user', required=False)
-    referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.all(), source='referred_docuhealth_hosp.user', required=False, allow_null=True) # Change queryset to only hospitals
+    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False)
+    referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True) # Change queryset to only hospitals
     attachments = serializers.PrimaryKeyRelatedField(many=True, queryset=MedicalRecordAttachment.objects.all(), required=False)
     
     drug_records = DrugRecordSerializer(many=True, required=False, allow_null=True)
@@ -58,7 +59,6 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
     diagnosis = serializers.ListField(child=serializers.CharField(), required=False)
     treatment_plan = serializers.ListField(child=serializers.CharField(), required=False)
     care_instructions = serializers.ListField(child=serializers.CharField(), required=False)
-    
     class Meta:
         model = MedicalRecord
         fields = '__all__'

@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from .models import PatientProfile, Subaccount
+from .models import PatientProfile, SubaccountProfile
 from core.models import User, UserProfileImage
 
 class PatientProfileImageSerializer(serializers.ModelSerializer):
@@ -112,7 +112,7 @@ class UpdatePatientSerializer(serializers.ModelSerializer):
 class CreateSubaccountSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
-        model = Subaccount
+        model = SubaccountProfile
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at', 'parent', 'hin']
     
