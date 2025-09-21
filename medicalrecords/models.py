@@ -1,13 +1,15 @@
 from django.db import models
 from core.models import User
-from patients.models import Subaccount
 from cloudinary.models import CloudinaryField
 
 from rest_framework.exceptions import ValidationError
 
+from patients.models import PatientProfile
+from hospitals.models import HospitalProfile
+
 class MedicalRecord(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='med_records')
-    hospital = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hospital_med_records')
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name='med_records')
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name='hospital_med_records')
     
     chief_complaint = models.TextField()
     history = models.JSONField(default=list)
@@ -18,7 +20,7 @@ class MedicalRecord(models.Model):
     care_instructions = models.JSONField(default=list)
     appointment = models.JSONField(default=dict, blank=True, null=True)
     
-    referred_docuhealth_hosp = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_medical_records')
+    referred_docuhealth_hosp = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_medical_records')
     referred_hosp = models.TextField(blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -35,8 +37,8 @@ class MedicalRecord(models.Model):
     
 class DrugRecord(models.Model):
     medical_record = models.ForeignKey(MedicalRecord, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_drug_records', blank=True, null=True)
-    hospital = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hospital_drug_records', blank=True, null=True)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
     
     name = models.CharField(max_length=255)
     route = models.CharField(max_length=255)
@@ -55,4 +57,6 @@ class MedicalRecordAttachment(models.Model):
     medical_record = models.ForeignKey(MedicalRecord, related_name="attachments", on_delete=models.CASCADE, null=True, blank=True)
     file = CloudinaryField("medical_records/") 
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
     

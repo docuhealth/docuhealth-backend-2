@@ -4,14 +4,15 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError, NotFound
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from medicalrecords.serializers import MedicalRecordSerializer
 from medicalrecords.models import MedicalRecord
-from core.models import OTP, User
+from core.models import OTP, User, UserProfileImage
 from docuhealth2.views import PublicGenericAPIView
 
 from .models import Subaccount
-from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer
+from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientProfileImageSerializer
 
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
     serializer_class = CreatePatientSerializer
@@ -99,7 +100,7 @@ class ListSubaccountMedicalRecordsView(generics.ListAPIView):
         
         return MedicalRecord.objects.filter(patient__hin = hin).select_related("patient", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
     
-class UpgradeSubaccount(generics.CreateAPIView):
+class UpgradeSubaccountView(generics.CreateAPIView):
     serializer_class = UpgradeSubaccountSerializer
     
     def perform_create(self, serializer):
@@ -118,4 +119,12 @@ class UpgradeSubaccount(generics.CreateAPIView):
             recipient_list=[user.email],
             from_email=None,
         )
+        
+class UploadPatientProfileImageView(generics.CreateAPIView):
+    serializer_class = PatientProfileImageSerializer
+    parser_classes = [MultiPartParser, FormParser]
     
+    def perform_create(self, serializer):
+        user = self.request.user
+        UserProfileImage.objects.filter(user=user).delete()
+        serializer.save(user=user)    

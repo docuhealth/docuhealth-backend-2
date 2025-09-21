@@ -3,9 +3,9 @@ from django.db import models
 from django.utils import timezone
 
 from datetime import timedelta
-import random
 
 from docuhealth2.utils.generate import generate_HIN, generate_otp
+from cloudinary.models import CloudinaryField
 
 role_choices = [
         ('patient', 'Patient'),
@@ -52,7 +52,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
         PATIENT = 'patient', 'Patient'
         SUBACCOUNT = 'subaccount', 'Subaccount'
-        HOSPITAL = 'hospital', 'Hospital'
+        HOSPITALADMIN = 'hospitaladmin', 'HospitalAdmin'
+        DOCTOR = 'doctor', 'Doctor'
         ADMIN = 'admin', 'Admin'
         PHARMACY = 'pharmacy', 'Pharmacy'
     
@@ -125,4 +126,9 @@ class OTP(models.Model):
     
     def __str__(self):
         return self.otp
+    
+class UserProfileImage(models.Model):
+    user = models.OneToOneField(User, related_name="profile_img", on_delete=models.SET_NULL, null=True, blank=True)
+    image = CloudinaryField("profile_images/") 
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 

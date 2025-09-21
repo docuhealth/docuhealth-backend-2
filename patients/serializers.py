@@ -2,8 +2,12 @@ from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
 from .models import PatientProfile, Subaccount
-from core.models import User
-from docuhealth2.utils.generate import generate_HIN
+from core.models import User, UserProfileImage
+
+class PatientProfileImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfileImage
+        fields = ['id', 'image']
 
 class PatientProfileSerializer(serializers.ModelSerializer):
     class Meta:
