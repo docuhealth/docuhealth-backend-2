@@ -2,8 +2,7 @@ from django.db import models
 from core.models import User
 
 class HospitalProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="hospitaladmin_profile")
-    # hospital = models.ForeignKey(User, on_delete=models.CASCADE, related_name="hospital_admins")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="hospital_profile")
     
     firstname = models.CharField(max_length=100, blank=True)
     lastname = models.CharField(max_length=100, blank=True)

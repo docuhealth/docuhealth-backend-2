@@ -51,10 +51,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
 
-        token["hin"] = user.hin
-        token["role"] = user.role
-        token["email"] = user.email
-
         return token
 
 class ResetPasswordSerializer(serializers.Serializer):

@@ -12,7 +12,7 @@ class PatientProfileImageSerializer(serializers.ModelSerializer):
 class PatientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
-        fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename', 'referred_by']
+        fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename', 'referred_by', 'hin']
         
 class UpdatePatientProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -42,8 +42,8 @@ class CreatePatientSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['email', 'role', 'hin', 'street', 'city', 'state','country', 'created_at', 'updated_at', 'profile', 'password', 'house_no']
-        read_only_fields = ['id', 'hin', 'created_at', 'updated_at']
+        fields = ['email', 'role', 'street', 'city', 'state','country', 'created_at', 'updated_at', 'profile', 'password', 'house_no']
+        read_only_fields = ['id', 'created_at', 'updated_at']
         
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')

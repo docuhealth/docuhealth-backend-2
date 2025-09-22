@@ -12,7 +12,7 @@ GENDER_CHOICES = [
 ]
 
 class PatientProfile(BaseModel):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="patient_profile")
     hin = models.CharField(max_length=20, unique=True)
     
     dob = models.DateField()
@@ -37,8 +37,8 @@ class PatientProfile(BaseModel):
         return f"{self.firstname} {self.lastname}"
     
 class SubaccountProfile(BaseModel):
-    parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name="subaccounts", null=True, blank=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subaccount_profile")
+    parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name="subaccounts", null=True, blank=True)
     
     firstname = models.CharField(max_length=100)
     lastname = models.CharField(max_length=100)

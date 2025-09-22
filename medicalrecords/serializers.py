@@ -42,7 +42,7 @@ class DrugRecordSerializer(serializers.ModelSerializer):
 class MedicalRecordAttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = MedicalRecordAttachment
-        fields = ('id', )
+        fields = ('id', 'file')
         read_only_fields = ('id', 'created_at', 'updated_at')
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
@@ -59,6 +59,7 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
     diagnosis = serializers.ListField(child=serializers.CharField(), required=False)
     treatment_plan = serializers.ListField(child=serializers.CharField(), required=False)
     care_instructions = serializers.ListField(child=serializers.CharField(), required=False)
+    
     class Meta:
         model = MedicalRecord
         fields = '__all__'
