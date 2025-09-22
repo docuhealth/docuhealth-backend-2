@@ -15,7 +15,7 @@ class MedicalRecordCreateView(generics.CreateAPIView):
     serializer_class = MedicalRecordSerializer
     
     def perform_create(self, serializer):
-        serializer.save(hospital=self.request.user)
+        serializer.save(hospital=self.request.user.hospital_profile)
         
 class ListUserMedicalrecordsView(generics.ListAPIView):
     serializer_class = MedicalRecordSerializer
@@ -25,10 +25,10 @@ class ListUserMedicalrecordsView(generics.ListAPIView):
         role = user.role
         
         if role == 'patient':
-            return MedicalRecord.objects.filter(patient=user).select_related("patient", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
+            return MedicalRecord.objects.filter(patient=user.patient_profile).select_related("patient", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
         
         if role == 'hospital':
-            return MedicalRecord.objects.filter(hospital=user).select_related("patient", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
+            return MedicalRecord.objects.filter(hospital=user.hospital_profile).select_related("patient", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
         
 class UploadMedicalRecordsAttachments(generics.CreateAPIView):
     queryset = MedicalRecordAttachment.objects.all()

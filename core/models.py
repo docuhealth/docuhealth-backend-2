@@ -3,9 +3,9 @@ from django.db import models
 from django.utils import timezone
 
 from datetime import timedelta
-import random
 
 from docuhealth2.utils.generate import generate_HIN, generate_otp
+from cloudinary.models import CloudinaryField
 
 role_choices = [
         ('patient', 'Patient'),
@@ -26,12 +26,6 @@ class UserManager(BaseUserManager):
         email = extra_fields.get("email")
         password = extra_fields.pop("password", None)
         
-        while True:
-            hin = generate_HIN()
-            if not User.objects.filter(hin=hin).exists():
-                extra_fields['hin'] = hin
-                break
-
         email = self.normalize_email(email)
         user = self.model(**extra_fields)
         if password:
@@ -53,10 +47,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         PATIENT = 'patient', 'Patient'
         SUBACCOUNT = 'subaccount', 'Subaccount'
         HOSPITAL = 'hospital', 'Hospital'
+        DOCTOR = 'doctor', 'Doctor'
         ADMIN = 'admin', 'Admin'
         PHARMACY = 'pharmacy', 'Pharmacy'
     
-    hin = models.CharField(max_length=20, unique=True)
     email = models.EmailField(unique=True, blank=True, null=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.PATIENT)
     
@@ -125,4 +119,9 @@ class OTP(models.Model):
     
     def __str__(self):
         return self.otp
+    
+class UserProfileImage(models.Model):
+    user = models.OneToOneField(User, related_name="profile_img", on_delete=models.SET_NULL, null=True, blank=True)
+    image = CloudinaryField("profile_images/") 
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 

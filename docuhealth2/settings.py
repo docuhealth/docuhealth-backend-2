@@ -1,7 +1,7 @@
 from pathlib import Path
 from datetime import timedelta
 import os
-import dj_database_url
+# import dj_database_url
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     'patients',
     'core',
     'medicalrecords',
+    'appointments',
+    'hospitals'
 ]
 
 AUTH_USER_MODEL = "core.User"
@@ -70,24 +72,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'docuhealth2.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'USER': os.environ['DATABASE_USER'],
+        'PASSWORD': os.environ['DATABASE_PASSWORD'],
+        'HOST': 'aws-1-us-east-2.pooler.supabase.com',
+        'PORT': '6543',
+        'OPTIONS': {
+            'sslmode': 'verify-full',
+            'sslrootcert': os.path.join(BASE_DIR, 'root.crt'),
+        }
     }
 }
-
-
-if ENVIRONMENT == "production":
-    DATABASES["default"] = dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),
-        conn_max_age=600,  
-        ssl_require = ENVIRONMENT == "production"   
-    )
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -152,7 +150,6 @@ SIMPLE_JWT = {
     "SIGNING_KEY": os.environ.get("DJANGO_SECRET_KEY"),
     "ALGORITHM": "HS256",
     "TOKEN_BLACKLIST_ENABLED": True,
-    "TOKEN_OBTAIN_SERIALIZER": "core.serializers.CustomTokenObtainPairSerializer",
 }
 
 SPECTACULAR_SETTINGS = {
