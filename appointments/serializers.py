@@ -1,12 +1,14 @@
 from rest_framework import serializers
 
 from .models import Appointment
-from core.models import User
+
+from hospitals.models import DoctorProfile
 
 class MedRecordAppointmentSerializer(serializers.ModelSerializer):
-    doctor = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.all(), source="doctor.user") # Change this when hin is removed from user model, remeber to add role="doctor"
+    doctor = serializers.SlugRelatedField(slug_field="hin", queryset=DoctorProfile.objects.all(), write_only=True) 
+    scheduled_time = serializers.DateTimeField(write_only=True, required=True)
     
     class Meta:
         model = Appointment
-        fields = '__all__'
-        read_only_fields = ('id', 'uploaded_at', 'medical_record', 'hospital', 'patient', 'status')
+        fields = ('doctor', 'scheduled_time')
+        read_only_fields = ('id', 'updated_at', 'created_at', 'medical_record', 'hospital', 'patient', 'status')

@@ -33,7 +33,7 @@ class ListUserView(generics.ListAPIView):
     queryset = User.objects.exclude(role="subaccount").order_by("-created_at")
     serializer_class = CreatePatientSerializer
         
-class VerifyEmailOTPView(PublicGenericAPIView):  
+class VerifySignupOTPView(PublicGenericAPIView):  
     serializer_class = VerifyOTPSerializer
     
     def post(self, request):

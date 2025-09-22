@@ -3,8 +3,8 @@ from rest_framework import serializers
 from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment
 from docuhealth2.serializers import DictSerializerMixin
 from core.models import User
-from patients.models import SubaccountProfile, PatientProfile
-from hospitals.models import HospitalProfile
+from patients.models import PatientProfile
+from hospitals.models import HospitalProfile, DoctorProfile
 from appointments.serializers import MedRecordAppointmentSerializer
 from appointments.models import Appointment
 
@@ -21,7 +21,7 @@ class VitalSignsSerializer(DictSerializerMixin, serializers.Serializer):
     heart_rate = serializers.FloatField()
     
 # class AppointmentSerializer(DictSerializerMixin, serializers.Serializer):
-#     date = serializers.DateField()
+#     date = serializers.DateField(required=True)
 #     time = serializers.TimeField()
     
 #     def to_internal_value(self, data):
@@ -47,12 +47,12 @@ class MedicalRecordAttachmentSerializer(serializers.ModelSerializer):
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False)
-    referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True) # Change queryset to only hospitals
+    referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True) 
     attachments = serializers.PrimaryKeyRelatedField(many=True, queryset=MedicalRecordAttachment.objects.all(), required=False)
     
     drug_records = DrugRecordSerializer(many=True, required=False, allow_null=True)
     vital_signs = VitalSignsSerializer()
-    appointment = MedRecordAppointmentSerializer(required=False, allow_null=True, default=None)
+    appointment = MedRecordAppointmentSerializer(required=False, allow_null=True)
     
     history = serializers.ListField(child=serializers.CharField(), required=False)
     physical_exam = serializers.ListField(child=serializers.CharField(), required=False)
@@ -68,21 +68,21 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         drug_records_data = validated_data.pop('drug_records', [])
         attachments_data = validated_data.pop('attachments', [])
-        appointment_data = validated_data.pop('appointment', [])
+        appointment_data = validated_data.pop('appointment', None)
+        hospital = validated_data.get("hospital")
         patient = validated_data.get('patient')
-        
-        # hospital = request.user  # add hospital creatiing the med record later
         
         medical_record = MedicalRecord.objects.create(**validated_data)
         
         for drug_data in drug_records_data:
-            DrugRecord.objects.create(medical_record=medical_record, patient=patient, **drug_data) # Add hospital creating the med record later
+            DrugRecord.objects.create(medical_record=medical_record, patient=patient, hospital=hospital, **drug_data)
             
         for attachment in attachments_data:
             attachment.medical_record = medical_record
             attachment.save()
             
         if appointment_data:
-            Appointment.objects.create(patient=patient, medical_record=medical_record, **appointment_data) # Add hospital creating the appointment later
+            Appointment.objects.create(patient=patient, medical_record=medical_record, hospital=hospital, **appointment_data) 
         
         return medical_record
+    

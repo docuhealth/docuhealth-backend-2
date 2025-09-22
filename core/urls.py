@@ -1,8 +1,8 @@
 from django.urls import path
-from .views import LoginView, CustomTokenRefreshView, ForgotPassword, VerifyForgotPasswordOTPView, ResetPasswordView, ListUserView, VerifyEmailOTPView
+from .views import LoginView, CustomTokenRefreshView, ForgotPassword, VerifyForgotPasswordOTPView, ResetPasswordView, ListUserView, VerifySignupOTPView
 
 urlpatterns = [
-    path('signup/verify-otp', VerifyEmailOTPView.as_view(), name='verify-signup-otp'),
+    path('signup/verify-otp', VerifySignupOTPView.as_view(), name='verify-signup-otp'),
     path('login', LoginView.as_view(), name='user-login'),
     path('refresh', CustomTokenRefreshView.as_view(), name='token_refresh'),
     path('forgot-password', ForgotPassword.as_view(), name='forgot-password'),

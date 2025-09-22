@@ -13,7 +13,7 @@ class PatientProfileImageSerializer(serializers.ModelSerializer):
 class PatientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
-        fields = '__all__'
+        fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename', 'referred_by', 'hin']
         read_only_fields = ['hin']
         
 class CreatePatientSerializer(BaseUserCreateSerializer):
