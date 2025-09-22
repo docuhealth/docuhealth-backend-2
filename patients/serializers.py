@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from .models import PatientProfile, SubaccountProfile
 from core.models import User, UserProfileImage
+from core.serializers import BaseUserCreateSerializer
 
 class PatientProfileImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,8 +13,25 @@ class PatientProfileImageSerializer(serializers.ModelSerializer):
 class PatientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
-        fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename', 'referred_by', 'hin']
+        fields = '__all__'
+        read_only_fields = ['hin']
         
+class CreatePatientSerializer(BaseUserCreateSerializer):
+    profile = PatientProfileSerializer(required=True, source="patient_profile")
+    house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
+    
+    class Meta(BaseUserCreateSerializer.Meta):
+        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "house_no"]
+
+    def create(self, validated_data):
+        profile_data = validated_data.pop("patient_profile")
+        validated_data['role'] = User.Role.PATIENT
+        
+        user = super().create_user(validated_data)
+        PatientProfile.objects.create(user=user, **profile_data)
+        
+        return user
+    
 class UpdatePatientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
@@ -28,37 +46,6 @@ class UpdatePatientProfileSerializer(serializers.ModelSerializer):
                 {field: f"Invalid profile field: {field}" for field in unknown_fields}
             )
         return super().to_internal_value(data)
-
-class CreatePatientSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(required=True)
-    password = serializers.CharField(write_only=True, required=True, min_length=8)
-    house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
-    profile = PatientProfileSerializer(required=True)
-    
-    street = serializers.CharField(required=True)
-    city = serializers.CharField(required=True)
-    state = serializers.CharField(required=True)
-    country = serializers.CharField(required=True)
-    
-    class Meta:
-        model = User
-        fields = ['email', 'role', 'street', 'city', 'state','country', 'created_at', 'updated_at', 'profile', 'password', 'house_no']
-        read_only_fields = ['id', 'created_at', 'updated_at']
-        
-    def create(self, validated_data):
-        profile_data = validated_data.pop('profile')
-        role = validated_data.get('role')
-        
-        house_no = validated_data.pop('house_no', None)
-        if house_no:
-            validated_data['street'] = f'{house_no}, {validated_data['street']}'
-
-        user = super().create(validated_data) 
-
-        if role == User.Role.PATIENT:
-            PatientProfile.objects.create(user=user, **profile_data)
-            
-        return user
     
 class UpdatePatientSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False)

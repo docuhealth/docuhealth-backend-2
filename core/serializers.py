@@ -56,8 +56,22 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class ResetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, required=True, min_length=8)
 
+class BaseUserCreateSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=8, required=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "email", "password", 
+            "street", "city", "state", "country",
+            "created_at", "updated_at"
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def create_user(self, validated_data):
+        house_no = validated_data.pop("house_no", None)
+        if house_no:
+            validated_data["street"] = f'{house_no}, {validated_data["street"]}'
+            
+        return super().create(validated_data)
         
-        
-        
-        
-    

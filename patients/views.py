@@ -44,9 +44,7 @@ class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
         )
         
 class UpdatePatientView(generics.UpdateAPIView):
-    # queryset = User.objects.filter(role='patient')
     serializer_class = UpdatePatientSerializer
-    # lookup_field = 'hin'
     
     def get_object(self):
         return self.request.user
