@@ -5,9 +5,10 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.generics import GenericAPIView
+from rest_framework.parsers import MultiPartParser, FormParser
 
-from .models import User, OTP
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer
+from .models import User, OTP, UserProfileImage
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer
 
 from docuhealth2.views import PublicGenericAPIView
 from patients.serializers import CreatePatientSerializer
@@ -140,3 +141,12 @@ class CustomTokenRefreshView(TokenRefreshView):
             set_refresh_cookie(response)
         
         return response
+    
+class UploadPatientProfileImageView(generics.CreateAPIView):
+    serializer_class = UserProfileImageSerializer
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def perform_create(self, serializer):
+        user = self.request.user
+        UserProfileImage.objects.filter(user=user).delete()
+        serializer.save(user=user) 

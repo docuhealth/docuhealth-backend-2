@@ -4,15 +4,14 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError, NotFound
-from rest_framework.parsers import MultiPartParser, FormParser
 
 from medicalrecords.serializers import MedicalRecordSerializer
 from medicalrecords.models import MedicalRecord
-from core.models import OTP, User, UserProfileImage
+from core.models import OTP, User
 from docuhealth2.views import PublicGenericAPIView
 
 from .models import SubaccountProfile
-from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientProfileImageSerializer
+from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer
 
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
     serializer_class = CreatePatientSerializer
@@ -53,22 +52,23 @@ class PatientDashboardView(generics.GenericAPIView):
     serializer_class = MedicalRecordSerializer  
 
     def get(self, request, *args, **kwargs):
-        patient = request.user  
+        user = request.user
+        profile = user.patient_profile 
+        print(user) 
 
-        queryset = MedicalRecord.objects.filter(patient=patient).order_by("-created_at")
+        queryset = MedicalRecord.objects.filter(patient=profile).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by("-created_at")
         page = self.paginate_queryset(queryset)
         records_serializer = self.get_serializer(page, many=True)
         
         paginated_data = self.get_paginated_response(records_serializer.data).data
-        profile = patient.profile
 
         return Response({
             "patient_info": {
                 "firstname": profile.firstname,
                 "lastname": profile.lastname,
                 "middlename": profile.middlename,
-                "hin": patient.hin,
-                "email": patient.email,
+                "hin": profile.hin,
+                "email": user.email,
                 "phone_num": profile.phone_num,
                 "emergency": profile.emergency
             },
@@ -79,10 +79,10 @@ class ListCreateSubaccountView(generics.ListCreateAPIView):
     serializer_class = CreateSubaccountSerializer
     
     def get_queryset(self):
-        return SubaccountProfile.objects.filter(parent=self.request.user).select_related("parent").order_by('-created_at')
+        return SubaccountProfile.objects.filter(parent=self.request.user.patient_profile).select_related("parent").order_by('-created_at')
     
     def perform_create(self, serializer):
-        serializer.save(parent=self.request.user)
+        serializer.save(parent=self.request.user.patient_profile)
     
 class ListSubaccountMedicalRecordsView(generics.ListAPIView):
     serializer_class = MedicalRecordSerializer
@@ -93,10 +93,10 @@ class ListSubaccountMedicalRecordsView(generics.ListAPIView):
         if not hin:
             raise ValidationError("Subaccount hin should be provided")
         
-        if not User.objects.filter(hin=hin).exists():
+        if not SubaccountProfile.objects.filter(hin=hin).exists():
             raise NotFound("A subaccount with this HIN does not exist.")
         
-        return MedicalRecord.objects.filter(patient__hin = hin).select_related("patient", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
+        return MedicalRecord.objects.filter(subaccount__hin = hin).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
     
 class UpgradeSubaccountView(generics.CreateAPIView):
     serializer_class = UpgradeSubaccountSerializer
@@ -118,11 +118,3 @@ class UpgradeSubaccountView(generics.CreateAPIView):
             from_email=None,
         )
         
-class UploadPatientProfileImageView(generics.CreateAPIView):
-    serializer_class = PatientProfileImageSerializer
-    parser_classes = [MultiPartParser, FormParser]
-    
-    def perform_create(self, serializer):
-        user = self.request.user
-        UserProfileImage.objects.filter(user=user).delete()
-        serializer.save(user=user)    

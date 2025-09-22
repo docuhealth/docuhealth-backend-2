@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from core.views import UploadPatientProfileImageView
 
 urlpatterns = [
     path('', SpectacularSwaggerView.as_view(url_name='schema'), name='redoc'),
@@ -11,4 +12,5 @@ urlpatterns = [
     path('api/medical-records/', include('medicalrecords.urls')),
     path('api/patients', include('patients.urls')),
     path('api/hospitals', include('hospitals.urls')),
+    path('api/users/profile-image', UploadPatientProfileImageView.as_view(), name="upload-user-profile-image"),
 ]

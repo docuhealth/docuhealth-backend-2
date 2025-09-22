@@ -38,7 +38,8 @@ class PatientProfile(BaseModel):
     
 class SubaccountProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subaccount_profile")
-    parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name="subaccounts", null=True, blank=True)
+    parent = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="subaccounts", null=True, blank=True)
+    hin = models.CharField(max_length=20, unique=True)
     
     firstname = models.CharField(max_length=100)
     lastname = models.CharField(max_length=100)

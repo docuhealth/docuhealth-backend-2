@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 
-from .models import User, OTP
+from .models import User, OTP, UserProfileImage
 
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
@@ -74,4 +74,9 @@ class BaseUserCreateSerializer(serializers.ModelSerializer):
             validated_data["street"] = f'{house_no}, {validated_data["street"]}'
             
         return super().create(validated_data)
+    
+class UserProfileImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfileImage
+        fields = ['id', 'image']
         

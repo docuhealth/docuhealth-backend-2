@@ -2,13 +2,10 @@ from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
 from .models import PatientProfile, SubaccountProfile
-from core.models import User, UserProfileImage
+from core.models import User
 from core.serializers import BaseUserCreateSerializer
 
-class PatientProfileImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfileImage
-        fields = ['id', 'image']
+from docuhealth2.serializers import StrictFieldsMixin
 
 class PatientProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,33 +29,22 @@ class CreatePatientSerializer(BaseUserCreateSerializer):
         
         return user
     
-class UpdatePatientProfileSerializer(serializers.ModelSerializer):
+class UpdatePatientProfileSerializer(StrictFieldsMixin, serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
         fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename']
         
-    def to_internal_value(self, data):
-        allowed_fields = set(self.fields.keys())
-        provided_fields = set(data.keys())
-        unknown_fields = provided_fields - allowed_fields
-        if unknown_fields:
-            raise serializers.ValidationError(
-                {field: f"Invalid profile field: {field}" for field in unknown_fields}
-            )
-        return super().to_internal_value(data)
-    
 class UpdatePatientSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(required=False)
+    email = serializers.EmailField(required=False, write_only=True)
     password = serializers.CharField(write_only=True, required=False, min_length=8)
     profile = UpdatePatientProfileSerializer(required=False)  
     
     class Meta:
         model = User
-        fields = ['email', 'password', 'profile']  
-        read_only_fields = ['id', 'hin', 'role', 'created_at', 'updated_at']
+        fields = ['email', 'password', 'profile', 'updated_at']  
+        read_only_fields = ['updated_at']
         
     def validate(self, attrs):
-        print(attrs)
         validated_data = super().validate(attrs)
         email = validated_data.get('email', None)
         
@@ -68,7 +54,7 @@ class UpdatePatientSerializer(serializers.ModelSerializer):
         profile_data = validated_data.get('profile')
         if profile_data:
             profile_serializer = PatientProfileSerializer(
-                instance=self.instance.profile,
+                instance=self.instance.patient_profile,
                 data=profile_data,
                 partial=True  
             )
@@ -87,7 +73,7 @@ class UpdatePatientSerializer(serializers.ModelSerializer):
             instance.set_password(validated_data['password'])
         
         if profile_data:
-            profile = instance.profile
+            profile = instance.patient_profile
             for attr, value in profile_data.items():
                 if value is not None:
                     setattr(profile, attr, value)
@@ -100,8 +86,8 @@ class CreateSubaccountSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = SubaccountProfile
-        fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'updated_at', 'parent', 'hin']
+        fields = ['firstname', 'lastname', 'middlename', 'dob', 'gender', 'hin', 'user']
+        read_only_fields = ['hin' ]
     
     def create(self, validated_data):
         user = User.objects.create(role="subaccount")
@@ -110,16 +96,9 @@ class CreateSubaccountSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
         
 class UpgradeSubaccountSerializer(serializers.ModelSerializer):
-    subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=User.objects.filter(role='subaccount'), write_only=True)
+    subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=SubaccountProfile.objects.all(), write_only=True)
     
-    email = serializers.EmailField(required=True)
-    phone_num = serializers.CharField(required=False)
-    
-    street = serializers.CharField(max_length=120, required=True)
-    city = serializers.CharField(max_length=20, required=True)
-    state = serializers.CharField(max_length=20, required=True)
-    country = serializers.CharField(max_length=20, required=True)
-    
+    phone_num = serializers.CharField(required=True, write_only=True)
     password = serializers.CharField(write_only=True, required=True, min_length=8)
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
     
@@ -143,11 +122,11 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
         if house_no:
             validated_data['street'] = f'{house_no}, {validated_data['street']}'
             
-        subaccount_user = validated_data.pop('subaccount')
+        subaccount_profile = validated_data.pop('subaccount')
         phone_num = validated_data.pop('phone_num')
         password = validated_data.pop('password')
         
-        subaccount_profile = subaccount_user.subaccount_profile
+        subaccount_user = subaccount_profile.user
         validated_data['role'] = 'patient'
         
         patient_profile_data = {

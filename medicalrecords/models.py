@@ -34,7 +34,13 @@ class MedicalRecord(models.Model):
             raise ValidationError("Only one of patient or subaccount can be set.")
 
     def __str__(self):
-        return f'Medical Record for {self.patient.email} created on {self.created_at}'
+        if self.patient:
+            user_info = self.patient.email
+        elif self.subaccount:
+            user_info = f"{self.subaccount.first_name} {self.subaccount.last_name}"
+        else:
+            user_info = "Unknown"
+        return f'Medical Record for {user_info} created on {self.created_at}'
     
 class DrugRecord(models.Model):
     medical_record = models.ForeignKey(MedicalRecord, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
