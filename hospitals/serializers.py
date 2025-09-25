@@ -9,15 +9,15 @@ class HospitalProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model= HospitalProfile
-        fields = ['firstname', 'lastname']
-        read_only_fields = ['doc_id']
+        fields = ['firstname', 'lastname', 'hin']
+        read_only_fields = ['hin']
         
 class CreateHospitalSerializer(BaseUserCreateSerializer):
     profile = HospitalProfileSerializer(required=True, source="hospital_profile")
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
     
     class Meta(BaseUserCreateSerializer.Meta):
-        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "house_no", "hin"]
+        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "house_no"]
 
     def create(self, validated_data):
         profile_data = validated_data.pop("hospital_profile")
