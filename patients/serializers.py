@@ -4,6 +4,8 @@ from rest_framework import serializers
 from .models import PatientProfile, SubaccountProfile
 from core.models import User
 from core.serializers import BaseUserCreateSerializer
+from appointments.models import Appointment
+from hospitals.models import DoctorProfile, HospitalProfile
 
 from docuhealth2.serializers import StrictFieldsMixin
 
@@ -147,4 +149,29 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
         PatientProfile.objects.create(user=subaccount_user, **patient_profile_data)
         
         return subaccount_user
+    
+class DoctorAppointmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DoctorProfile
+        fields = ['doc_id', 'specialization']
+        
+class HospitalAppointmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HospitalProfile
+        fields = ['hin', 'firstname', 'lastname']
+    
+class PatientAppointmentSerializer(serializers.ModelSerializer):
+    last_visited = serializers.SerializerMethodField(read_only=True)
+    doctor = DoctorAppointmentSerializer(read_only=True)
+    hospital = HospitalAppointmentSerializer(read_only=True)
+    
+    class Meta:
+        model = Appointment
+        fields = ['id', 'status', 'scheduled_time', 'doctor', 'hospital', 'last_visited']
+        read_only_fields = fields
+        
+    def get_last_visited(self, obj):
+        last_completed_appointment = Appointment.objects.filter(patient=obj.patient, status=Appointment.Status.COMPLETED, scheduled_time__lt=obj.scheduled_time).order_by('-scheduled_time').first()
+        return last_completed_appointment.scheduled_time if last_completed_appointment else None
+        
             

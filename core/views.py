@@ -142,7 +142,7 @@ class CustomTokenRefreshView(TokenRefreshView):
         
         return response
     
-class UploadPatientProfileImageView(generics.CreateAPIView):
+class UploadUserProfileImageView(generics.CreateAPIView):
     serializer_class = UserProfileImageSerializer
     parser_classes = [MultiPartParser, FormParser]
     

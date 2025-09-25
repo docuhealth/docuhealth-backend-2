@@ -20,17 +20,6 @@ class VitalSignsSerializer(DictSerializerMixin, serializers.Serializer):
     weight = serializers.FloatField()
     heart_rate = serializers.FloatField()
     
-# class AppointmentSerializer(DictSerializerMixin, serializers.Serializer):
-#     date = serializers.DateField(required=True)
-#     time = serializers.TimeField()
-    
-#     def to_internal_value(self, data):
-#         validated = super().to_internal_value(data)
-#         return {
-#             "date": validated["date"].isoformat(),
-#             "time": validated["time"].isoformat() if hasattr(validated["time"], "isoformat") else str(validated["time"]),
-#         }
-        
 class DrugRecordSerializer(serializers.ModelSerializer):
     frequency = ValueRateSerializer()
     duration = ValueRateSerializer()

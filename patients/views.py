@@ -8,10 +8,13 @@ from rest_framework.exceptions import ValidationError, NotFound
 from medicalrecords.serializers import MedicalRecordSerializer
 from medicalrecords.models import MedicalRecord
 from core.models import OTP, User
+from appointments.models import Appointment
+
 from docuhealth2.views import PublicGenericAPIView
+from docuhealth2.permissions import IsAuthenticatedPatient
 
 from .models import SubaccountProfile
-from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer
+from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer
 
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
     serializer_class = CreatePatientSerializer
@@ -44,12 +47,14 @@ class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
         
 class UpdatePatientView(generics.UpdateAPIView):
     serializer_class = UpdatePatientSerializer
+    permission_classes = [IsAuthenticatedPatient]
     
     def get_object(self):
         return self.request.user
     
 class PatientDashboardView(generics.GenericAPIView):
     serializer_class = MedicalRecordSerializer  
+    permission_classes = [IsAuthenticatedPatient]
 
     def get(self, request, *args, **kwargs):
         user = request.user
@@ -77,6 +82,7 @@ class PatientDashboardView(generics.GenericAPIView):
         
 class ListCreateSubaccountView(generics.ListCreateAPIView):
     serializer_class = CreateSubaccountSerializer
+    permission_classes = [IsAuthenticatedPatient]
     
     def get_queryset(self):
         return SubaccountProfile.objects.filter(parent=self.request.user.patient_profile).select_related("parent").order_by('-created_at')
@@ -86,6 +92,7 @@ class ListCreateSubaccountView(generics.ListCreateAPIView):
     
 class ListSubaccountMedicalRecordsView(generics.ListAPIView):
     serializer_class = MedicalRecordSerializer
+    permission_classes = [IsAuthenticatedPatient]
     
     def get_queryset(self):
         hin = self.kwargs.get("hin")
@@ -100,6 +107,7 @@ class ListSubaccountMedicalRecordsView(generics.ListAPIView):
     
 class UpgradeSubaccountView(generics.CreateAPIView):
     serializer_class = UpgradeSubaccountSerializer
+    permission_classes = [IsAuthenticatedPatient]
     
     def perform_create(self, serializer):
         user = serializer.save()
@@ -117,4 +125,14 @@ class UpgradeSubaccountView(generics.CreateAPIView):
             recipient_list=[user.email],
             from_email=None,
         )
+        
+class ListAppointmentsView(generics.ListAPIView):
+    serializer_class = PatientAppointmentSerializer
+    permission_classes = [IsAuthenticatedPatient]
+    
+    def get_queryset(self):
+        user = self.request.user
+        
+        return Appointment.objects.filter(patient=user.patient_profile).select_related("doctor", "hospital").order_by('-scheduled_time')
+        
         

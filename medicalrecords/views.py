@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 
+from docuhealth2.permissions import IsAuthenticatedHospital
+
 from .models import MedicalRecord, MedicalRecordAttachment
 from .serializers import MedicalRecordSerializer, MedicalRecordAttachmentSerializer
 
@@ -10,10 +12,10 @@ class MedicalRecordListView(generics.ListAPIView):
     queryset = MedicalRecord.objects.all().order_by('-created_at')
     serializer_class = MedicalRecordSerializer
 
-class MedicalRecordCreateView(generics.CreateAPIView):
+class CreateMedicalRecordView(generics.CreateAPIView):
     queryset = MedicalRecord.objects.all()
     serializer_class = MedicalRecordSerializer
-    
+    permission_classes = [IsAuthenticatedHospital]  
     def perform_create(self, serializer):
         serializer.save(hospital=self.request.user.hospital_profile)
         
@@ -34,6 +36,7 @@ class UploadMedicalRecordsAttachments(generics.CreateAPIView):
     queryset = MedicalRecordAttachment.objects.all()
     serializer_class = MedicalRecordAttachmentSerializer
     parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticatedHospital]  
     
     def create(self, request, *args, **kwargs):
         files = request.FILES.getlist("files")  
