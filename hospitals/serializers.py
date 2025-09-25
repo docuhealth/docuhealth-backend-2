@@ -17,7 +17,7 @@ class CreateHospitalSerializer(BaseUserCreateSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
     
     class Meta(BaseUserCreateSerializer.Meta):
-        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "house_no"]
+        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "house_no", "hin"]
 
     def create(self, validated_data):
         profile_data = validated_data.pop("hospital_profile")
