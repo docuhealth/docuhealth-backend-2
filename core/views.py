@@ -134,12 +134,12 @@ class CustomTokenRefreshView(TokenRefreshView):
         if not refresh_token:
             return Response({"detail": "Please login again"}, status=400)
         
-        data = request.data.copy()
-        data["refresh"] = refresh_token
-        response = super().post(request, *args, **kwargs)
+        serializer = self.get_serializer(data={"refresh": refresh_token})
+        serializer.is_valid(raise_exception=True)
         
-        if response.status_code == status.HTTP_200_OK:
-            set_refresh_cookie(response)
+        response = Response(serializer.validated_data, status=status.HTTP_200_OK)
+        
+        set_refresh_cookie(response)
         
         return response
     
