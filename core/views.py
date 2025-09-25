@@ -133,8 +133,9 @@ class CustomTokenRefreshView(TokenRefreshView):
         
         if not refresh_token:
             return Response({"detail": "Please login again"}, status=400)
-
-        request.data["refresh"] = refresh_token
+        
+        data = request.data.copy()
+        data["refresh"] = refresh_token
         response = super().post(request, *args, **kwargs)
         
         if response.status_code == status.HTTP_200_OK:
