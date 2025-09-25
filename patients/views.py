@@ -134,5 +134,16 @@ class ListAppointmentsView(generics.ListAPIView):
         user = self.request.user
         
         return Appointment.objects.filter(patient=user.patient_profile).select_related("doctor", "hospital").order_by('-scheduled_time')
+    
+class DeletePatientAccountView(generics.DestroyAPIView):
+    serializer_class = UpdatePatientSerializer
+    permission_classes = [IsAuthenticatedPatient]
+    
+    def get_object(self):
+        return self.request.user
+    
+    def perform_destroy(self, instance):
+        profile = instance.patient_profile
+        profile.soft_delete()
         
         
