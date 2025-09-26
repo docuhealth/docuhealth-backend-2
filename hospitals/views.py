@@ -22,18 +22,18 @@ class CreateHospitalView(BaseUserCreateView, PublicGenericAPIView):
         user = serializer.save()
         otp = OTP.generate_otp(user)
         
-        send_mail(
-            subject="Verify your email",
-            message=(
-                f"Enter the OTP below into the required field \n"
-                f"The OTP will expire in 10 mins\n\n"
-                f"OTP: {otp}\n\n"
-                f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
-                f"From the Docuhealth Team"
-            ),
-            recipient_list=[user.email],
-            from_email=None,
-        )
+        # send_mail(
+        #     subject="Verify your email",
+        #     message=(
+        #         f"Enter the OTP below into the required field \n"
+        #         f"The OTP will expire in 10 mins\n\n"
+        #         f"OTP: {otp}\n\n"
+        #         f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
+        #         f"From the Docuhealth Team"
+        #     ),
+        #     recipient_list=[user.email],
+        #     from_email=None,
+        # )
         
 class CreateDoctorView(BaseUserCreateView):
     serializer_class = CreateDoctorSerializer
@@ -43,15 +43,17 @@ class CreateDoctorView(BaseUserCreateView):
         user = serializer.save()
         otp = OTP.generate_otp(user)
         
-        send_mail(
-            subject="Verify your email",
-            message=(
-                f"Enter the OTP below into the required field \n"
-                f"The OTP will expire in 10 mins\n\n"
-                f"OTP: {otp}\n\n"
-                f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
-                f"From the Docuhealth Team"
-            ),
-            recipient_list=[user.email],
-            from_email=None,
-        )
+        # send_mail(
+        #     subject="Verify your email",
+        #     message=(
+        #         f"Enter the OTP below into the required field \n"
+        #         f"The OTP will expire in 10 mins\n\n"
+        #         f"OTP: {otp}\n\n"
+        #         f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
+        #         f"From the Docuhealth Team"
+        #     ),
+        #     recipient_list=[user.email],
+        #     from_email=None,
+        # )
+        
+        
