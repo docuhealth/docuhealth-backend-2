@@ -6,7 +6,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from docuhealth2.permissions import IsAuthenticatedHospital
 
 from .models import MedicalRecord, MedicalRecordAttachment
-from .serializers import MedicalRecordSerializer, MedicalRecordAttachmentSerializer
+from .serializers import MedicalRecordSerializer, MedicalRecordAttachmentSerializer, ListMedicalRecordsSerializer
 
 class MedicalRecordListView(generics.ListAPIView):
     queryset = MedicalRecord.objects.all().order_by('-created_at')
@@ -20,7 +20,7 @@ class CreateMedicalRecordView(generics.CreateAPIView):
         serializer.save(hospital=self.request.user.hospital_profile)
         
 class ListUserMedicalrecordsView(generics.ListAPIView):
-    serializer_class = MedicalRecordSerializer
+    serializer_class = ListMedicalRecordsSerializer
     
     def get_queryset(self):
         user = self.request.user

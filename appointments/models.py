@@ -4,7 +4,9 @@ from medicalrecords.models import MedicalRecord
 from hospitals.models import DoctorProfile, HospitalProfile
 from patients.models import PatientProfile
 
-class Appointment(models.Model):
+from docuhealth2.models import BaseModel
+
+class Appointment(BaseModel):
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
         CONFIRMED = "confirmed", "Confirmed"
@@ -12,7 +14,7 @@ class Appointment(models.Model):
         COMPLETED = "completed", "Completed"
     
     patient = models.ForeignKey(PatientProfile, related_name='appointments', on_delete=models.SET_NULL, null=True)
-    medical_record = models.ForeignKey(MedicalRecord, related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
+    medical_record = models.OneToOneField(MedicalRecord, related_name='appointment', on_delete=models.SET_NULL, null=True, blank=True)
     hospital = models.ForeignKey(HospitalProfile, related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
     doctor = models.ForeignKey(DoctorProfile, related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
     

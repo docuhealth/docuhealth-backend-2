@@ -29,6 +29,9 @@ class DoctorProfile(BaseModel):
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name="doctors")
     doc_id = models.CharField(max_length=20, unique=True)
     
+    firstname = models.CharField(max_length=100, blank=True)
+    lastname = models.CharField(max_length=100, blank=True)
+    
     specialization = models.CharField(max_length=100, blank=True)
     license_no = models.CharField(max_length=50, blank=True)
     

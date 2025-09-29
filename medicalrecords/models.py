@@ -5,10 +5,11 @@ from cloudinary.models import CloudinaryField
 from rest_framework.exceptions import ValidationError
 
 from patients.models import PatientProfile, SubaccountProfile
-from hospitals.models import HospitalProfile
+from hospitals.models import HospitalProfile, DoctorProfile
 
 class MedicalRecord(models.Model):
     patient = models.ForeignKey(PatientProfile, on_delete=models.SET_NULL, related_name='medical_records', null=True, blank=True)
+    doctor = models.ForeignKey(DoctorProfile, on_delete=models.SET_NULL, related_name='medical_records', null=True, blank=True)
     subaccount = models.ForeignKey(SubaccountProfile, on_delete=models.SET_NULL, related_name='medical_records', null=True, blank=True)
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name='medical_records', null=True)
     
@@ -19,7 +20,6 @@ class MedicalRecord(models.Model):
     diagnosis = models.JSONField(default=list)
     treatment_plan = models.JSONField(default=list)
     care_instructions = models.JSONField(default=list)
-    appointment = models.JSONField(default=dict, blank=True, null=True)
     
     referred_docuhealth_hosp = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_medical_records')
     referred_hosp = models.TextField(blank=True, null=True)

@@ -33,7 +33,7 @@ class DoctorProfileSerializer(serializers.ModelSerializer):
     hospital = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=True)
     class Meta:
         model= DoctorProfile
-        fields = ['specialization', 'license_no', 'hospital', 'doc_id']
+        fields = ['specialization', 'license_no', 'hospital', 'firstname', 'lastname', 'doc_id']
         read_only_fields = ['doc_id']
     
 class CreateDoctorSerializer(BaseUserCreateSerializer):
