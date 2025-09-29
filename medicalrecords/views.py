@@ -3,22 +3,27 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 
+from drf_spectacular.utils import extend_schema
+
 from docuhealth2.permissions import IsAuthenticatedHospital
 
 from .models import MedicalRecord, MedicalRecordAttachment
 from .serializers import MedicalRecordSerializer, MedicalRecordAttachmentSerializer, ListMedicalRecordsSerializer
 
+@extend_schema(tags=["Medical records"])  
 class MedicalRecordListView(generics.ListAPIView):
     queryset = MedicalRecord.objects.all().order_by('-created_at')
     serializer_class = MedicalRecordSerializer
 
+@extend_schema(tags=["Medical records"])  
 class CreateMedicalRecordView(generics.CreateAPIView):
     queryset = MedicalRecord.objects.all()
     serializer_class = MedicalRecordSerializer
     permission_classes = [IsAuthenticatedHospital]  
     def perform_create(self, serializer):
         serializer.save(hospital=self.request.user.hospital_profile)
-        
+
+@extend_schema(tags=["Medical records"])    
 class ListUserMedicalrecordsView(generics.ListAPIView):
     serializer_class = ListMedicalRecordsSerializer
     
@@ -31,7 +36,8 @@ class ListUserMedicalrecordsView(generics.ListAPIView):
         
         if role == 'hospital':
             return MedicalRecord.objects.filter(hospital=user.hospital_profile).select_related("patient", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
-        
+
+@extend_schema(tags=["Medical records"])      
 class UploadMedicalRecordsAttachments(generics.CreateAPIView):
     queryset = MedicalRecordAttachment.objects.all()
     serializer_class = MedicalRecordAttachmentSerializer

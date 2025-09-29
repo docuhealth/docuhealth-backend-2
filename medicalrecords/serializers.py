@@ -78,7 +78,6 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         
         return medical_record
     
-    
 class ListMedicalRecordsSerializer(serializers.ModelSerializer):
     hospital = serializers.SerializerMethodField()
     doctor = serializers.SerializerMethodField(read_only=True)

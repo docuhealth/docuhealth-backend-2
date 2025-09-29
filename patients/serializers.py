@@ -173,5 +173,7 @@ class PatientAppointmentSerializer(serializers.ModelSerializer):
     def get_last_visited(self, obj):
         last_completed_appointment = Appointment.objects.filter(patient=obj.patient, status=Appointment.Status.COMPLETED, scheduled_time__lt=obj.scheduled_time).order_by('-scheduled_time').first()
         return last_completed_appointment.scheduled_time if last_completed_appointment else None
+    
+# class 
         
             

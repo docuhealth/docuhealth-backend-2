@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError, NotFound
 
-from medicalrecords.serializers import MedicalRecordSerializer
+from medicalrecords.serializers import MedicalRecordSerializer, ListMedicalRecordsSerializer
 from medicalrecords.models import MedicalRecord
 from core.models import OTP, User
 from appointments.models import Appointment
@@ -13,9 +13,12 @@ from appointments.models import Appointment
 from docuhealth2.views import PublicGenericAPIView
 from docuhealth2.permissions import IsAuthenticatedPatient
 
+from drf_spectacular.utils import extend_schema
+
 from .models import SubaccountProfile
 from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer
 
+@extend_schema(tags=["Patient"])
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
     serializer_class = CreatePatientSerializer
     
@@ -45,15 +48,18 @@ class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
         #     from_email=None,
         # )
         
+@extend_schema(tags=["Patient"])
 class UpdatePatientView(generics.UpdateAPIView):
     serializer_class = UpdatePatientSerializer
     permission_classes = [IsAuthenticatedPatient]
+    http_method_names = ['patch']
     
     def get_object(self):
         return self.request.user
-    
+
+@extend_schema(tags=["Patient"])
 class PatientDashboardView(generics.GenericAPIView):
-    serializer_class = MedicalRecordSerializer  
+    serializer_class = ListMedicalRecordsSerializer
     permission_classes = [IsAuthenticatedPatient]
 
     def get(self, request, *args, **kwargs):
@@ -79,7 +85,8 @@ class PatientDashboardView(generics.GenericAPIView):
             },
             **paginated_data
         })
-        
+    
+@extend_schema(tags=["Patient"])   
 class ListCreateSubaccountView(generics.ListCreateAPIView):
     serializer_class = CreateSubaccountSerializer
     permission_classes = [IsAuthenticatedPatient]
@@ -89,9 +96,10 @@ class ListCreateSubaccountView(generics.ListCreateAPIView):
     
     def perform_create(self, serializer):
         serializer.save(parent=self.request.user.patient_profile)
-    
+
+@extend_schema(tags=["auth"])  
 class ListSubaccountMedicalRecordsView(generics.ListAPIView):
-    serializer_class = MedicalRecordSerializer
+    serializer_class = ListMedicalRecordsSerializer
     permission_classes = [IsAuthenticatedPatient]
     
     def get_queryset(self):
@@ -104,7 +112,8 @@ class ListSubaccountMedicalRecordsView(generics.ListAPIView):
             raise NotFound("A subaccount with this HIN does not exist.")
         
         return MedicalRecord.objects.filter(subaccount__hin = hin).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
-    
+
+@extend_schema(tags=["Patient"])
 class UpgradeSubaccountView(generics.CreateAPIView):
     serializer_class = UpgradeSubaccountSerializer
     permission_classes = [IsAuthenticatedPatient]
@@ -125,7 +134,8 @@ class UpgradeSubaccountView(generics.CreateAPIView):
         #     recipient_list=[user.email],
         #     from_email=None,
         # )
-        
+    
+@extend_schema(tags=["Patient"])
 class ListAppointmentsView(generics.ListAPIView):
     serializer_class = PatientAppointmentSerializer
     permission_classes = [IsAuthenticatedPatient]
@@ -134,7 +144,8 @@ class ListAppointmentsView(generics.ListAPIView):
         user = self.request.user
         
         return Appointment.objects.filter(patient=user.patient_profile).select_related("doctor", "hospital").order_by('-scheduled_time')
-    
+
+@extend_schema(tags=["Patient"])
 class DeletePatientAccountView(generics.DestroyAPIView):
     serializer_class = UpdatePatientSerializer
     permission_classes = [IsAuthenticatedPatient]

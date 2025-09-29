@@ -12,9 +12,12 @@ from core.models import OTP, User, UserProfileImage
 from docuhealth2.views import PublicGenericAPIView, BaseUserCreateView
 from docuhealth2.permissions import IsAuthenticatedHospital
 
+from drf_spectacular.utils import extend_schema
+
 from .models import HospitalProfile, DoctorProfile
 from .serializers import CreateHospitalSerializer, CreateDoctorSerializer
 
+@extend_schema(tags=["Hospital"])  
 class CreateHospitalView(BaseUserCreateView, PublicGenericAPIView):
     serializer_class = CreateHospitalSerializer
     
@@ -35,6 +38,7 @@ class CreateHospitalView(BaseUserCreateView, PublicGenericAPIView):
         #     from_email=None,
         # )
         
+@extend_schema(tags=["Hospital"])  
 class CreateDoctorView(BaseUserCreateView):
     serializer_class = CreateDoctorSerializer
     permission_classes = [IsAuthenticatedHospital]
