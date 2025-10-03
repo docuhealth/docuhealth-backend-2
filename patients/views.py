@@ -1,6 +1,6 @@
 from django.core.mail import send_mail
 
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError, NotFound
@@ -15,8 +15,8 @@ from docuhealth2.permissions import IsAuthenticatedPatient
 
 from drf_spectacular.utils import extend_schema
 
-from .models import SubaccountProfile
-from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer
+from .models import SubaccountProfile, PatientProfile
+from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer, PatientEmergencySerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer
 
 @extend_schema(tags=["Patient"])
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
@@ -159,4 +159,41 @@ class DeletePatientAccountView(generics.DestroyAPIView):
         profile = instance.patient_profile
         profile.soft_delete()
         
+@extend_schema(tags=['Patients'])
+class ToggleEmergencyView(generics.UpdateAPIView):
+    serializer_class = PatientEmergencySerializer
+    permission_classes = [IsAuthenticatedPatient]
+    http_method_names = ['patch']
+    
+    def get_object(self):
+        return self.request.user.patient_profile
+
+    def perform_update(self, serializer):
+        patient = self.get_object()
+        patient.toggle_emergency()
+        
+@extend_schema(tags=['Patients'])
+class GeneratePatientIdCard(generics.UpdateAPIView):
+    serializer_class = GeneratePatientIDCardSerializer
+    permission_classes = [IsAuthenticatedPatient]
+    http_method_names = ['patch']
+    
+    def get_object(self):
+        return self.request.user.patient_profile
+
+    def perform_update(self, serializer):
+        patient = self.get_object()
+        patient.generate_id_card()
+        
+@extend_schema(tags=['Patients'])
+class GenerateSubaccountIdCard(generics.UpdateAPIView):
+    queryset = SubaccountProfile.objects.all()
+    serializer_class = GenerateSubaccountIDCardSerializer
+    permission_classes = [IsAuthenticatedPatient]
+    http_method_names = ['patch']
+    lookup_field = 'hin'
+    
+    def perform_update(self, serializer):
+        subaccount = self.get_object()
+        subaccount.generate_id_card()
         

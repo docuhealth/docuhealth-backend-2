@@ -88,7 +88,7 @@ class CreateSubaccountSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = SubaccountProfile
-        fields = ['firstname', 'lastname', 'middlename', 'dob', 'gender', 'hin', 'user']
+        fields = ['firstname', 'lastname', 'middlename', 'dob', 'gender', 'hin', 'user', 'id_card_generated']
         read_only_fields = ['hin' ]
     
     def create(self, validated_data):
@@ -174,6 +174,20 @@ class PatientAppointmentSerializer(serializers.ModelSerializer):
         last_completed_appointment = Appointment.objects.filter(patient=obj.patient, status=Appointment.Status.COMPLETED, scheduled_time__lt=obj.scheduled_time).order_by('-scheduled_time').first()
         return last_completed_appointment.scheduled_time if last_completed_appointment else None
     
-# class 
+class PatientEmergencySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientProfile
+        fields = ['hin', 'emergency']
+        read_only_fields = ['hin']
         
-            
+class GeneratePatientIDCardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientProfile
+        fields = ['hin', 'id_card_generated']
+        read_only_fields = ['hin']
+        
+class GenerateSubaccountIDCardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubaccountProfile
+        fields = ['hin', 'id_card_generated']
+        read_only_fields = ['hin']

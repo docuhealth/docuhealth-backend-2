@@ -28,3 +28,14 @@ def create_plan(payload):
         return response_data["data"]["plan_code"]
     
     raise Exception(response_data.get("message", "Failed to create Paystack plan"))
+
+def create_customer(payload):
+    response = send_paystack_request("POST", "customer", payload)
+    response_data = response.json()
+    
+    print(response_data)
+    
+    if response.status_code == 201 and response_data.get("status"):
+        return response_data["data"]["customer_code"]
+    
+    raise Exception(response_data.get("message", "Failed to create Paystack customer"))

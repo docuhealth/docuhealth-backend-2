@@ -37,6 +37,17 @@ class PatientProfile(BaseModel):
     def __str__(self):
         return f"{self.firstname} {self.lastname}"
     
+    def toggle_emergency(self):
+        self.emergency = not self.emergency
+        self.save(update_fields=['emergency'])
+        
+    def generate_id_card(self):
+        if self.id_card_generated:
+            return
+        
+        self.id_card_generated = True
+        self.save(update_fields=['id_card_generated'])
+    
 class SubaccountProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subaccount_profile")
     parent = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="subaccounts", null=True, blank=True)
@@ -47,6 +58,7 @@ class SubaccountProfile(BaseModel):
     middlename = models.CharField(max_length=100, blank=True)
     dob = models.DateField()
     gender = models.CharField(choices=GENDER_CHOICES)
+    id_card_generated = models.BooleanField(default=False)
     
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
@@ -62,3 +74,10 @@ class SubaccountProfile(BaseModel):
     
     def __str__(self):
         return f"{self.firstname} {self.lastname}"
+    
+    def generate_id_card(self):
+        if self.id_card_generated:
+            return
+        
+        self.id_card_generated = True
+        self.save(update_fields=['id_card_generated'])

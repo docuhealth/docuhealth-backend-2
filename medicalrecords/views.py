@@ -20,6 +20,7 @@ class CreateMedicalRecordView(generics.CreateAPIView):
     queryset = MedicalRecord.objects.all()
     serializer_class = MedicalRecordSerializer
     permission_classes = [IsAuthenticatedHospital]  
+    
     def perform_create(self, serializer):
         serializer.save(hospital=self.request.user.hospital_profile)
 
