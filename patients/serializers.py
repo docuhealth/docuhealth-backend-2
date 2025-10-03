@@ -153,7 +153,7 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
 class DoctorAppointmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = DoctorProfile
-        fields = ['doc_id', 'specialization']
+        fields = ['doc_id', 'firstname', 'lastname']
         
 class HospitalAppointmentSerializer(serializers.ModelSerializer):
     class Meta:

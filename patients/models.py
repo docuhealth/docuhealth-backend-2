@@ -23,6 +23,7 @@ class PatientProfile(BaseModel):
     middlename = models.CharField(max_length=100, blank=True, null=True)
     referred_by = models.CharField(max_length=50, blank=True)
     emergency = models.BooleanField(default=False, blank=True)
+    id_card_generated = models.BooleanField(default=False)
     
     def save(self, *args, **kwargs):
         if not self.hin:  

@@ -79,6 +79,8 @@ class PatientDashboardView(generics.GenericAPIView):
                 "lastname": profile.lastname,
                 "middlename": profile.middlename,
                 "hin": profile.hin,
+                "dob": profile.dob,
+                "id_card_generated": profile.id_card_generated,
                 "email": user.email,
                 "phone_num": profile.phone_num,
                 "emergency": profile.emergency

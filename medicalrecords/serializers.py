@@ -31,8 +31,8 @@ class DrugRecordSerializer(serializers.ModelSerializer):
 class MedicalRecordAttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = MedicalRecordAttachment
-        fields = ('id', 'file')
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        fields = "__all__"
+        read_only_fields = ('id', 'updated_at')
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False)
@@ -100,5 +100,5 @@ class ListMedicalRecordsSerializer(serializers.ModelSerializer):
         return None
     
     def get_attachments(self, obj):
-        return [att.file.url for att in obj.attachments.all()]
+        return [{"url": attachment.file.url, "filename": attachment.filename, "uploaded_at": attachment.uploaded_at} for attachment in obj.attachments.all()]
     

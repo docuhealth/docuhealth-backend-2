@@ -49,7 +49,7 @@ class UploadMedicalRecordsAttachments(generics.CreateAPIView):
         attachments = []
 
         for file in files:
-            serializer = self.get_serializer(data={"file": file})
+            serializer = self.get_serializer(data={"file": file, "filename": file.name})
             serializer.is_valid(raise_exception=True)
             attachment = serializer.save()
             attachments.append(serializer.data)

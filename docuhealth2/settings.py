@@ -84,7 +84,8 @@ DATABASES = {
         'OPTIONS': {
             'sslmode': 'verify-full',
             'sslrootcert': os.path.join(BASE_DIR, 'root.crt'),
-        }
+        },
+        "CONN_MAX_AGE": 60
     }
 }
 
