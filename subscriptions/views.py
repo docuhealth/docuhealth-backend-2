@@ -1,4 +1,4 @@
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 
 from drf_spectacular.utils import extend_schema
@@ -9,7 +9,7 @@ from .serializers import SubscriptionPlanSerializer, SubscriptionSerializer
 from core.models import User
 from docuhealth2.permissions import IsAuthenticatedPatient, IsAuthenticatedHospital
 
-from .requests import create_customer
+from .requests import create_customer, initialize_transaction
 
 @extend_schema(tags=["Subscriptions"])
 class ListCreateSubscriptionPlanView(generics.ListCreateAPIView):
@@ -28,17 +28,35 @@ class CreateSubscriptionView(generics.CreateAPIView):
         permission_classes = [IsAuthenticatedPatient, IsAuthenticatedHospital]
         
         def create(self, request, *args, **kwargs):
-            plan = request.data.get("plan")
             user = request.user
             
-            serializer = self.get_serializer(data={**request.data, 'user': user})
+            serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            subscription = serializer.save()
+            subscription = serializer.save(user=user)
             
+            plan = subscription.plan
             paystack_cus_code = user.paystack_cus_code
             email = user.email
+            
             if not paystack_cus_code:
-                user.paystack_cus_code = create_customer({'email': email})
+                paystack_cus_code = create_customer({"email": email})
+                user.paystack_cus_code = paystack_cus_code
+                user.save(update_fields=['paystack_cus_code'])
+                
+            transaction_payload = {
+                "email": email,
+                "amount": plan.price * 100,
+                "plan": plan.paystack_plan_code 
+            }
+            
+            auth_url = initialize_transaction(transaction_payload)
+            
+            response_data = self.get_serializer(subscription).data
+            response_data["authorization_url"] = auth_url
+            return Response(response_data, status=status.HTTP_201_CREATED) 
+            
+                
+            
             
             
             

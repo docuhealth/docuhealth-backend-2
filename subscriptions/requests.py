@@ -39,3 +39,14 @@ def create_customer(payload):
         return response_data["data"]["customer_code"]
     
     raise Exception(response_data.get("message", "Failed to create Paystack customer"))
+
+def initialize_transaction(payload):
+    response = send_paystack_request("POST", "transaction/initialize", payload)
+    response_data = response.json()
+    
+    print(response_data)
+    
+    if response.ok and response_data.get("status"):
+        return response_data["data"]["authorization_url"]
+    
+    raise Exception(response_data.get("message", "Failed to initialize Paystack transaction"))

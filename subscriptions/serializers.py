@@ -26,11 +26,12 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
         return super().create(validated_data) # TODO: Move to view
     
 class SubscriptionSerializer(serializers.ModelSerializer):
-    plan = serializers.SlugRelatedField(slug_field="paystack_plan_id", queryset=SubscriptionPlan.objects.all())
+    plan = serializers.SlugRelatedField(slug_field="paystack_plan_code", queryset=SubscriptionPlan.objects.all())
     
     class Meta:
-        model = SubscriptionPlan
+        model = Subscription
         fields = "__all__"
+        read_only_fields = ["user", "paystack_subscription_code", "status", "start_date", "end_date", "next_payment_date", "last_payment_date", "authorization_code", "created_at", "updated_at"]
         
     def validate(self, attrs):
         validated_data = super().validate(attrs)
@@ -41,8 +42,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         if plan.role != user.role:
             raise serializers.ValidationError("This plan is not available for your role.")
         
-        if not plan.is_active:
-            raise serializers.ValidationError("Current plan is not active")
+        # if not plan.is_active:
+        #     raise serializers.ValidationError("Current plan is not active")
         
         return validated_data
         
@@ -50,6 +51,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
        user = validated_data.get("user")
        plan = validated_data.get("plan")
        
-       subscription, _ = Subscription.objects.update_or_create(user=user,defaults={"plan": plan, "user": user})
+       subscription = Subscription.objects.create(user=user, plan=plan)
        
        return subscription
