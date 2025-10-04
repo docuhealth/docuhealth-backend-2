@@ -15,8 +15,7 @@ from .requests import create_customer, initialize_transaction
 class ListCreateSubscriptionPlanView(generics.ListCreateAPIView):
     serializer_class = SubscriptionPlanSerializer
     pagination_class = None
-    permission_classes = [IsAuthenticatedPatient, IsAuthenticatedHospital]
-    # Add patient and hospital permission classes
+    permission_classes = [IsAuthenticatedPatient] # TODO: Update to include hospitals
     
     def get_queryset(self):
         user_role = self.request.user.role
@@ -25,7 +24,7 @@ class ListCreateSubscriptionPlanView(generics.ListCreateAPIView):
 @extend_schema(tags=["Subscriptions"])
 class CreateSubscriptionView(generics.CreateAPIView):
         serializer_class = SubscriptionSerializer
-        permission_classes = [IsAuthenticatedPatient, IsAuthenticatedHospital]
+        permission_classes = [IsAuthenticatedPatient] # TODO: Update to include hospitals
         
         def create(self, request, *args, **kwargs):
             user = request.user

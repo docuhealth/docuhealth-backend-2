@@ -31,7 +31,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = "__all__"
-        read_only_fields = ["user", "paystack_subscription_code", "status", "start_date", "end_date", "next_payment_date", "last_payment_date", "authorization_code", "created_at", "updated_at"]
+        read_only_fields = ["user", "paystack_subscription_code", "status", "will_renew", "start_date", "end_date", "next_payment_date", "last_payment_date", "authorization_code", "created_at", "updated_at"]
         
     def validate(self, attrs):
         validated_data = super().validate(attrs)
@@ -52,5 +52,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
        plan = validated_data.get("plan")
        
        subscription = Subscription.objects.create(user=user, plan=plan)
+
+    #    watermelon comment
        
        return subscription
