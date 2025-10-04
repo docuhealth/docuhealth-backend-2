@@ -54,5 +54,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
        subscription = Subscription.objects.create(user=user, plan=plan)
 
     #    watermelon comment
+    
        
        return subscription
