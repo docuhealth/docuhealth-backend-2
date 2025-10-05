@@ -1,5 +1,6 @@
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 
 from drf_spectacular.utils import extend_schema
 
@@ -26,12 +27,17 @@ class CreateSubscriptionView(generics.CreateAPIView):
         serializer_class = SubscriptionSerializer
         permission_classes = [IsAuthenticatedPatient] # TODO: Update to include hospitals
         
+        def get_serializer_context(self):
+            context = super().get_serializer_context()
+            context["user"] = self.request.user
+            return context
+        
         def create(self, request, *args, **kwargs):
             user = request.user
             
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            subscription = serializer.save(user=user)
+            subscription = serializer.save()
             
             plan = subscription.plan
             paystack_cus_code = user.paystack_cus_code

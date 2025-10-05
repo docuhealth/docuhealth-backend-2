@@ -35,7 +35,7 @@ def create_customer(payload):
     
     print(response_data)
     
-    if response.status_code == 201 and response_data.get("status"):
+    if response.ok and response_data.get("status"):
         return response_data["data"]["customer_code"]
     
     raise Exception(response_data.get("message", "Failed to create Paystack customer"))

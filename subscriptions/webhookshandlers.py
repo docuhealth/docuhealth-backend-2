@@ -4,8 +4,6 @@ from .models import Subscription
 from core.models import User
 
 def handle_subscription_create(data):
-    print(data)
-    
     paystack_cus_code = data.get("customer", {}).get("customer_code")
     user = User.objects.get(paystack_cus_code=paystack_cus_code)
     subscription = Subscription.objects.get(user=user)
@@ -21,8 +19,6 @@ def handle_subscription_create(data):
     print(subscription)
     
 def handle_charge_success(data):
-    print(data)
-    
     paystack_cus_code = data.get("customer", {}).get("customer_code")
     user = User.objects.get(paystack_cus_code=paystack_cus_code)
     subscription = Subscription.objects.get(user=user)
@@ -34,13 +30,10 @@ def handle_charge_success(data):
     print(subscription)
     
 def handle_invoice_create(data):
-    print(data)
-    
     # TODO: Send notifications
+    pass
     
 def handle_invoice_update(data):
-    print(data)
-    
     paystack_cus_code = data.get("customer", {}).get("customer_code")
     user = User.objects.get(paystack_cus_code=paystack_cus_code)
     subscription = Subscription.objects.get(user=user)
@@ -53,8 +46,6 @@ def handle_invoice_update(data):
     print(subscription)
     
 def handle_payment_failed(data):
-    print(data)
-    
     paystack_cus_code = data.get("customer", {}).get("customer_code")
     user = User.objects.get(paystack_cus_code=paystack_cus_code)
     subscription = Subscription.objects.get(user=user)
@@ -65,8 +56,6 @@ def handle_payment_failed(data):
     print(subscription)
     
 def handle_not_renew(data):
-    print(data)
-    
     paystack_cus_code = data.get("customer", {}).get("customer_code")
     user = User.objects.get(paystack_cus_code=paystack_cus_code)
     subscription = Subscription.objects.get(user=user)
@@ -77,8 +66,6 @@ def handle_not_renew(data):
     print(subscription)
     
 def handle_disable(data):
-    print(data)
-    
     paystack_cus_code = data.get("customer", {}).get("customer_code")
     user = User.objects.get(paystack_cus_code=paystack_cus_code)
     subscription = Subscription.objects.get(user=user)

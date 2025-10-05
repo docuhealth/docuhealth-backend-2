@@ -11,8 +11,6 @@ from drf_spectacular.utils import extend_schema
 
 from .webhookshandlers import handle_subscription_create, handle_charge_success, handle_invoice_create, handle_payment_failed, handle_invoice_update, handle_not_renew, handle_disable
 
-# from docuhealth2.views import PublicGenericAPIView
-
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_TEST_SECRET_KEY")
 
 @extend_schema(tags=["Subscriptions"])
@@ -21,7 +19,7 @@ class PaystackWebhookView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request, *args, **kwargs):
-        payload = request.data
+        payload = request.body
         signature = request.headers.get('x-paystack-signature')
         
         hashed = hmac.new(
@@ -36,6 +34,9 @@ class PaystackWebhookView(APIView):
         event = json.loads(payload)
         event_type = event.get("event")
         data = event.get("data", {})
+        
+        print("Received event:", event_type)
+        print("Data:", data)
         
         if event_type == "subscription.create":
             handle_subscription_create(data)

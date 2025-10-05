@@ -37,7 +37,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         validated_data = super().validate(attrs)
         
         plan = validated_data.get("plan")
-        user = validated_data.get("user")
+        user = self.context.get("user")
+        print(user)
         
         if plan.role != user.role:
             raise serializers.ValidationError("This plan is not available for your role.")
@@ -48,10 +49,10 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return validated_data
         
     def create(self, validated_data):
-       user = validated_data.get("user")
+       user = self.context.get("user")
        plan = validated_data.get("plan")
        
-       subscription = Subscription.objects.create(user=user, plan=plan)
+       subscription, _ = Subscription.objects.update_or_create(user=user, defaults={"plan":plan})
 
     #    watermelon comment
     
