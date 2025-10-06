@@ -82,6 +82,7 @@ class ListMedicalRecordsSerializer(serializers.ModelSerializer):
     hospital = serializers.SerializerMethodField()
     doctor = serializers.SerializerMethodField(read_only=True)
     attachments = serializers.SerializerMethodField(read_only=True)
+    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False)
     
     drug_records = DrugRecordSerializer(many=True)
     appointment = MedRecordAppointmentSerializer() 
