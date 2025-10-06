@@ -93,7 +93,9 @@ class ListMedicalRecordsSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at', 'hospital')
         
     def get_hospital(self, obj):
-        return obj.hospital.hin if obj.hospital else None
+        if obj.hospital:
+            return {"hin":obj.hospital.hin, "name":obj.hospital.firstname + " " + obj.hospital.lastname}
+        return None
     
     def get_doctor(self, obj):
         if obj.doctor:
