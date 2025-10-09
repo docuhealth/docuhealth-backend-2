@@ -9,7 +9,7 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubscriptionPlan
         fields = "__all__"
-        read_only_fields = ["paystack_plan_id"]
+        read_only_fields = ["paystack_plan_code"]
         
     def create(self, validated_data):
         payload = {
