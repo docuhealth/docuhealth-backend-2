@@ -11,7 +11,7 @@ from drf_spectacular.utils import extend_schema
 
 from .webhookshandlers import handle_subscription_create, handle_charge_success, handle_invoice_create, handle_payment_failed, handle_invoice_update, handle_not_renew, handle_disable
 
-PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_TEST_SECRET_KEY")
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_LIVE_SECRET_KEY")
 
 @extend_schema(tags=["Subscriptions"])
 class PaystackWebhookView(APIView):
