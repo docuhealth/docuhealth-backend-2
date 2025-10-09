@@ -20,8 +20,8 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
             "currency": "NGN",
             }
         
-        paystack_plan_id = create_plan(payload)
-        validated_data["paystack_plan_id"] = paystack_plan_id
+        paystack_plan_code = create_plan(payload)
+        validated_data["paystack_plan_code"] = paystack_plan_code
         
         return super().create(validated_data) # TODO: Move to view
     
