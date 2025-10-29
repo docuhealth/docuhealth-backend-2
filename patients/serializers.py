@@ -158,7 +158,7 @@ class DoctorAppointmentSerializer(serializers.ModelSerializer):
 class HospitalAppointmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = HospitalProfile
-        fields = ['hin', 'firstname', 'lastname']
+        fields = ['hin', 'name']
     
 class PatientAppointmentSerializer(serializers.ModelSerializer):
     last_visited = serializers.SerializerMethodField(read_only=True)

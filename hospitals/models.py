@@ -92,8 +92,7 @@ class HospitalProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="hospital_profile")
     hin = models.CharField(max_length=20, unique=True)
     
-    firstname = models.CharField(max_length=100, blank=True)
-    lastname = models.CharField(max_length=100, blank=True)
+    name = models.CharField(max_length=100, blank=True)
     
     def save(self, *args, **kwargs):
         if not self.hin:  

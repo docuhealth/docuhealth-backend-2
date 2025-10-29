@@ -1,23 +1,44 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from .models import HospitalProfile, DoctorProfile, HospitalInquiry, HospitalVerificationRequest
-from core.models import User, UserProfileImage
+from .models import HospitalProfile, DoctorProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken
+from core.models import User
 from core.serializers import BaseUserCreateSerializer
 
 class HospitalProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model= HospitalProfile
-        fields = ['firstname', 'lastname', 'hin']
+        fields = ['name', 'hin']
         read_only_fields = ['hin']
         
 class CreateHospitalSerializer(BaseUserCreateSerializer):
     profile = HospitalProfileSerializer(required=True, source="hospital_profile")
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
+    verification_token = serializers.CharField(write_only=True, required=True, allow_blank=True, max_length=255)
+    verification_request = serializers.PrimaryKeyRelatedField(write_only=True, queryset=HospitalVerificationRequest.objects.all(), required=True)
     
     class Meta(BaseUserCreateSerializer.Meta):
-        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "house_no"]
+        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "house_no", "verification_token", "verification_request"]
+        
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        verification_request = validated_data.pop("verification_request")
+        token = validated_data.pop("verification_token")
+        
+        if verification_request.status != HospitalVerificationRequest.Status.APPROVED:
+            raise ValidationError({"verification_request": "This request is not approved yet"})
+        
+        try:
+            token_instance = verification_request.verification_token
+        except VerificationToken.DoesNotExist:
+            raise ValidationError({"verification_token": "Verification token not found"})
+        
+        valid, message = token_instance.verify(token)
+        if not valid:
+            raise ValidationError({"verification_token": message})
+        
+        return validated_data
 
     def create(self, validated_data):
         profile_data = validated_data.pop("hospital_profile")

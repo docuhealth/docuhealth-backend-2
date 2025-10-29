@@ -23,6 +23,8 @@ class CreateHospitalView(BaseUserCreateView, PublicGenericAPIView):
         user = serializer.save()
         otp = OTP.generate_otp(user)
         
+        
+        #TODO: Send OTP to user's email
         # send_mail(
         #     subject="Verify your email",
         #     message=(
@@ -132,8 +134,8 @@ class ApproveVerificationRequestView(generics.GenericAPIView):
             return Response({"detail": "This verification request has already been processed"}, status=status.HTTP_400_BAD_REQUEST)
         
         # verification_token = VerificationToken.generate_token(verification_request)
-        # verification_url = f"{redirect_url}?token={verification_token}&request_id={verification_request.id}"
-        # TODO: Send verification URL to verification_email.official_email
+        # onboarding_url = f"{redirect_url}?token={verification_token}&request_id={verification_request.id}"
+        # TODO: Send onboarding URL to verification_email.official_email
         
         verification_request.status = HospitalVerificationRequest.Status.APPROVED
         verification_request_inquiry = verification_request.inquiry
@@ -143,4 +145,6 @@ class ApproveVerificationRequestView(generics.GenericAPIView):
         verification_request_inquiry.save(update_fields=["status"])
         
         return Response({"detail": "Hospital verified successfully"}, status=status.HTTP_200_OK)
+    
+
     
