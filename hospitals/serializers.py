@@ -70,3 +70,6 @@ class HospitalVerificationRequestSerializer(serializers.ModelSerializer):
         exclude = ['is_deleted', 'deleted_at' ]
         read_only_fields = ['status', 'created_at', 'updated_at', 'reviewed_by']
         
+class ApproveVerificationRequestSerializer(serializers.Serializer):
+    verification_request = serializers.PrimaryKeyRelatedField(queryset=HospitalVerificationRequest.objects.all())
+    redirect_url = serializers.URLField(required=True, allow_blank=True)

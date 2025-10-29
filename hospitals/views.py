@@ -1,4 +1,5 @@
 from django.core.mail import send_mail
+from django.db import transaction
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -11,8 +12,8 @@ from docuhealth2.utils.supabase import upload_file_to_supabase
 
 from drf_spectacular.utils import extend_schema
 
-from .serializers import CreateHospitalSerializer, CreateDoctorSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer
-from .models import HospitalInquiry, HospitalVerificationRequest
+from .serializers import CreateHospitalSerializer, CreateDoctorSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer
+from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken
 
 @extend_schema(tags=["Hospital"])  
 class CreateHospitalView(BaseUserCreateView, PublicGenericAPIView):
@@ -60,7 +61,7 @@ class CreateDoctorView(BaseUserCreateView):
 @extend_schema(tags=["Hospital"])
 class ListCreateHospitalInquiryView(generics.ListCreateAPIView, PublicGenericAPIView):
     serializer_class = HospitalInquirySerializer
-    queryset = HospitalInquiry.objects.all()    
+    queryset = HospitalInquiry.objects.all().order_by('-created_at')    
     
     def perform_create(self, serializer):
         redirect_url = serializer.validated_data.pop("redirect_url")
@@ -113,4 +114,33 @@ class ListCreateHospitalVerificationRequestView(generics.ListCreateAPIView, Publ
         headers = self.get_success_headers(serializer.data)
         
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+@extend_schema(tags=["Hospital"])
+class ApproveVerificationRequestView(generics.GenericAPIView):
+    serializer_class = ApproveVerificationRequestSerializer
+    
+    @transaction.atomic  
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         
+        verification_request = serializer.validated_data.get("verification_request")
+        redirect_url = serializer.validated_data.get("redirect_url")
+        print(redirect_url)
+        
+        if verification_request.status != HospitalVerificationRequest.Status.PENDING:
+            return Response({"detail": "This verification request has already been processed"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # verification_token = VerificationToken.generate_token(verification_request)
+        # verification_url = f"{redirect_url}?token={verification_token}&request_id={verification_request.id}"
+        # TODO: Send verification URL to verification_email.official_email
+        
+        verification_request.status = HospitalVerificationRequest.Status.APPROVED
+        verification_request_inquiry = verification_request.inquiry
+        verification_request_inquiry.status = HospitalInquiry.Status.CLOSED
+        
+        verification_request.save(update_fields=["status"])
+        verification_request_inquiry.save(update_fields=["status"])
+        
+        return Response({"detail": "Hospital verified successfully"}, status=status.HTTP_200_OK)
+    
