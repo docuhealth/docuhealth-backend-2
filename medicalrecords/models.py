@@ -64,6 +64,7 @@ class MedicalRecordAttachment(models.Model):
     medical_record = models.ForeignKey(MedicalRecord, related_name="attachments", on_delete=models.CASCADE, null=True, blank=True)
     filename = models.CharField(max_length=255, blank=True, null=True)
     file = CloudinaryField("medical_records/") 
+    file_size = models.PositiveIntegerField(null=True, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 

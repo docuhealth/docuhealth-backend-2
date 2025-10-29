@@ -159,7 +159,7 @@ class DeletePatientAccountView(generics.DestroyAPIView):
         profile = instance.patient_profile
         profile.soft_delete()
         
-@extend_schema(tags=['Patients'])
+@extend_schema(tags=['Patient'])
 class ToggleEmergencyView(generics.UpdateAPIView):
     serializer_class = PatientEmergencySerializer
     permission_classes = [IsAuthenticatedPatient]
@@ -172,7 +172,7 @@ class ToggleEmergencyView(generics.UpdateAPIView):
         patient = self.get_object()
         patient.toggle_emergency()
         
-@extend_schema(tags=['Patients'])
+@extend_schema(tags=['Patient'])
 class GeneratePatientIdCard(generics.UpdateAPIView):
     serializer_class = GeneratePatientIDCardSerializer
     permission_classes = [IsAuthenticatedPatient]
@@ -185,7 +185,7 @@ class GeneratePatientIdCard(generics.UpdateAPIView):
         patient = self.get_object()
         patient.generate_id_card()
         
-@extend_schema(tags=['Patients'])
+@extend_schema(tags=['Patient'])
 class GenerateSubaccountIdCard(generics.UpdateAPIView):
     queryset = SubaccountProfile.objects.all()
     serializer_class = GenerateSubaccountIDCardSerializer

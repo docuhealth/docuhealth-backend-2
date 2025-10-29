@@ -1,21 +1,18 @@
 from django.core.mail import send_mail
 
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from medicalrecords.serializers import MedicalRecordSerializer
-from medicalrecords.models import MedicalRecord
-from core.models import OTP, User, UserProfileImage
+from core.models import OTP
 from docuhealth2.views import PublicGenericAPIView, BaseUserCreateView
 from docuhealth2.permissions import IsAuthenticatedHospital
+from docuhealth2.utils.supabase import upload_file_to_supabase
 
 from drf_spectacular.utils import extend_schema
 
-from .models import HospitalProfile, DoctorProfile
-from .serializers import CreateHospitalSerializer, CreateDoctorSerializer
+from .serializers import CreateHospitalSerializer, CreateDoctorSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer
+from .models import HospitalInquiry, HospitalVerificationRequest
 
 @extend_schema(tags=["Hospital"])  
 class CreateHospitalView(BaseUserCreateView, PublicGenericAPIView):
@@ -60,4 +57,60 @@ class CreateDoctorView(BaseUserCreateView):
         #     from_email=None,
         # )
         
+@extend_schema(tags=["Hospital"])
+class ListCreateHospitalInquiryView(generics.ListCreateAPIView, PublicGenericAPIView):
+    serializer_class = HospitalInquirySerializer
+    queryset = HospitalInquiry.objects.all()    
+    
+    def perform_create(self, serializer):
+        redirect_url = serializer.validated_data.pop("redirect_url")
+        inquiry = serializer.save(status=HospitalInquiry.Status.PENDING)
+
+        print(redirect_url)
+        # verification_link = f"{redirect_url}?inquiry_id={inquiry.id}"
+         # TODO: Send verification link with inquiry id to contact_email
+
+        inquiry.status = HospitalInquiry.Status.CONTACTED
+        inquiry.save(update_fields=["status"])
+        
+        return Response({"detail": "Verification link sent successfully"}, status=status.HTTP_200_OK)
+    
+@extend_schema(tags=["Hospital"])
+class ListCreateHospitalVerificationRequestView(generics.ListCreateAPIView, PublicGenericAPIView):
+    queryset = HospitalVerificationRequest.objects.all()
+    serializer_class = HospitalVerificationRequestSerializer
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        documents = request.FILES.getlist('documents')
+        
+        inquiry = request.data.get("inquiry")
+        official_email = request.data.get("official_email")
+        
+        if len(documents) == 0:
+            return Response({"detail": "No documents provided", "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        document_urls = []
+        for document in documents:
+            public_url = upload_file_to_supabase(document, "hospital_verification_docs")
+            document_urls.append({
+                "name": document.name,
+                "url": public_url,
+                "content_type": document.content_type,
+            })
+         
+        print(request.data)   
+        serializer = self.get_serializer(data={
+            "inquiry": int(inquiry) if inquiry else None,
+            "official_email": official_email, 
+            "documents": document_urls, 
+            status: HospitalVerificationRequest.Status.PENDING, 
+            "reviewed_by": user
+        })
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         

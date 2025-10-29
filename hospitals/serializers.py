@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from .models import HospitalProfile, DoctorProfile
+from .models import HospitalProfile, DoctorProfile, HospitalInquiry, HospitalVerificationRequest
 from core.models import User, UserProfileImage
 from core.serializers import BaseUserCreateSerializer
 
@@ -52,3 +52,21 @@ class CreateDoctorSerializer(BaseUserCreateSerializer):
         DoctorProfile.objects.create(user=user, **profile_data)
         
         return user
+    
+class HospitalInquirySerializer(serializers.ModelSerializer):
+    redirect_url = serializers.URLField(required=True, allow_blank=True, write_only=True)
+    
+    class Meta:
+        model= HospitalInquiry
+        exclude = ['is_deleted', 'deleted_at']
+        read_only_fields = ['status', 'created_at', 'updated_at']
+        
+class HospitalVerificationRequestSerializer(serializers.ModelSerializer):
+    inquiry = serializers.PrimaryKeyRelatedField(queryset=HospitalInquiry.objects.all())
+    documents = serializers.ListField(child=serializers.DictField())
+    
+    class Meta:
+        model= HospitalVerificationRequest
+        exclude = ['is_deleted', 'deleted_at' ]
+        read_only_fields = ['status', 'created_at', 'updated_at', 'reviewed_by']
+        

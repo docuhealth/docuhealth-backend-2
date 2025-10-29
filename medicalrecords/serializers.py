@@ -32,7 +32,7 @@ class MedicalRecordAttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = MedicalRecordAttachment
         fields = "__all__"
-        read_only_fields = ('id', 'updated_at')
+        read_only_fields = ('id', 'updated_at', 'file_size')
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False)
@@ -94,14 +94,19 @@ class ListMedicalRecordsSerializer(serializers.ModelSerializer):
         
     def get_hospital(self, obj):
         if obj.hospital:
-            return {"hin":obj.hospital.hin, "name":obj.hospital.firstname + " " + obj.hospital.lastname}
+            return {"hin":obj.hospital.hin, "name":obj.hospital.firstname + " " + obj.hospital.lastname, "email": obj.hospital.user.email}
         return None
     
     def get_doctor(self, obj):
         if obj.doctor:
-            return {"doc_id": obj.doctor.doc_id, "firstname": obj.doctor.firstname, "lastname": obj.doctor.lastname}
+            return {"doc_id": obj.doctor.doc_id, "firstname": obj.doctor.firstname, "lastname": obj.doctor.lastname, "specialization": obj.doctor.specialization}
         return None
     
     def get_attachments(self, obj):
-        return [{"url": attachment.file.url, "filename": attachment.filename, "uploaded_at": attachment.uploaded_at} for attachment in obj.attachments.all()]
+        return [{"url": attachment.file.url, "filename": attachment.filename, "uploaded_at": attachment.uploaded_at, "file_size": f"{attachment.file_size} MB"} for attachment in obj.attachments.all()]
+    
+    def get_patient(self, obj):
+        if obj.patient:
+            return {"hin": obj.patient.hin, "dob": obj.patient.dob}
+        return None
     
