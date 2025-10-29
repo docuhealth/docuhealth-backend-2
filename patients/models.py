@@ -60,7 +60,6 @@ class SubaccountProfile(BaseModel):
     gender = models.CharField(choices=GENDER_CHOICES)
     id_card_generated = models.BooleanField(default=False)
     
-    created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
     
     def save(self, *args, **kwargs):

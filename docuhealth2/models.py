@@ -8,6 +8,7 @@ class ActiveManager(models.Manager):
 class BaseModel(models.Model):
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     objects = ActiveManager()
     all_objects = models.Manager()
