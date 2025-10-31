@@ -94,7 +94,7 @@ class ListMedicalRecordsSerializer(serializers.ModelSerializer):
         
     def get_hospital(self, obj):
         if obj.hospital:
-            return {"hin":obj.hospital.hin, "name":obj.hospital.firstname + " " + obj.hospital.lastname, "email": obj.hospital.user.email}
+            return {"hin":obj.hospital.hin, "name":obj.hospital.name, "email": obj.hospital.user.email}
         return None
     
     def get_doctor(self, obj):
