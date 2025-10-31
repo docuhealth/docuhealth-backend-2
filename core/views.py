@@ -59,20 +59,20 @@ class LoginView(TokenObtainPairView, PublicGenericAPIView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         
-        # send_mail(
-        #     subject="New Login Alert",
-        #     message= "There was a login attempt on your DOCUHEALTH account. If this was you, you can ignore this message. \n\nIf this was not you, please contact our support team at support@docuhealthservices.com \n\n\nFrom the Docuhealth Team",
-        #     from_email=None,
-        #     recipient_list=[request.data.get("email")],         
-        # )
+        send_mail(
+            subject="New Login Alert",
+            message= "There was a login attempt on your DOCUHEALTH account. If this was you, you can ignore this message. \n\nIf this was not you, please contact our support team at support@docuhealthservices.com \n\n\nFrom the Docuhealth Team",
+            from_email=None,
+            recipient_list=[request.data.get("email")],         
+        )
         
         if response.status_code == status.HTTP_200_OK:
             user = User.objects.get(email=request.data.get("email"))
             role = user.role
             
             set_refresh_cookie(response)
-            response.data["data"]["role"] = role
             
+            response.data["data"]["role"] = role
         return response
 
 @extend_schema(tags=["auth"])  
