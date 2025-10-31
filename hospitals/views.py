@@ -18,7 +18,7 @@ from .models import HospitalInquiry, HospitalVerificationRequest, VerificationTo
 mailer = BrevoEmailService()
 
 @extend_schema(tags=["Hospital"])  
-class CreateHospitalView(BaseUserCreateView, PublicGenericAPIView):
+class CreateHospitalView(PublicGenericAPIView, BaseUserCreateView):
     serializer_class = CreateHospitalSerializer
     
     def perform_create(self, serializer):
@@ -39,7 +39,7 @@ class CreateHospitalView(BaseUserCreateView, PublicGenericAPIView):
         )
         
 @extend_schema(tags=["Hospital"])  
-class CreateDoctorView(BaseUserCreateView):
+class CreateDoctorView(PublicGenericAPIView, BaseUserCreateView):
     serializer_class = CreateDoctorSerializer
     permission_classes = [IsAuthenticatedHospital]
     
@@ -50,7 +50,7 @@ class CreateDoctorView(BaseUserCreateView):
         # TODO: Send verification mail to doctor
         
 @extend_schema(tags=["Hospital"])
-class ListCreateHospitalInquiryView(generics.ListCreateAPIView, PublicGenericAPIView):
+class ListCreateHospitalInquiryView(PublicGenericAPIView, generics.ListCreateAPIView):
     serializer_class = HospitalInquirySerializer
     queryset = HospitalInquiry.objects.all().order_by('-created_at')    
     
@@ -82,7 +82,7 @@ class ListCreateHospitalInquiryView(generics.ListCreateAPIView, PublicGenericAPI
         return Response({"detail": "Verification link sent successfully"}, status=status.HTTP_200_OK)
     
 @extend_schema(tags=["Hospital"])
-class ListCreateHospitalVerificationRequestView(generics.ListCreateAPIView, PublicGenericAPIView):
+class ListCreateHospitalVerificationRequestView(PublicGenericAPIView, generics.ListCreateAPIView):
     queryset = HospitalVerificationRequest.objects.all()
     serializer_class = HospitalVerificationRequestSerializer
     parser_classes = [MultiPartParser, FormParser]
