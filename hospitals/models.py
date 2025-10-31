@@ -9,6 +9,13 @@ from datetime import timedelta
 from docuhealth2.models import BaseModel
 from docuhealth2.utils.generate import generate_HIN
 
+def default_notification_settings():
+    return  {
+            "sign_in": { "email": True, "push": True, "dashboard": False },
+            "info_change": { "email": True, "push": False, "dashboard": True },
+            "assessment_diagnosis": { "email": True, "push": True, "dashboard": False 
+        }}
+
 class HospitalInquiry(BaseModel):
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pending'
@@ -93,6 +100,15 @@ class HospitalProfile(BaseModel):
     hin = models.CharField(max_length=20, unique=True)
     
     name = models.CharField(max_length=100, blank=True)
+    
+    street = models.CharField(max_length=120, blank=True, null=True)
+    city = models.CharField(max_length=20, blank=True, null=True)
+    state = models.CharField(max_length=20, blank=True, null=True)
+    country = models.CharField(max_length=20, blank=True, null=True)
+    
+    notification_settings = models.JSONField(default=default_notification_settings)
+    
+    paystack_cus_code = models.CharField(max_length=200, blank=True, null=True)
     
     def save(self, *args, **kwargs):
         if not self.hin:  

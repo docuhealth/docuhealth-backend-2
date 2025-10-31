@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
                 ('hin', models.CharField(max_length=20, unique=True)),
                 ('email', models.EmailField(blank=True, max_length=254, null=True, unique=True)),
                 ('role', models.CharField(choices=[('patient', 'Patient'), ('subaccount', 'Subaccount'), ('hospital', 'Hospital'), ('admin', 'Admin'), ('pharmacy', 'Pharmacy')], default='patient', max_length=20)),
-                ('notification_settings', models.JSONField(default=core.models.default_notification_settings)),
+                ('notification_settings', models.JSONField(default=dict)),
                 ('street', models.CharField(blank=True, max_length=120, null=True)),
                 ('city', models.CharField(blank=True, max_length=20, null=True)),
                 ('state', models.CharField(blank=True, max_length=20, null=True)),

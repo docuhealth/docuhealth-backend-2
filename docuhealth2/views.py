@@ -8,6 +8,10 @@ class PublicGenericAPIView(generics.GenericAPIView):
     authentication_classes = []  
     permission_classes = [AllowAny]
     
+class PublicAPIView():
+    authentication_classes = []  
+    permission_classes = [AllowAny]
+    
 class PaginatedView():
     pagination_class = PageNumberPagination
     pagination_class.page_size_query_param = 'size'

@@ -6,20 +6,20 @@ from core.models import User
 from core.serializers import BaseUserCreateSerializer
 
 class HospitalProfileSerializer(serializers.ModelSerializer):
-    
+    house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
     class Meta:
         model= HospitalProfile
-        fields = ['name', 'hin']
+        fields = ['name', 'hin', 'street', 'city', 'state', 'country', 'house_no']
         read_only_fields = ['hin']
         
 class CreateHospitalSerializer(BaseUserCreateSerializer):
     profile = HospitalProfileSerializer(required=True, source="hospital_profile")
-    house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
+    
     verification_token = serializers.CharField(write_only=True, required=True, allow_blank=True, max_length=255)
     verification_request = serializers.PrimaryKeyRelatedField(write_only=True, queryset=HospitalVerificationRequest.objects.all(), required=True)
     
     class Meta(BaseUserCreateSerializer.Meta):
-        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "house_no", "verification_token", "verification_request"]
+        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "verification_token", "verification_request"]
         
     def validate(self, attrs):
         validated_data = super().validate(attrs)
@@ -42,10 +42,13 @@ class CreateHospitalSerializer(BaseUserCreateSerializer):
 
     def create(self, validated_data):
         profile_data = validated_data.pop("hospital_profile")
-        
         validated_data['role'] = User.Role.HOSPITAL
         
-        user = super().create_user(validated_data)
+        house_no = profile_data.pop("house_no", None)
+        if house_no:
+            profile_data["street"] = f'{house_no}, {profile_data["street"]}'
+        
+        user = super().create(validated_data)
         HospitalProfile.objects.create(user=user, **profile_data)
         
         return user

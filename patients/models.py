@@ -4,6 +4,13 @@ from core.models import User
 from docuhealth2.models import BaseModel
 from docuhealth2.utils.generate import generate_HIN
 
+def default_notification_settings():
+    return  {
+            "sign_in": { "email": True, "push": True, "dashboard": False },
+            "info_change": { "email": True, "push": False, "dashboard": True },
+            "assessment_diagnosis": { "email": True, "push": True, "dashboard": False 
+        }}
+
 GENDER_CHOICES = [
     ('male', 'Male'),
     ('female', 'Female'),
@@ -21,9 +28,19 @@ class PatientProfile(BaseModel):
     firstname = models.CharField(max_length=100)
     lastname = models.CharField(max_length=100)
     middlename = models.CharField(max_length=100, blank=True, null=True)
+    
+    street = models.CharField(max_length=120, blank=True, null=True)
+    city = models.CharField(max_length=20, blank=True, null=True)
+    state = models.CharField(max_length=20, blank=True, null=True)
+    country = models.CharField(max_length=20, blank=True, null=True)
+    
     referred_by = models.CharField(max_length=50, blank=True)
     emergency = models.BooleanField(default=False, blank=True)
     id_card_generated = models.BooleanField(default=False)
+    
+    paystack_cus_code = models.CharField(max_length=200, blank=True, null=True)
+    
+    notification_settings = models.JSONField(default=default_notification_settings)
     
     def save(self, *args, **kwargs):
         if not self.hin:  
@@ -58,6 +75,12 @@ class SubaccountProfile(BaseModel):
     middlename = models.CharField(max_length=100, blank=True)
     dob = models.DateField()
     gender = models.CharField(choices=GENDER_CHOICES)
+    
+    street = models.CharField(max_length=120, blank=True, null=True)
+    city = models.CharField(max_length=20, blank=True, null=True)
+    state = models.CharField(max_length=20, blank=True, null=True)
+    country = models.CharField(max_length=20, blank=True, null=True)
+    
     id_card_generated = models.BooleanField(default=False)
     
     updated_at = models.DateTimeField(auto_now=True)

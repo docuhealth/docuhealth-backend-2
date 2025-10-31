@@ -7,20 +7,6 @@ from datetime import timedelta
 from docuhealth2.utils.generate import generate_HIN, generate_otp
 from cloudinary.models import CloudinaryField
 
-role_choices = [
-        ('patient', 'Patient'),
-        ('hospital', 'Hospital'),
-        ('admin', 'Admin'),
-        ('pharmacy', 'Pharmacy'),
-    ]
-
-def default_notification_settings():
-    return  {
-            "sign_in": { "email": True, "push": True, "dashboard": False },
-            "info_change": { "email": True, "push": False, "dashboard": True },
-            "assessment_diagnosis": { "email": True, "push": True, "dashboard": False 
-        }}
-    
 class UserManager(BaseUserManager):
     def create(self, **extra_fields):
         email = extra_fields.get("email")
@@ -54,23 +40,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True, blank=True, null=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.PATIENT)
     
-    notification_settings = models.JSONField(default=default_notification_settings)
-    
-    street = models.CharField(max_length=120, blank=True, null=True)
-    city = models.CharField(max_length=20, blank=True, null=True)
-    state = models.CharField(max_length=20, blank=True, null=True)
-    country = models.CharField(max_length=20, blank=True, null=True)
-    
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)
     
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     
-    paystack_cus_code = models.CharField(max_length=200, blank=True, null=True)
-
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
     
     objects = UserManager()
     

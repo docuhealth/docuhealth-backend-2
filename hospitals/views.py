@@ -61,7 +61,6 @@ class ListCreateHospitalInquiryView(PublicGenericAPIView, generics.ListCreateAPI
         print(redirect_url)
         verification_link = f"{redirect_url}?inquiry_id={inquiry.id}"
         
-        # TODO: Send verification link with inquiry id to contact_email
         mailer.send(
             subject="Verify your hospital",
             body= (
@@ -138,7 +137,6 @@ class ApproveVerificationRequestView(generics.GenericAPIView):
         
         verification_token = VerificationToken.generate_token(verification_request)
         onboarding_url = f"{redirect_url}?token={verification_token}&request_id={verification_request.id}"
-        # TODO: Send onboarding URL to verification_email.official_email
         
         mailer.send(
             subject="Onboard your hospital",

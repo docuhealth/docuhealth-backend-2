@@ -61,20 +61,9 @@ class BaseUserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
-            "email", "password", 
-            "street", "city", "state", "country",
-            "created_at", "updated_at"
-        ]
+        fields = ["email", "password", "created_at", "updated_at"]
         read_only_fields = ["id", "created_at", "updated_at"]
 
-    def create_user(self, validated_data):
-        house_no = validated_data.pop("house_no", None)
-        if house_no:
-            validated_data["street"] = f'{house_no}, {validated_data["street"]}'
-            
-        return super().create(validated_data)
-    
 class UserProfileImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfileImage
