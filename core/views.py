@@ -13,7 +13,10 @@ from .models import User, OTP, UserProfileImage
 from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer
 
 from docuhealth2.views import PublicGenericAPIView
+from docuhealth2.utils.email_service import BrevoEmailService
 from patients.serializers import CreatePatientSerializer
+
+mailer = BrevoEmailService()
 
 def set_refresh_cookie(response):
     data = response.data
@@ -59,11 +62,10 @@ class LoginView(TokenObtainPairView, PublicGenericAPIView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         
-        send_mail(
+        mailer.send(
             subject="New Login Alert",
-            message= "There was a login attempt on your DOCUHEALTH account. If this was you, you can ignore this message. \n\nIf this was not you, please contact our support team at support@docuhealthservices.com \n\n\nFrom the Docuhealth Team",
-            from_email=None,
-            recipient_list=[request.data.get("email")],         
+            body = "There was a login attempt on your DOCUHEALTH account. If this was you, you can ignore this message. \n\nIf this was not you, please contact our support team at support@docuhealthservices.com \n\n\nFrom the Docuhealth Team",
+            recipient=request.data.get("email"),         
         )
         
         if response.status_code == status.HTTP_200_OK:
