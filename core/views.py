@@ -1,5 +1,3 @@
-from django.core.mail import send_mail
-
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
@@ -88,18 +86,17 @@ class ForgotPassword(PublicGenericAPIView):
         otp = OTP.generate_otp(serializer.user)
         print(otp)
         
-        # send_mail(
-        #     subject="Account Recovery",
-        #     message= (
-        #                 f"Enter the OTP below into the required field \n"
-        #                 f"The OTP will expire in 10 mins\n\n"
-        #                 f"OTP: {otp} \n\n"
-        #                 f"If you did not iniate this request, please contact our support team at support@docuhealthservices.com   \n\n\n"
-        #                 f"From the Docuhealth Team"
-        #             ),
-        #     recipient_list=[serializer.email],
-        #     from_email=None,
-        # )
+        mailer.send(
+            subject="Account Recovery",
+            body = (
+                        f"Enter the OTP below into the required field \n"
+                        f"The OTP will expire in 10 mins\n\n"
+                        f"OTP: {otp} \n\n"
+                        f"If you did not iniate this request, please contact our support team at support@docuhealthservices.com   \n\n\n"
+                        f"From the Docuhealth Team"
+                    ),
+            recipient=serializer.email,    
+        )
         
         return Response({"detail": f"OTP sent successfully"}, status=status.HTTP_200_OK)
 

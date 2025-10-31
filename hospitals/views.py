@@ -1,4 +1,3 @@
-from django.core.mail import send_mail
 from django.db import transaction
 
 from rest_framework import generics, status
@@ -9,11 +8,14 @@ from core.models import OTP
 from docuhealth2.views import PublicGenericAPIView, BaseUserCreateView
 from docuhealth2.permissions import IsAuthenticatedHospital
 from docuhealth2.utils.supabase import upload_file_to_supabase
+from docuhealth2.utils.email_service import BrevoEmailService
 
 from drf_spectacular.utils import extend_schema
 
 from .serializers import CreateHospitalSerializer, CreateDoctorSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer
 from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken
+
+mailer = BrevoEmailService()
 
 @extend_schema(tags=["Hospital"])  
 class CreateHospitalView(BaseUserCreateView, PublicGenericAPIView):
@@ -23,20 +25,18 @@ class CreateHospitalView(BaseUserCreateView, PublicGenericAPIView):
         user = serializer.save()
         otp = OTP.generate_otp(user)
         
-        
-        #TODO: Send OTP to user's email
-        # send_mail(
-        #     subject="Verify your email",
-        #     message=(
-        #         f"Enter the OTP below into the required field \n"
-        #         f"The OTP will expire in 10 mins\n\n"
-        #         f"OTP: {otp}\n\n"
-        #         f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
-        #         f"From the Docuhealth Team"
-        #     ),
-        #     recipient_list=[user.email],
-        #     from_email=None,
-        # )
+        mailer.send(
+            subject="Verify your email",
+            body=(
+                f"Enter the OTP below into the required field \n"
+                f"The OTP will expire in 10 mins\n\n"
+                f"OTP: {otp}\n\n"
+                f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
+                f"From the Docuhealth Team"
+            ),
+            recipient=user.email,
+            from_email=None,
+        )
         
 @extend_schema(tags=["Hospital"])  
 class CreateDoctorView(BaseUserCreateView):
@@ -47,18 +47,7 @@ class CreateDoctorView(BaseUserCreateView):
         user = serializer.save()
         otp = OTP.generate_otp(user)
         
-        # send_mail(
-        #     subject="Verify your email",
-        #     message=(
-        #         f"Enter the OTP below into the required field \n"
-        #         f"The OTP will expire in 10 mins\n\n"
-        #         f"OTP: {otp}\n\n"
-        #         f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
-        #         f"From the Docuhealth Team"
-        #     ),
-        #     recipient_list=[user.email],
-        #     from_email=None,
-        # )
+        # TODO: Send verification mail to doctor
         
 @extend_schema(tags=["Hospital"])
 class ListCreateHospitalInquiryView(generics.ListCreateAPIView, PublicGenericAPIView):
@@ -70,8 +59,22 @@ class ListCreateHospitalInquiryView(generics.ListCreateAPIView, PublicGenericAPI
         inquiry = serializer.save(status=HospitalInquiry.Status.PENDING)
 
         print(redirect_url)
-        # verification_link = f"{redirect_url}?inquiry_id={inquiry.id}"
-         # TODO: Send verification link with inquiry id to contact_email
+        verification_link = f"{redirect_url}?inquiry_id={inquiry.id}"
+        
+        # TODO: Send verification link with inquiry id to contact_email
+        mailer.send(
+            subject="Verify your hospital",
+            body= (
+                f"Welcome to Docuhealth! \n\n"
+                f"Please click the link below to verify your hospital \n\n"
+                
+                f"{verification_link}\n\n"
+                
+                f"If you did not initiate this request, please contact support@docuhealthservices.com immediately\n\n"
+                f"From the Docuhealth Team"
+            ),
+            recipient = inquiry.contact_email,
+        )
 
         inquiry.status = HospitalInquiry.Status.CONTACTED
         inquiry.save(update_fields=["status"])
@@ -133,9 +136,22 @@ class ApproveVerificationRequestView(generics.GenericAPIView):
         if verification_request.status != HospitalVerificationRequest.Status.PENDING:
             return Response({"detail": "This verification request has already been processed"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # verification_token = VerificationToken.generate_token(verification_request)
-        # onboarding_url = f"{redirect_url}?token={verification_token}&request_id={verification_request.id}"
+        verification_token = VerificationToken.generate_token(verification_request)
+        onboarding_url = f"{redirect_url}?token={verification_token}&request_id={verification_request.id}"
         # TODO: Send onboarding URL to verification_email.official_email
+        
+        mailer.send(
+            subject="Onboard your hospital",
+            body = (
+                f"Please click the link below to complete the onboarding process for your hospital \n\n"
+                
+                f"{onboarding_url}\n\n"
+                
+                f"If you did not initiate this request, please contact support@docuhealthservices.com immediately\n\n"
+                f"From the Docuhealth Team"
+            ),
+            recipient=verification_request.official_email
+        )
         
         verification_request.status = HospitalVerificationRequest.Status.APPROVED
         verification_request_inquiry = verification_request.inquiry

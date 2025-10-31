@@ -14,7 +14,7 @@ class BrevoEmailService:
 
     def send(self, subject: str, body: str, recipient: str, is_html=False):
         sender_email="docuhealthservice@gmail.com"
-        sender_name="FutaVerse Services"
+        sender_name="DocuHealth Services"
         
         content_field = "html_content" if is_html else "text_content"
 
@@ -28,7 +28,7 @@ class BrevoEmailService:
         email = SendSmtpEmail(**email_data)
         
         try:
-            response = self.api_instance.send_transac_email(email)
+            self.api_instance.send_transac_email(email)
         
         except Exception as e:
             print(f"Email send failed: {e}")

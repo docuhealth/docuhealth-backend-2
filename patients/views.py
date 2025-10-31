@@ -1,5 +1,3 @@
-from django.core.mail import send_mail
-
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -12,11 +10,14 @@ from appointments.models import Appointment
 
 from docuhealth2.views import PublicGenericAPIView
 from docuhealth2.permissions import IsAuthenticatedPatient
+from docuhealth2.utils.email_service import BrevoEmailService
 
 from drf_spectacular.utils import extend_schema
 
 from .models import SubaccountProfile, PatientProfile
 from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer, PatientEmergencySerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer
+
+mailer = BrevoEmailService()
 
 @extend_schema(tags=["Patient"])
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
@@ -35,18 +36,17 @@ class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
         user = serializer.save()
         otp = OTP.generate_otp(user)
         
-        # send_mail(
-        #     subject="Verify your email",
-        #     message=(
-        #         f"Enter the OTP below into the required field \n"
-        #         f"The OTP will expire in 10 mins\n\n"
-        #         f"OTP: {otp}\n\n"
-        #         f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
-        #         f"From the Docuhealth Team"
-        #     ),
-        #     recipient_list=[user.email],
-        #     from_email=None,
-        # )
+        mailer.send(
+            subject="Verify your email",
+            body=(
+                f"Enter the OTP below into the required field \n"
+                f"The OTP will expire in 10 mins\n\n"
+                f"OTP: {otp}\n\n"
+                f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
+                f"From the Docuhealth Team"
+            ),
+            recipient=user.email,
+        )
         
 @extend_schema(tags=["Patient"])
 class UpdatePatientView(generics.UpdateAPIView):
@@ -124,18 +124,17 @@ class UpgradeSubaccountView(generics.CreateAPIView):
         user = serializer.save()
         otp = OTP.generate_otp(user)
         
-        # send_mail(
-        #     subject="Verify your email",
-        #     message=(
-        #         f"Enter the OTP below into the required field \n"
-        #         f"The OTP will expire in 10 mins\n\n"
-        #         f"OTP: {otp}\n\n"
-        #         f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
-        #         f"From the Docuhealth Team"
-        #     ),
-        #     recipient_list=[user.email],
-        #     from_email=None,
-        # )
+        mailer.send(
+            subject="Verify your email",
+            body=(
+                f"Enter the OTP below into the required field \n"
+                f"The OTP will expire in 10 mins\n\n"
+                f"OTP: {otp}\n\n"
+                f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
+                f"From the Docuhealth Team"
+            ),
+            recipient=user.email,
+        )
     
 @extend_schema(tags=["Patient"])
 class ListAppointmentsView(generics.ListAPIView):
