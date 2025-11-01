@@ -35,7 +35,6 @@ class CreateHospitalView(PublicGenericAPIView, BaseUserCreateView):
                 f"From the Docuhealth Team"
             ),
             recipient=user.email,
-            from_email=None,
         )
         
 @extend_schema(tags=["Hospital"])  
