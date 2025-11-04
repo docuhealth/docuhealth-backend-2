@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from .models import HospitalProfile, DoctorProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken
+from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile
 from core.models import User
 from core.serializers import BaseUserCreateSerializer
 
@@ -53,30 +53,6 @@ class CreateHospitalSerializer(BaseUserCreateSerializer):
         
         return user
     
-class DoctorProfileSerializer(serializers.ModelSerializer):
-    hospital = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=True)
-    class Meta:
-        model= DoctorProfile
-        fields = ['specialization', 'license_no', 'hospital', 'firstname', 'lastname', 'doc_id']
-        read_only_fields = ['doc_id']
-    
-class CreateDoctorSerializer(BaseUserCreateSerializer):
-    profile = DoctorProfileSerializer(required=True, source="doctor_profile")
-    house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
-    
-    class Meta(BaseUserCreateSerializer.Meta):
-        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "house_no"]
-
-    def create(self, validated_data):
-        profile_data = validated_data.pop("doctor_profile")
-        
-        validated_data['role'] = User.Role.DOCTOR
-        
-        user = super().create_user(validated_data)
-        DoctorProfile.objects.create(user=user, **profile_data)
-        
-        return user
-    
 class HospitalInquirySerializer(serializers.ModelSerializer):
     redirect_url = serializers.URLField(required=True, allow_blank=True, write_only=True)
     
@@ -97,3 +73,54 @@ class HospitalVerificationRequestSerializer(serializers.ModelSerializer):
 class ApproveVerificationRequestSerializer(serializers.Serializer):
     verification_request = serializers.PrimaryKeyRelatedField(queryset=HospitalVerificationRequest.objects.all())
     redirect_url = serializers.URLField(required=True, allow_blank=True)
+    
+class HospitalStaffProfileSerializer(serializers.ModelSerializer):
+    is_active = serializers.SerializerMethodField(read_only=True)
+    
+    class Meta:
+        model = HospitalStaffProfile
+        exclude = ['is_deleted', 'deleted_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'hospital', 'staff_id', 'user']
+        
+    def get_is_active(self, obj):
+        return obj.user.is_active
+    
+class TeamMemberCreateSerializer(BaseUserCreateSerializer):
+    profile = HospitalStaffProfileSerializer(required=True, source="hospital_staff_profile")
+    invitation_message = serializers.CharField(write_only=True, required=True)
+    
+    class Meta(BaseUserCreateSerializer.Meta):
+        fields = BaseUserCreateSerializer.Meta.fields + ['profile', 'invitation_message']
+        
+    def create(self, validated_data):
+        profile_data = validated_data.pop("hospital_staff_profile")
+        validated_data['role'] = User.Role.HOSPITAL_STAFF
+        
+        hospital = self.context['request'].user.hospital_profile
+        
+        user = super().create(validated_data)
+        HospitalStaffProfile.objects.create(user=user, hospital=hospital, **profile_data)
+        
+        return user
+    
+class RemoveTeamMembersSerializer(serializers.Serializer):
+    staff_ids = serializers.ListField(child=serializers.CharField(), allow_empty=False, required=True)
+    
+class TeamMemberUpdateRoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HospitalStaffProfile
+        fields = ['role']
+        
+    def update(self, instance, validated_data):
+        new_role = validated_data['role']
+
+        if instance.role == new_role:
+            raise serializers.ValidationError({"role": "Role already assigned"})
+        
+        instance.role = new_role
+        instance.save(update_fields=["role"])
+        
+        return instance
+    
+    
+    

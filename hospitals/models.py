@@ -7,7 +7,9 @@ import hashlib
 from datetime import timedelta
 
 from docuhealth2.models import BaseModel
-from docuhealth2.utils.generate import generate_HIN
+from docuhealth2.utils.generate import generate_HIN, generate_staff_id
+
+from core.models import Gender
 
 def default_notification_settings():
     return  {
@@ -120,27 +122,36 @@ class HospitalProfile(BaseModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"HospitalAdmin: {self.firstname} {self.lastname} ({self.user.email})"
+        return f"HospitalAdmin: {self.name} hospital,  ({self.user.email})"
 
-class DoctorProfile(BaseModel):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="doctor_profile")
-    hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name="doctors")
-    doc_id = models.CharField(max_length=20, unique=True)
+class HospitalStaffProfile(BaseModel):
+    class Role(models.TextChoices):
+        DOCTOR = "doctor", "Doctor"
+        NURSE = "nurse", "Nurse"
+        RECEPTIONIST = "receptionist", "Receptionist"
+        
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="hospital_staff_profile")
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name="staff")
     
-    firstname = models.CharField(max_length=100, blank=True)
-    lastname = models.CharField(max_length=100, blank=True)
+    firstname = models.CharField(max_length=100)
+    lastname = models.CharField(max_length=100)
+    phone_no = models.CharField(max_length=20)
     
-    specialization = models.CharField(max_length=100, blank=True)
-    license_no = models.CharField(max_length=50, blank=True)
+    role = models.CharField(max_length=20, choices=Role.choices)
+    specialization = models.CharField(max_length=100, blank=True, null=True)
+    staff_id = models.CharField(max_length=20, unique=True)
+    
+    gender = models.CharField(choices=Gender.choices)
+    
+    # ward = models.CharField(max_length=50, blank=True)
+    # TODO: Add ward
+    
+    updated_at = models.DateTimeField(auto_now=True)
     
     def save(self, *args, **kwargs):
-        if not self.doc_id:  
-            while True:
-                new_doc_id = generate_HIN()
-                if not DoctorProfile.all_objects.filter(doc_id=new_doc_id).exists():
-                    self.doc_id = new_doc_id
-                    break
+        if not self.staff_id:
+            self.staff_id = generate_staff_id(self.hospital.name, self.role)
         super().save(*args, **kwargs)
-
+    
     def __str__(self):
         return f"Doctor: {self.user.email} ({self.specialization})"

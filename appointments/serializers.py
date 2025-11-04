@@ -2,10 +2,10 @@ from rest_framework import serializers
 
 from .models import Appointment
 
-from hospitals.models import DoctorProfile
+from hospitals.models import HospitalStaffProfile
 
 class MedRecordAppointmentSerializer(serializers.ModelSerializer):
-    doctor = serializers.SlugRelatedField(slug_field="doc_id", queryset=DoctorProfile.objects.all()) 
+    doctor = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.Role.DOCTOR)) 
     
     class Meta:
         model = Appointment

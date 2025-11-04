@@ -24,6 +24,7 @@ class BaseUserCreateView(generics.CreateAPIView):
         
         existing_inactive_user = User.objects.filter(email=email, is_active=False).first()
         if existing_inactive_user:
+            print("Deleting existing inactive user")
             existing_inactive_user.delete()  
 
         return super().post(request, *args, **kwargs)

@@ -5,11 +5,11 @@ from cloudinary.models import CloudinaryField
 from rest_framework.exceptions import ValidationError
 
 from patients.models import PatientProfile, SubaccountProfile
-from hospitals.models import HospitalProfile, DoctorProfile
+from hospitals.models import HospitalProfile, HospitalStaffProfile
 
 class MedicalRecord(models.Model):
     patient = models.ForeignKey(PatientProfile, on_delete=models.SET_NULL, related_name='medical_records', null=True, blank=True)
-    doctor = models.ForeignKey(DoctorProfile, on_delete=models.SET_NULL, related_name='medical_records', null=True, blank=True)
+    doctor = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name='medical_records', null=True, blank=True)
     subaccount = models.ForeignKey(SubaccountProfile, on_delete=models.SET_NULL, related_name='medical_records', null=True, blank=True)
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name='medical_records', null=True)
     

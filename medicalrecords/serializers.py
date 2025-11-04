@@ -2,9 +2,8 @@ from rest_framework import serializers
 
 from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment
 from docuhealth2.serializers import DictSerializerMixin
-from core.models import User
 from patients.models import PatientProfile, SubaccountProfile
-from hospitals.models import HospitalProfile, DoctorProfile
+from hospitals.models import HospitalProfile, HospitalStaffProfile
 from appointments.serializers import MedRecordAppointmentSerializer
 from appointments.models import Appointment
 
@@ -37,7 +36,7 @@ class MedicalRecordAttachmentSerializer(serializers.ModelSerializer):
 class MedicalRecordSerializer(serializers.ModelSerializer):
     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False)
     subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=SubaccountProfile.objects.all(), required=False)
-    doctor = serializers.SlugRelatedField(slug_field="doc_id", queryset=DoctorProfile.objects.all(), required=False, allow_null=True, write_only=True)
+    doctor = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.Role.DOCTOR), required=False, allow_null=True, write_only=True)
     referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True) 
     attachments = serializers.PrimaryKeyRelatedField(many=True, queryset=MedicalRecordAttachment.objects.all(), required=False, write_only=True)
     
@@ -99,7 +98,7 @@ class ListMedicalRecordsSerializer(serializers.ModelSerializer):
     
     def get_doctor(self, obj):
         if obj.doctor:
-            return {"doc_id": obj.doctor.doc_id, "firstname": obj.doctor.firstname, "lastname": obj.doctor.lastname, "specialization": obj.doctor.specialization}
+            return {"doc_id": obj.doctor.staff_id, "firstname": obj.doctor.firstname, "lastname": obj.doctor.lastname, "specialization": obj.doctor.specialization}
         return None
     
     def get_attachments(self, obj):

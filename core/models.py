@@ -7,6 +7,12 @@ from datetime import timedelta
 from docuhealth2.utils.generate import generate_HIN, generate_otp
 from cloudinary.models import CloudinaryField
 
+class Gender(models.TextChoices):
+    MALE = 'male', 'Male'
+    FEMALE = 'female', 'Female'
+    OTHER = 'other', 'Other'
+    UNKNOWN = 'unknown', 'Unknown'
+
 class UserManager(BaseUserManager):
     def create(self, **extra_fields):
         email = extra_fields.get("email")
@@ -33,7 +39,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         PATIENT = 'patient', 'Patient'
         SUBACCOUNT = 'subaccount', 'Subaccount'
         HOSPITAL = 'hospital', 'Hospital'
-        DOCTOR = 'doctor', 'Doctor'
+        HOSPITAL_STAFF = 'hospital_staff', 'Hospital Staff'
         ADMIN = 'admin', 'Admin'
         PHARMACY = 'pharmacy', 'Pharmacy'
     

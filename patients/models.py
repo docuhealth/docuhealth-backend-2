@@ -1,5 +1,5 @@
 from django.db import models
-from core.models import User
+from core.models import User, Gender
 
 from docuhealth2.models import BaseModel
 from docuhealth2.utils.generate import generate_HIN
@@ -11,19 +11,12 @@ def default_notification_settings():
             "assessment_diagnosis": { "email": True, "push": True, "dashboard": False 
         }}
 
-GENDER_CHOICES = [
-    ('male', 'Male'),
-    ('female', 'Female'),
-    ('other', 'Other'),
-    ('unknown', 'Unknown'),
-]
-
 class PatientProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="patient_profile")
     hin = models.CharField(max_length=20, unique=True)
     
     dob = models.DateField()
-    gender = models.CharField(choices=GENDER_CHOICES)
+    gender = models.CharField(choices=Gender.choices)
     phone_num = models.CharField(blank=True)
     firstname = models.CharField(max_length=100)
     lastname = models.CharField(max_length=100)
@@ -74,7 +67,7 @@ class SubaccountProfile(BaseModel):
     lastname = models.CharField(max_length=100)
     middlename = models.CharField(max_length=100, blank=True)
     dob = models.DateField()
-    gender = models.CharField(choices=GENDER_CHOICES)
+    gender = models.CharField(choices=Gender.choices)
     
     street = models.CharField(max_length=120, blank=True, null=True)
     city = models.CharField(max_length=20, blank=True, null=True)

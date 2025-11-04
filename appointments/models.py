@@ -1,7 +1,7 @@
 from django.db import models
 
 from medicalrecords.models import MedicalRecord
-from hospitals.models import DoctorProfile, HospitalProfile
+from hospitals.models import HospitalProfile, HospitalStaffProfile
 from patients.models import PatientProfile
 
 from docuhealth2.models import BaseModel
@@ -16,7 +16,7 @@ class Appointment(BaseModel):
     patient = models.ForeignKey(PatientProfile, related_name='appointments', on_delete=models.SET_NULL, null=True)
     medical_record = models.OneToOneField(MedicalRecord, related_name='appointment', on_delete=models.SET_NULL, null=True, blank=True)
     hospital = models.ForeignKey(HospitalProfile, related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
-    doctor = models.ForeignKey(DoctorProfile, related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
+    doctor = models.ForeignKey(HospitalStaffProfile, related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
     
     scheduled_time = models.DateTimeField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)

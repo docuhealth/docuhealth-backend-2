@@ -2,6 +2,7 @@ from django.db import transaction
 
 from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from core.models import OTP
@@ -12,43 +13,32 @@ from docuhealth2.utils.email_service import BrevoEmailService
 
 from drf_spectacular.utils import extend_schema
 
-from .serializers import CreateHospitalSerializer, CreateDoctorSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer
-from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken
+from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, TeamMemberCreateSerializer, HospitalStaffProfileSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer
+from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile
+
+from core.models import User
 
 mailer = BrevoEmailService()
 
-@extend_schema(tags=["Hospital"])  
+@extend_schema(tags=["Hospital Onboarding"])  
 class CreateHospitalView(PublicGenericAPIView, BaseUserCreateView):
     serializer_class = CreateHospitalSerializer
     
     def perform_create(self, serializer):
-        user = serializer.save()
-        otp = OTP.generate_otp(user)
+        user = serializer.save(is_active=True)
         
         mailer.send(
             subject="Verify your email",
             body=(
-                f"Enter the OTP below into the required field \n"
-                f"The OTP will expire in 10 mins\n\n"
-                f"OTP: {otp}\n\n"
+                f"Welcome to Docuhealth! \n\n"
+                f"You have successfully created your Docuhealth account. \n\n"
+                
                 f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
                 f"From the Docuhealth Team"
             ),
             recipient=user.email,
         )
-        
-@extend_schema(tags=["Hospital"])  
-class CreateDoctorView(PublicGenericAPIView, BaseUserCreateView):
-    serializer_class = CreateDoctorSerializer
-    permission_classes = [IsAuthenticatedHospital]
-    
-    def perform_create(self, serializer):
-        user = serializer.save()
-        otp = OTP.generate_otp(user)
-        
-        # TODO: Send verification mail to doctor
-        
-@extend_schema(tags=["Hospital"])
+@extend_schema(tags=["Hospital Onboarding"])
 class ListCreateHospitalInquiryView(PublicGenericAPIView, generics.ListCreateAPIView):
     serializer_class = HospitalInquirySerializer
     queryset = HospitalInquiry.objects.all().order_by('-created_at')    
@@ -79,7 +69,7 @@ class ListCreateHospitalInquiryView(PublicGenericAPIView, generics.ListCreateAPI
         
         return Response({"detail": "Verification link sent successfully"}, status=status.HTTP_200_OK)
     
-@extend_schema(tags=["Hospital"])
+@extend_schema(tags=["Hospital Onboarding"])
 class ListCreateHospitalVerificationRequestView(PublicGenericAPIView, generics.ListCreateAPIView):
     queryset = HospitalVerificationRequest.objects.all()
     serializer_class = HospitalVerificationRequestSerializer
@@ -91,6 +81,9 @@ class ListCreateHospitalVerificationRequestView(PublicGenericAPIView, generics.L
         
         inquiry = request.data.get("inquiry")
         official_email = request.data.get("official_email")
+        
+        if User.objects.filter(email=official_email).exists():
+            return Response({"detail": "User with this official email already exists.", "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
         
         if len(documents) == 0:
             return Response({"detail": "No documents provided", "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
@@ -118,7 +111,7 @@ class ListCreateHospitalVerificationRequestView(PublicGenericAPIView, generics.L
         
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-@extend_schema(tags=["Hospital"])
+@extend_schema(tags=["Hospital Onboarding"])
 class ApproveVerificationRequestView(generics.GenericAPIView):
     serializer_class = ApproveVerificationRequestSerializer
     
@@ -159,5 +152,86 @@ class ApproveVerificationRequestView(generics.GenericAPIView):
         
         return Response({"detail": "Hospital verified successfully"}, status=status.HTTP_200_OK)
     
-
+@extend_schema(tags=["Hospital Admin"])  
+class TeamMemberCreateView(generics.CreateAPIView):
+    serializer_class = TeamMemberCreateSerializer
+    permission_classes = [IsAuthenticatedHospital]
     
+    @transaction.atomic
+    def perform_create(self, serializer):
+        hospital = self.request.user.hospital_profile
+        invitation_message = serializer.validated_data.pop("invitation_message")
+        user = serializer.save(is_active=True)
+        
+        mailer.send(
+                subject=f"Welcome to {hospital.name} hospital",
+                body=(
+                    f"{invitation_message} \n\n"
+                    f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
+                    f"From the Docuhealth Team"
+                ),
+                recipient=user.email,
+            )
+        
+@extend_schema(tags=["Hospital Admin"])
+class TeamMemberListView(generics.ListAPIView):
+    serializer_class = HospitalStaffProfileSerializer
+    permission_classes = [IsAuthenticatedHospital]
+    
+    def get_queryset(self):
+        return HospitalStaffProfile.objects.filter(hospital=self.request.user.hospital_profile).order_by('-created_at')
+        
+@extend_schema(tags=["Hospital Admin"])
+class RemoveTeamMembersView(generics.GenericAPIView):
+    serializer_class = RemoveTeamMembersSerializer
+    permission_classes = [IsAuthenticatedHospital]
+    
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        staff_ids = serializer.validated_data.get("staff_ids")
+        hospital = request.user.hospital_profile
+
+        users = HospitalStaffProfile.objects.filter(
+            hospital=hospital,
+            staff_id__in=staff_ids
+        )
+        
+        found_ids = set(users.values_list("staff_id", flat=True))
+        missing = set(staff_ids) - found_ids
+        
+        if missing:
+            return Response({
+                "staff_ids": [f"Invalid or unauthorized staff IDs: {', '.join(map(str, missing))}"]
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        user_ids = set(users.values_list("user_id", flat=True))
+
+        updated_count = User.objects.filter(id__in=user_ids, is_active=True).update(is_active=False)
+        if updated_count == 0:
+            return Response(
+                {"message": "No changes detected. No team members deactivated."},
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            {"message": f"{updated_count} team member(s) deactivated successfully."},
+            status=status.HTTP_200_OK
+        )
+        
+@extend_schema(tags=["Hospital Admin"])
+class TeamMemberUpdateRoleView(generics.UpdateAPIView):
+    serializer_class = TeamMemberUpdateRoleSerializer
+    permission_classes = [IsAuthenticatedHospital]
+    http_method_names = ["patch"]
+    
+    def get_object(self):
+        hospital = self.request.user.hospital_profile
+        staff = HospitalStaffProfile.objects.filter(hospital=hospital, staff_id=self.kwargs["staff_id"]).first()
+        
+        if not staff:
+            raise NotFound({"detail": "Staff not found or unauthorized."})
+        
+        return staff

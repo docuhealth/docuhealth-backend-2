@@ -6,7 +6,7 @@ from .models import PatientProfile, SubaccountProfile
 from core.models import User
 from core.serializers import BaseUserCreateSerializer
 from appointments.models import Appointment
-from hospitals.models import DoctorProfile, HospitalProfile
+from hospitals.models import HospitalProfile, HospitalStaffProfile
 
 from docuhealth2.serializers import StrictFieldsMixin
 
@@ -160,8 +160,8 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
     
 class DoctorAppointmentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = DoctorProfile
-        fields = ['doc_id', 'firstname', 'lastname']
+        model = HospitalStaffProfile
+        fields = ['staff_id', 'firstname', 'lastname']
         
 class HospitalAppointmentSerializer(serializers.ModelSerializer):
     class Meta:
