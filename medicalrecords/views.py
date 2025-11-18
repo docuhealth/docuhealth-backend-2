@@ -30,7 +30,7 @@ class CreateMedicalRecordView(generics.CreateAPIView):
             serializer.save(hospital=self.request.user.hospital_profile)
             
         elif role == User.Role.HOSPITAL_STAFF:
-            serializer.save(hosital=self.request.user.hospital_staff_profile.hospital)
+            serializer.save(hospital=self.request.user.hospital_staff_profile.hospital)
 
 @extend_schema(tags=["Medical records"])    
 class ListUserMedicalrecordsView(generics.ListAPIView):

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CreateHospitalView, ListCreateHospitalInquiryView, ListCreateHospitalVerificationRequestView, ApproveVerificationRequestView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, ListAppointmentsView
+from .views import CreateHospitalView, ListCreateHospitalInquiryView, ListCreateHospitalVerificationRequestView, ApproveVerificationRequestView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, ListAppointmentsView, GetHospitalInfo
 
 urlpatterns = [
     path('', CreateHospitalView.as_view(), name='create-hospital'),
@@ -12,4 +12,5 @@ urlpatterns = [
     path('/team-member/<str:staff_id>/update-role', TeamMemberUpdateRoleView.as_view(), name='update-team-member-role'),
     
     path('/appointments', ListAppointmentsView.as_view(), name='get-appointments'),
+    path('/info', GetHospitalInfo.as_view(), name='get-hospital-info'),
 ]

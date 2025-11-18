@@ -140,7 +140,7 @@ class HospitalAppointmentSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Appointment
-        fields = ['id', 'status', 'scheduled_time', 'staff', 'patient', 'last_visited']
+        fields = ['id', 'status', 'scheduled_time', 'staff', 'patient', 'last_visited', 'note', 'type']
         read_only_fields = fields
         
     def get_last_visited(self, obj):
@@ -162,3 +162,10 @@ class HospitalActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = HospitalPatientActivity
         fields = ["id", "staff", "staff_id", "patient", "patient_hin", "action", "created_at"]
+        
+class HospitalInfoSerializer(serializers.ModelSerializer):
+    hospital_profile = HospitalProfileSerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "hospital_profile"]

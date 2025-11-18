@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.db import transaction
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -10,7 +11,7 @@ from drf_spectacular.utils import extend_schema
 from docuhealth2.permissions import IsAuthenticatedReceptionist
 from docuhealth2.utils.email_service import BrevoEmailService
 
-from .serializers import ReceptionistInfoSerializer
+from .serializers import ReceptionistInfoSerializer, BookAppointmentSerializer
 
 from hospitals.models import HospitalPatientActivity, HospitalStaffProfile
 from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmentSerializer, HospitalStaffProfileSerializer
@@ -56,6 +57,7 @@ class ReceptionistDashboardView(generics.GenericAPIView):
 @extend_schema(tags=["Receptionist"])
 class CreatePatientView(generics.CreateAPIView):
     serializer_class = PatientSerializer
+    permission_classes = [IsAuthenticatedReceptionist]
     
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
@@ -66,7 +68,10 @@ class CreatePatientView(generics.CreateAPIView):
 
         return super().post(request, *args, **kwargs)
     
+    @transaction.atomic
     def perform_create(self, serializer):
+        staff = self.request.user.hospital_staff_profile
+        hospital = staff.hospital
         user = serializer.save()
         otp = OTP.generate_otp(user, expiry_minutes=60)
         
@@ -82,10 +87,13 @@ class CreatePatientView(generics.CreateAPIView):
             recipient=user.email,
         )
         
+        HospitalPatientActivity.objects.create(patient=user.patient_profile, staff=staff, hospital=hospital, action="create_patient_account")
+        
 @extend_schema(tags=["Receptionist"])
 class GetPatientDetailsView(generics.RetrieveAPIView):
     serializer_class = PatientSerializer
     lookup_url_kwarg = "hin"
+    permission_classes = [IsAuthenticatedReceptionist]
     
     def get_object(self):
         hin = self.kwargs.get(self.lookup_url_kwarg)
@@ -126,4 +134,18 @@ class GetStaffByRoleView(generics.ListAPIView):
         
         return Response(self.get_serializer(staff_qs, many=True).data, status=status.HTTP_200_OK)
         
+
+@extend_schema(tags=["Receptionist"])
+class BookAppointmentView(generics.CreateAPIView):
+    serializer_class = BookAppointmentSerializer
+    permission_classes = [IsAuthenticatedReceptionist]
+    
+    @transaction.atomic
+    def perform_create(self, serializer):
+        appointment = serializer.save(hospital=self.request.user.hospital_staff_profile.hospital)
         
+        patient = appointment.patient
+        staff = self.request.user.hospital_staff_profile
+        hospital = staff.hospital
+        
+        HospitalPatientActivity.objects.create(patient=patient, staff=staff, hospital=hospital, action="book_appointment")

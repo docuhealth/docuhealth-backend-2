@@ -170,4 +170,22 @@ class HospitalPatientActivity(BaseModel):
         indexes = [
             models.Index(fields=['hospital', 'staff', 'created_at']),
         ]
+        
+class HospitalWard(BaseModel):
+    name = models.CharField(max_length=100)
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name="wards")
+    beds = models.IntegerField()
+    
+    def __str__(self):
+        return self.name
+    
+    def decrement_beds(self):
+        self.beds -= 1
+        self.save(update_fields=['beds'])
+        
+    def increment_beds(self):
+        self.beds -= 1
+        self.save(update_fields=['beds'])
+    
+    
 
