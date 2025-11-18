@@ -1,9 +1,15 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile
+from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalPatientActivity
+
 from core.models import User
 from core.serializers import BaseUserCreateSerializer
+
+from appointments.models import Appointment
+from appointments.serializers import AppointmentPatientSerializer
+
+from patients.models import PatientProfile
 
 class HospitalProfileSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
@@ -122,5 +128,37 @@ class TeamMemberUpdateRoleSerializer(serializers.ModelSerializer):
         
         return instance
     
+class HospitalStaffSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HospitalStaffProfile
+        fields = ['staff_id', 'firstname', 'lastname', 'role', 'specialization']
     
+class HospitalAppointmentSerializer(serializers.ModelSerializer):
+    last_visited = serializers.SerializerMethodField(read_only=True)
+    staff = HospitalStaffSerializer(read_only=True)
+    patient = AppointmentPatientSerializer(read_only=True)
     
+    class Meta:
+        model = Appointment
+        fields = ['id', 'status', 'scheduled_time', 'staff', 'patient', 'last_visited']
+        read_only_fields = fields
+        
+    def get_last_visited(self, obj):
+        last_completed_appointment = Appointment.objects.filter(patient=obj.patient, status=Appointment.Status.COMPLETED, scheduled_time__lt=obj.scheduled_time).order_by('-scheduled_time').first()
+        return last_completed_appointment.scheduled_time if last_completed_appointment else None
+    
+class HospitalActivityPatientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientProfile
+        fields = ['hin', 'firstname', 'lastname', 'gender']
+        
+    
+class HospitalActivitySerializer(serializers.ModelSerializer):
+    staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.all(), write_only=True)
+    staff = HospitalStaffSerializer(read_only=True)
+    patient_hin = serializers.SlugRelatedField(slug_field="hin", source="patient", queryset=PatientProfile.objects.all(), write_only=True)
+    patient = HospitalActivityPatientSerializer(read_only=True)
+
+    class Meta:
+        model = HospitalPatientActivity
+        fields = ["id", "staff", "staff_id", "patient", "patient_hin", "action", "created_at"]

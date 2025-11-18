@@ -6,9 +6,11 @@ from .models import PatientProfile, SubaccountProfile
 from core.models import User
 from core.serializers import BaseUserCreateSerializer
 from appointments.models import Appointment
-from hospitals.models import HospitalProfile, HospitalStaffProfile
+from appointments.serializers import AppointmentHospitalSerializer
 
 from docuhealth2.serializers import StrictFieldsMixin
+
+from hospitals.serializers import HospitalStaffSerializer
 
 class PatientProfileSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
@@ -18,7 +20,7 @@ class PatientProfileSerializer(serializers.ModelSerializer):
         fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename', 'referred_by', 'hin', 'street', 'city', 'state', 'country', 'house_no']
         read_only_fields = ['hin']
         
-class CreatePatientSerializer(BaseUserCreateSerializer):
+class PatientSerializer(BaseUserCreateSerializer):
     profile = PatientProfileSerializer(required=True, source="patient_profile")
     
     class Meta(BaseUserCreateSerializer.Meta):
@@ -158,24 +160,14 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
         
         return subaccount_user
     
-class DoctorAppointmentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = HospitalStaffProfile
-        fields = ['staff_id', 'firstname', 'lastname']
-        
-class HospitalAppointmentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = HospitalProfile
-        fields = ['hin', 'name']
-    
 class PatientAppointmentSerializer(serializers.ModelSerializer):
     last_visited = serializers.SerializerMethodField(read_only=True)
-    doctor = DoctorAppointmentSerializer(read_only=True)
-    hospital = HospitalAppointmentSerializer(read_only=True)
+    staff = HospitalStaffSerializer(read_only=True)
+    hospital = AppointmentHospitalSerializer(read_only=True)
     
     class Meta:
         model = Appointment
-        fields = ['id', 'status', 'scheduled_time', 'doctor', 'hospital', 'last_visited']
+        fields = ['id', 'status', 'scheduled_time', 'staff', 'hospital', 'last_visited']
         read_only_fields = fields
         
     def get_last_visited(self, obj):
@@ -199,3 +191,4 @@ class GenerateSubaccountIDCardSerializer(serializers.ModelSerializer):
         model = SubaccountProfile
         fields = ['hin', 'id_card_generated']
         read_only_fields = ['hin']
+        

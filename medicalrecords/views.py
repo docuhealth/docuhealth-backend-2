@@ -5,10 +5,12 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from drf_spectacular.utils import extend_schema
 
-from docuhealth2.permissions import IsAuthenticatedHospital
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin
 
 from .models import MedicalRecord, MedicalRecordAttachment
 from .serializers import MedicalRecordSerializer, MedicalRecordAttachmentSerializer, ListMedicalRecordsSerializer
+
+from core.models import User
 
 @extend_schema(tags=["Medical records"])  
 class MedicalRecordListView(generics.ListAPIView):
@@ -19,10 +21,16 @@ class MedicalRecordListView(generics.ListAPIView):
 class CreateMedicalRecordView(generics.CreateAPIView):
     queryset = MedicalRecord.objects.all()
     serializer_class = MedicalRecordSerializer
-    permission_classes = [IsAuthenticatedHospital]  
+    # permission_classes = [IsAuthenticatedHospital]  
     
     def perform_create(self, serializer):
-        serializer.save(hospital=self.request.user.hospital_profile)
+        user = self.request.user
+        role = user.role
+        if role == User.Role.HOSPITAL:
+            serializer.save(hospital=self.request.user.hospital_profile)
+            
+        elif role == User.Role.HOSPITAL_STAFF:
+            serializer.save(hosital=self.request.user.hospital_staff_profile.hospital)
 
 @extend_schema(tags=["Medical records"])    
 class ListUserMedicalrecordsView(generics.ListAPIView):
@@ -43,7 +51,7 @@ class UploadMedicalRecordsAttachments(generics.CreateAPIView):
     queryset = MedicalRecordAttachment.objects.all()
     serializer_class = MedicalRecordAttachmentSerializer
     parser_classes = [MultiPartParser, FormParser]
-    permission_classes = [IsAuthenticatedHospital]  
+    # permission_classes = [IsAuthenticatedHospital]  
     
     def create(self, request, *args, **kwargs):
         files = request.FILES.getlist("files")  

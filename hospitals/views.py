@@ -5,15 +5,16 @@ from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from core.models import OTP
 from docuhealth2.views import PublicGenericAPIView, BaseUserCreateView
-from docuhealth2.permissions import IsAuthenticatedHospital
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin
 from docuhealth2.utils.supabase import upload_file_to_supabase
 from docuhealth2.utils.email_service import BrevoEmailService
 
+from appointments.models import Appointment
+
 from drf_spectacular.utils import extend_schema
 
-from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, TeamMemberCreateSerializer, HospitalStaffProfileSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer
+from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, TeamMemberCreateSerializer, HospitalStaffProfileSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, HospitalAppointmentSerializer
 from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile
 
 from core.models import User
@@ -155,7 +156,7 @@ class ApproveVerificationRequestView(generics.GenericAPIView):
 @extend_schema(tags=["Hospital Admin"])  
 class TeamMemberCreateView(generics.CreateAPIView):
     serializer_class = TeamMemberCreateSerializer
-    permission_classes = [IsAuthenticatedHospital]
+    permission_classes = [IsAuthenticatedHospitalAdmin]
     
     @transaction.atomic
     def perform_create(self, serializer):
@@ -176,7 +177,7 @@ class TeamMemberCreateView(generics.CreateAPIView):
 @extend_schema(tags=["Hospital Admin"])
 class TeamMemberListView(generics.ListAPIView):
     serializer_class = HospitalStaffProfileSerializer
-    permission_classes = [IsAuthenticatedHospital]
+    permission_classes = [IsAuthenticatedHospitalAdmin]
     
     def get_queryset(self):
         return HospitalStaffProfile.objects.filter(hospital=self.request.user.hospital_profile).order_by('-created_at')
@@ -184,7 +185,7 @@ class TeamMemberListView(generics.ListAPIView):
 @extend_schema(tags=["Hospital Admin"])
 class RemoveTeamMembersView(generics.GenericAPIView):
     serializer_class = RemoveTeamMembersSerializer
-    permission_classes = [IsAuthenticatedHospital]
+    permission_classes = [IsAuthenticatedHospitalAdmin]
     
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -224,7 +225,7 @@ class RemoveTeamMembersView(generics.GenericAPIView):
 @extend_schema(tags=["Hospital Admin"])
 class TeamMemberUpdateRoleView(generics.UpdateAPIView):
     serializer_class = TeamMemberUpdateRoleSerializer
-    permission_classes = [IsAuthenticatedHospital]
+    permission_classes = [IsAuthenticatedHospitalAdmin]
     http_method_names = ["patch"]
     
     def get_object(self):
@@ -235,3 +236,12 @@ class TeamMemberUpdateRoleView(generics.UpdateAPIView):
             raise NotFound({"detail": "Staff not found or unauthorized."})
         
         return staff
+    
+@extend_schema(tags=["Hospital Admin"])
+class ListAppointmentsView(generics.ListAPIView):
+    serializer_class = HospitalAppointmentSerializer
+    permission_classes = [IsAuthenticatedHospitalAdmin]
+    
+    def get_queryset(self):
+        hospital = self.request.user.hospital_profile
+        return Appointment.objects.filter(hospital=hospital).order_by('-created_at')

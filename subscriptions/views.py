@@ -8,7 +8,7 @@ from .models import SubscriptionPlan
 from .serializers import SubscriptionPlanSerializer, SubscriptionSerializer
 
 from core.models import User
-from docuhealth2.permissions import IsAuthenticatedPatient, IsAuthenticatedHospital
+from docuhealth2.permissions import IsAuthenticatedPatient, IsAuthenticatedHospitalAdmin
 
 from .requests import create_customer, initialize_transaction
 

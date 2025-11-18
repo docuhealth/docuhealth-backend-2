@@ -15,13 +15,13 @@ from docuhealth2.utils.email_service import BrevoEmailService
 from drf_spectacular.utils import extend_schema
 
 from .models import SubaccountProfile, PatientProfile
-from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer, PatientEmergencySerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer
+from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, PatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer, PatientEmergencySerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer
 
 mailer = BrevoEmailService()
 
 @extend_schema(tags=["Patient"])
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
-    serializer_class = CreatePatientSerializer
+    serializer_class = PatientSerializer
     
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
@@ -65,7 +65,6 @@ class PatientDashboardView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         profile = user.patient_profile 
-        print(user) 
 
         queryset = MedicalRecord.objects.filter(patient=profile).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by("-created_at")
         page = self.paginate_queryset(queryset)

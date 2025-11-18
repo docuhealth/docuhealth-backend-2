@@ -44,7 +44,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         PHARMACY = 'pharmacy', 'Pharmacy'
     
     email = models.EmailField(unique=True, blank=True, null=True)
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.PATIENT)
+    role = models.CharField(max_length=20, choices=Role.choices)
     
     created_at = models.DateTimeField(auto_now_add=True)  
     updated_at = models.DateTimeField(auto_now=True)

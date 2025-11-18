@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'appointments',
     'hospitals',
     'subscriptions',
+    'receptionists'
 ]
 
 AUTH_USER_MODEL = "core.User"

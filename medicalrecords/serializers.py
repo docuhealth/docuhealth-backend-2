@@ -4,7 +4,7 @@ from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment
 from docuhealth2.serializers import DictSerializerMixin
 from patients.models import PatientProfile, SubaccountProfile
 from hospitals.models import HospitalProfile, HospitalStaffProfile
-from appointments.serializers import MedRecordAppointmentSerializer
+from hospitals.serializers import HospitalStaffSerializer
 from appointments.models import Appointment
 
 class ValueRateSerializer(serializers.Serializer):
@@ -32,11 +32,20 @@ class MedicalRecordAttachmentSerializer(serializers.ModelSerializer):
         model = MedicalRecordAttachment
         fields = "__all__"
         read_only_fields = ('id', 'updated_at', 'file_size')
+        
+class MedRecordAppointmentSerializer(serializers.ModelSerializer):
+    staff_id = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.all(), write_only=True, source="staff") 
+    staff = HospitalStaffSerializer(read_only=True)
+    
+    class Meta:
+        model = Appointment
+        fields = ['staff', 'staff_id', 'scheduled_time']
+        read_only_fields = ['id']
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False)
     subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=SubaccountProfile.objects.all(), required=False)
-    doctor = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.Role.DOCTOR), required=False, allow_null=True, write_only=True)
+    doctor = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.StaffRole.DOCTOR), required=False, allow_null=True, write_only=True)
     referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True) 
     attachments = serializers.PrimaryKeyRelatedField(many=True, queryset=MedicalRecordAttachment.objects.all(), required=False, write_only=True)
     
@@ -108,4 +117,6 @@ class ListMedicalRecordsSerializer(serializers.ModelSerializer):
         if obj.patient:
             return {"hin": obj.patient.hin, "dob": obj.patient.dob}
         return None
+    
+
     

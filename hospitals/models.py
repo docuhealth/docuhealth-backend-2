@@ -10,6 +10,7 @@ from docuhealth2.models import BaseModel
 from docuhealth2.utils.generate import generate_HIN, generate_staff_id
 
 from core.models import Gender
+from patients.models import PatientProfile
 
 def default_notification_settings():
     return  {
@@ -125,7 +126,7 @@ class HospitalProfile(BaseModel):
         return f"HospitalAdmin: {self.name} hospital,  ({self.user.email})"
 
 class HospitalStaffProfile(BaseModel):
-    class Role(models.TextChoices):
+    class StaffRole(models.TextChoices):
         DOCTOR = "doctor", "Doctor"
         NURSE = "nurse", "Nurse"
         RECEPTIONIST = "receptionist", "Receptionist"
@@ -137,7 +138,7 @@ class HospitalStaffProfile(BaseModel):
     lastname = models.CharField(max_length=100)
     phone_no = models.CharField(max_length=20)
     
-    role = models.CharField(max_length=20, choices=Role.choices)
+    role = models.CharField(max_length=20, choices=StaffRole.choices)
     specialization = models.CharField(max_length=100, blank=True, null=True)
     staff_id = models.CharField(max_length=20, unique=True)
     
@@ -155,3 +156,18 @@ class HospitalStaffProfile(BaseModel):
     
     def __str__(self):
         return f"Doctor: {self.user.email} ({self.specialization})"
+    
+    
+class HospitalPatientActivity(BaseModel):
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE)
+    staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, null=True)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE)
+
+    action = models.CharField(max_length=100)  
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['hospital', 'staff', 'created_at']),
+        ]
+

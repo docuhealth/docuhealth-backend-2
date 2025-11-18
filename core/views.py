@@ -12,7 +12,7 @@ from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPas
 
 from docuhealth2.views import PublicGenericAPIView
 from docuhealth2.utils.email_service import BrevoEmailService
-from patients.serializers import CreatePatientSerializer
+from patients.serializers import PatientSerializer
 
 mailer = BrevoEmailService()
 
@@ -36,7 +36,7 @@ def set_refresh_cookie(response):
 @extend_schema(tags=["auth"])
 class ListUserView(generics.ListAPIView):
     queryset = User.objects.exclude(role="subaccount").order_by("-created_at")
-    serializer_class = CreatePatientSerializer
+    serializer_class = PatientSerializer
       
 @extend_schema(tags=["auth"])  
 class VerifySignupOTPView(PublicGenericAPIView):  
@@ -59,20 +59,35 @@ class VerifySignupOTPView(PublicGenericAPIView):
 class LoginView(TokenObtainPairView, PublicGenericAPIView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
-        
-        mailer.send(
-            subject="New Login Alert",
-            body = "There was a login attempt on your DOCUHEALTH account. If this was you, you can ignore this message. \n\nIf this was not you, please contact our support team at support@docuhealthservices.com \n\n\nFrom the Docuhealth Team",
-            recipient=request.data.get("email"),         
-        )
+        email = request.data.get("email")
         
         if response.status_code == status.HTTP_200_OK:
-            user = User.objects.get(email=request.data.get("email"))
+            mailer.send(
+                subject="New Login Alert",
+                body = "There was a login attempt on your DOCUHEALTH account. If this was you, you can ignore this message. \n\nIf this was not you, please contact our support team at support@docuhealthservices.com \n\n\nFrom the Docuhealth Team",
+                recipient=email,         
+            )
+            
+            user = User.objects.get(email=email)
             role = user.role
             
             set_refresh_cookie(response)
             
             response.data["data"]["role"] = role
+            
+            if role == User.Role.HOSPITAL_STAFF:
+                staff_profile = user.hospital_staff_profile
+                hospital = staff_profile.hospital
+                staff_role = staff_profile.role
+                
+                hospital_data = {
+                    "name": hospital.name,
+                    "hin": hospital.hin
+                }
+                
+                response.data["data"]["hospital"] = hospital_data
+                response.data["data"]["staff_role"] = staff_role
+            
         return response
 
 @extend_schema(tags=["auth"])  
