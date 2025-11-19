@@ -175,27 +175,51 @@ class HospitalWard(BaseModel):
     name = models.CharField(max_length=100)
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name="wards")
     total_beds = models.IntegerField()
-    available_beds = models.IntegerField(blank=True, null=True)
     
     def __str__(self):
-        return self.name
+        return f"Ward {self.name}"
     
-    def decrement_beds(self):
-        self.available_beds -= 1
-        self.save(update_fields=['available_beds'])
-        
-    def increment_beds(self):
-        self.available_beds += 1
-        self.save(update_fields=['available_beds'])
-        
-    def save(self, *args, **kwargs):
-        if self.remaining_beds is None:
-            self.remaining_beds = self.available_beds
-                
-        super().save(*args, **kwargs)
+    @property
+    def available_beds(self):
+        return self.beds.filter(is_available=True).count()
     
+class WardBed(BaseModel):
+    class Status(models.TextChoices):
+        AVAILABLE = "available", "Available"
+        OCCUPIED = "occupied", "Occupied"
+        REQUESTED = "requested", "Requested"
         
+    ward = models.ForeignKey(HospitalWard, on_delete=models.CASCADE, related_name="beds")
+    bed_number = models.IntegerField()  
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.AVAILABLE)
+
+    def __str__(self):
+        return f"{self.ward.name} - Bed {self.bed_number}"
     
+    @property
+    def is_available(self):
+        return self.status == self.Status.AVAILABLE
+    
+class Admission(BaseModel):
+    class Status(models.TextChoices):
+        PENDING= "pending", "Pending"
+        ACTIVE = "active", "Active"
+        CANCELLED = "cancelled", "Cancelled"
+        DISCHARGED = "discharged", "Discharged"
+    
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="admissions")
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="admissions", null=True)
+    staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name="admissions", null=True)
+    
+    ward = models.ForeignKey(HospitalWard, on_delete=models.SET_NULL, related_name="admissions", null=True)
+    bed = models.ForeignKey(WardBed, on_delete=models.SET_NULL, related_name="admissions", null=True)
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    admission_date = models.DateTimeField(auto_now_add=True)
+    discharge_date = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"Admission for {self.patient.full_name} at {self.hospital.name}"
     
     
 

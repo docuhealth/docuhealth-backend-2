@@ -11,10 +11,10 @@ from drf_spectacular.utils import extend_schema
 from docuhealth2.permissions import IsAuthenticatedReceptionist
 from docuhealth2.utils.email_service import BrevoEmailService
 
-from .serializers import ReceptionistInfoSerializer, BookAppointmentSerializer
+from .serializers import ReceptionistInfoSerializer, BookAppointmentSerializer, UpdatePasswordView
 
-from hospitals.models import HospitalPatientActivity, HospitalStaffProfile
-from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmentSerializer, HospitalStaffProfileSerializer
+from hospitals.models import HospitalPatientActivity, HospitalStaffProfile, Admission, WardBed
+from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmentSerializer, HospitalStaffProfileSerializer, AdmissionSerializer
 
 from appointments.models import Appointment
 
@@ -149,3 +149,38 @@ class BookAppointmentView(generics.CreateAPIView):
         hospital = staff.hospital
         
         HospitalPatientActivity.objects.create(patient=patient, staff=staff, hospital=hospital, action="book_appointment")
+        
+@extend_schema(tags=['Receptionist'], summary="Request admission for a patient")
+class RequestAdmissionView(generics.CreateAPIView):
+    serializer_class = AdmissionSerializer
+    permission_classes = [IsAuthenticatedReceptionist]
+    
+    @transaction.atomic
+    def perform_create(self, serializer):
+        admission = serializer.save(hospital=self.request.user.hospital_staff_profile.hospital)
+        
+        bed = admission.bed
+        bed.status = WardBed.Status.REQUESTED
+        bed.save(update_fields=["status"])
+        
+        patient = admission.patient
+        staff = self.request.user.hospital_staff_profile
+        hospital = staff.hospital
+        
+        HospitalPatientActivity.objects.create(patient=patient, staff=staff, hospital=hospital, action="request_admission")
+        
+@extend_schema(tags=['Receptionist'], summary="Update account password")
+class UpdatePasswordView(generics.GenericAPIView):
+    serializer_class = UpdatePasswordView
+    
+    def patch(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        user = request.user
+        new_password = serializer.validated_data["new_password"]
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"detail": "Password reset successfully. Please log in with your new credentials.", "status": "success"}, status=200)

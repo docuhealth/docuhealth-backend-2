@@ -145,7 +145,7 @@ class ResetPasswordView(GenericAPIView):
 
         user = request.user
         user.set_password(new_password)
-        user.save()
+        user.save(update_fields=['password'])
 
         return Response({"detail": "Password reset successfully. Please log in with your new credentials.", "status": "success"}, status=200)
 

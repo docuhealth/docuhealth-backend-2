@@ -57,6 +57,10 @@ class PatientProfile(BaseModel):
         
         self.id_card_generated = True
         self.save(update_fields=['id_card_generated'])
+        
+    @property
+    def full_name(self):
+        return f"{self.firstname} {self.lastname}"
     
 class SubaccountProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subaccount_profile")

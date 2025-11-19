@@ -2,11 +2,11 @@ from django.db import transaction
 
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from docuhealth2.views import PublicGenericAPIView, BaseUserCreateView
-from docuhealth2.permissions import IsAuthenticatedHospitalAdmin
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff
 from docuhealth2.utils.supabase import upload_file_to_supabase
 from docuhealth2.utils.email_service import BrevoEmailService
 
@@ -14,9 +14,9 @@ from appointments.models import Appointment
 
 from drf_spectacular.utils import extend_schema
 
-from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, TeamMemberCreateSerializer, HospitalStaffProfileSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, HospitalAppointmentSerializer, HospitalInfoSerializer, WardSerializer
+from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, TeamMemberCreateSerializer, HospitalStaffProfileSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, HospitalAppointmentSerializer, HospitalInfoSerializer, WardSerializer, WardBedSerializer
 
-from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalWard
+from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalWard, WardBed
 
 from core.models import User
 
@@ -238,14 +238,20 @@ class TeamMemberUpdateRoleView(generics.UpdateAPIView):
         
         return staff
     
-@extend_schema(tags=["Hospital Admin"])
+@extend_schema(tags=["Hospital"])
 class ListAppointmentsView(generics.ListAPIView):
     serializer_class = HospitalAppointmentSerializer
-    permission_classes = [IsAuthenticatedHospitalAdmin]
+    permission_classes = [IsAuthenticatedHospitalAdmin | IsAuthenticatedHospitalStaff]
     
     def get_queryset(self):
-        hospital = self.request.user.hospital_profile
-        return Appointment.objects.filter(hospital=hospital).order_by('-created_at')
+        user = self.request.user
+        
+        if user.role == User.Role.HOSPITAL:
+            hospital = self.request.user.hospital_profile
+        else:
+            hospital = self.request.user.hospital_staff_profile.hospital
+            
+        return Appointment.objects.filter(hospital=hospital).order_by('scheduled_time')
     
 @extend_schema(tags=["Hospital Admin"])
 class GetHospitalInfo(generics.GenericAPIView):
@@ -257,19 +263,67 @@ class GetHospitalInfo(generics.GenericAPIView):
         serializer = self.get_serializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-@extend_schema(tags=["Hospital Admin"])
+@extend_schema(tags=["Hospital"])
 class ListCreateWardsView(generics.ListCreateAPIView):
     serializer_class = WardSerializer
-    permission_classes = [IsAuthenticatedHospitalAdmin]
+    permission_classes = [IsAuthenticatedHospitalAdmin | IsAuthenticatedHospitalStaff]
     
     def get_queryset(self):
-        return HospitalWard.objects.filter(hospital=self.request.user.hospital_profile)
+        user = self.request.user
+        
+        if user.role == User.Role.HOSPITAL:
+            hospital = self.request.user.hospital_profile
+        else:
+            hospital = self.request.user.hospital_staff_profile.hospital
+            
+        return HospitalWard.objects.filter(hospital=hospital).order_by('created_at')
     
-@extend_schema(tags=["Hospital Admin"])
+    def perform_create(self, serializer):
+        user = self.request.user
+        
+        if user.role == User.Role.HOSPITAL:
+            hospital = self.request.user.hospital_profile
+        else:
+            hospital = self.request.user.hospital_staff_profile.hospital
+            
+        ward = serializer.save(hospital=hospital)
+        
+        for num in range(1, ward.total_beds + 1):
+            WardBed.objects.create(
+                ward=ward,
+                bed_number=str(num)
+            )
+        
+@extend_schema(tags=["Hospital Admin"], summary="Retrieve(get), update(patch) or delete(delete) a specific ward")
 class RetrieveUpdateDeleteWardView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = WardSerializer
-    permission_classes = [IsAuthenticatedHospitalAdmin]
+    permission_classes = [IsAuthenticatedHospitalAdmin | IsAuthenticatedHospitalStaff]
     http_method_names = ["get", "patch", "delete"]
     
     def get_queryset(self):
         return HospitalWard.objects.filter(hospital=self.request.user.hospital_profile)
+
+@extend_schema(tags=["Hospital"])
+class ListBedsByWardView(generics.ListAPIView):
+    serializer_class = WardBedSerializer
+    permission_classes = [IsAuthenticatedHospitalAdmin | IsAuthenticatedHospitalStaff]
+    pagination_class = None
+    
+    def get_queryset(self):
+        user = self.request.user
+        
+        if user.role == User.Role.HOSPITAL:
+            hospital = self.request.user.hospital_profile
+        else:
+            hospital = self.request.user.hospital_staff_profile.hospital
+            
+        ward_id = self.kwargs["ward_id"]
+        
+        if not ward_id:
+            raise ValidationError("Ward ID should be provided")
+        
+        ward = HospitalWard.objects.filter(id=ward_id, hospital=hospital).first()
+        if not ward:
+            raise ValidationError("Ward with the provided ID not found")
+        
+        return WardBed.objects.filter(ward=ward).order_by('bed_number')

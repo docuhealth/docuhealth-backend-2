@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalPatientActivity, HospitalWard
+from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalPatientActivity, HospitalWard, WardBed, Admission
 
 from core.models import User
 from core.serializers import BaseUserCreateSerializer
@@ -147,7 +147,7 @@ class HospitalAppointmentSerializer(serializers.ModelSerializer):
         last_completed_appointment = Appointment.objects.filter(patient=obj.patient, status=Appointment.Status.COMPLETED, scheduled_time__lt=obj.scheduled_time).order_by('-scheduled_time').first()
         return last_completed_appointment.scheduled_time if last_completed_appointment else None
     
-class HospitalActivityPatientSerializer(serializers.ModelSerializer):
+class PatientBasicInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
         fields = ['hin', 'firstname', 'lastname', 'gender']
@@ -157,7 +157,7 @@ class HospitalActivitySerializer(serializers.ModelSerializer):
     staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.all(), write_only=True)
     staff = HospitalStaffSerializer(read_only=True)
     patient_hin = serializers.SlugRelatedField(slug_field="hin", source="patient", queryset=PatientProfile.objects.all(), write_only=True)
-    patient = HospitalActivityPatientSerializer(read_only=True)
+    patient = PatientBasicInfoSerializer(read_only=True)
 
     class Meta:
         model = HospitalPatientActivity
@@ -169,9 +169,53 @@ class HospitalInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "email", "hospital_profile"]
+
+class WardBedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WardBed  
+        fields = ['bed_number', 'status', 'id']   
+        read_only_fields = ['id']
         
 class WardSerializer(serializers.ModelSerializer):
+    beds = WardBedSerializer(many=True, read_only=True)
+    available_beds = serializers.IntegerField(read_only=True)
     class Meta:
         model = HospitalWard
         exclude = ['is_deleted', 'deleted_at', 'created_at']
         read_only_fields = ['available_beds', 'id', 'hospital']
+        
+class AdmissionSerializer(serializers.ModelSerializer):
+    patient_hin = serializers.SlugRelatedField(slug_field="hin", source="patient", queryset=PatientProfile.objects.all(), write_only=True)
+    patient = PatientBasicInfoSerializer(read_only=True)
+    
+    staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.all(), write_only=True)
+    staff = HospitalStaffSerializer(read_only=True)
+    
+    ward = serializers.PrimaryKeyRelatedField(queryset=HospitalWard.objects.all())
+    
+    bed = serializers.PrimaryKeyRelatedField(queryset=WardBed.objects.all(), write_only=True)
+    bed_info = WardBedSerializer(read_only=True, source="bed")
+    
+    class Meta:
+        model = Admission
+        exclude = ['is_deleted', 'deleted_at', 'created_at']
+        read_only_fields = ['id', 'status', 'hospital', 'admission_date', 'discharge_date']
+        
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        ward = validated_data['ward']
+        bed = validated_data['bed']
+        
+        if bed.status == WardBed.Status.REQUESTED:
+            raise serializers.ValidationError({"bed": f"Admission to bed {bed.bed_number} has been requested already. Revoke the request or choose another bed"})
+        
+        if bed.status == WardBed.Status.OCCUPIED:
+            raise serializers.ValidationError({"bed": f"Bed {bed.bed_number} is occupied"})
+        
+        if not bed.ward == ward:
+            raise serializers.ValidationError({"ward": "Bed not available in this ward"})
+        
+        if not ward.hospital == self.context['request'].user.hospital_staff_profile.hospital:
+            raise serializers.ValidationError({"ward": "Ward with provided ID not found"})
+        
+        return validated_data
