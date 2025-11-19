@@ -14,8 +14,9 @@ from appointments.models import Appointment
 
 from drf_spectacular.utils import extend_schema
 
-from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, TeamMemberCreateSerializer, HospitalStaffProfileSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, HospitalAppointmentSerializer, HospitalInfoSerializer
-from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile
+from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, TeamMemberCreateSerializer, HospitalStaffProfileSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, HospitalAppointmentSerializer, HospitalInfoSerializer, WardSerializer
+
+from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalWard
 
 from core.models import User
 
@@ -256,3 +257,19 @@ class GetHospitalInfo(generics.GenericAPIView):
         serializer = self.get_serializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+@extend_schema(tags=["Hospital Admin"])
+class ListCreateWardsView(generics.ListCreateAPIView):
+    serializer_class = WardSerializer
+    permission_classes = [IsAuthenticatedHospitalAdmin]
+    
+    def get_queryset(self):
+        return HospitalWard.objects.filter(hospital=self.request.user.hospital_profile)
+    
+@extend_schema(tags=["Hospital Admin"])
+class RetrieveUpdateDeleteWardView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = WardSerializer
+    permission_classes = [IsAuthenticatedHospitalAdmin]
+    http_method_names = ["get", "patch", "delete"]
+    
+    def get_queryset(self):
+        return HospitalWard.objects.filter(hospital=self.request.user.hospital_profile)

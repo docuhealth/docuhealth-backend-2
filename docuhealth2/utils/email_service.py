@@ -29,7 +29,6 @@ class BrevoEmailService:
         
         try:
             response = self.api_instance.send_transac_email(email)
-            print(response)
         
         except Exception as e:
             print(f"Email send failed: {e}")

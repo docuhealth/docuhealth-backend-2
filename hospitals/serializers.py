@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalPatientActivity
+from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalPatientActivity, HospitalWard
 
 from core.models import User
 from core.serializers import BaseUserCreateSerializer
@@ -169,3 +169,9 @@ class HospitalInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "email", "hospital_profile"]
+        
+class WardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HospitalWard
+        exclude = ['is_deleted', 'deleted_at', 'created_at']
+        read_only_fields = ['available_beds', 'id', 'hospital']
