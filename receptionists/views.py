@@ -172,6 +172,7 @@ class RequestAdmissionView(generics.CreateAPIView):
 @extend_schema(tags=['Receptionist'], summary="Update account password")
 class UpdatePasswordView(generics.GenericAPIView):
     serializer_class = UpdatePasswordView
+    permission_classes = [IsAuthenticatedReceptionist]
     
     def patch(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
