@@ -11,10 +11,10 @@ from drf_spectacular.utils import extend_schema
 from docuhealth2.permissions import IsAuthenticatedReceptionist
 from docuhealth2.utils.email_service import BrevoEmailService
 
-from .serializers import ReceptionistInfoSerializer, BookAppointmentSerializer, UpdatePasswordView
+from .serializers import  BookAppointmentSerializer, UpdatePasswordView
 
-from hospitals.models import HospitalPatientActivity, HospitalStaffProfile, Admission, WardBed
-from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmentSerializer, HospitalStaffProfileSerializer, AdmissionSerializer
+from hospitals.models import HospitalPatientActivity, HospitalStaffProfile, WardBed
+from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmentSerializer, HospitalStaffProfileSerializer, AdmissionSerializer, HospitalStaffStaffInfoSerilizer
 
 from appointments.models import Appointment
 
@@ -32,7 +32,7 @@ class ReceptionistDashboardView(generics.GenericAPIView):
         staff = request.user.hospital_staff_profile
         hospital = staff.hospital
 
-        receptionist_info = ReceptionistInfoSerializer(staff).data
+        receptionist_info = HospitalStaffStaffInfoSerilizer(staff).data
 
         recent_qs = (
             HospitalPatientActivity.objects.filter(hospital=hospital).select_related("patient", "staff").order_by("-created_at"))
@@ -52,7 +52,7 @@ class ReceptionistDashboardView(generics.GenericAPIView):
             "receptionist": receptionist_info,
             "recent_patients": recent_paginated,
             "upcoming_appointments": upcoming_paginated
-        })
+        }, status=status.HTTP_200_OK)
         
 @extend_schema(tags=["Receptionist"])
 class CreatePatientView(generics.CreateAPIView):

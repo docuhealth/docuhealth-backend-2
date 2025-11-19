@@ -18,6 +18,13 @@ class HospitalProfileSerializer(serializers.ModelSerializer):
         fields = ['name', 'hin', 'street', 'city', 'state', 'country', 'house_no']
         read_only_fields = ['hin']
         
+class HospitalStaffStaffInfoSerilizer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email")
+
+    class Meta:
+        model = HospitalStaffProfile
+        fields = ["firstname", "lastname", "phone_no", "role", "staff_id", "email"]
+        
 class CreateHospitalSerializer(BaseUserCreateSerializer):
     profile = HospitalProfileSerializer(required=True, source="hospital_profile")
     
@@ -179,6 +186,15 @@ class WardBedSerializer(serializers.ModelSerializer):
 class WardSerializer(serializers.ModelSerializer):
     beds = WardBedSerializer(many=True, read_only=True)
     available_beds = serializers.IntegerField(read_only=True)
+    
+    class Meta:
+        model = HospitalWard
+        exclude = ['is_deleted', 'deleted_at', 'created_at']
+        read_only_fields = ['available_beds', 'id', 'hospital']
+        
+class WardBasicInfoSerializer(serializers.ModelSerializer):
+    available_beds = serializers.IntegerField(read_only=True)
+    
     class Meta:
         model = HospitalWard
         exclude = ['is_deleted', 'deleted_at', 'created_at']

@@ -124,6 +124,18 @@ class HospitalProfile(BaseModel):
 
     def __str__(self):
         return f"HospitalAdmin: {self.name} hospital,  ({self.user.email})"
+    
+class HospitalWard(BaseModel):
+    name = models.CharField(max_length=100)
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name="wards")
+    total_beds = models.IntegerField()
+    
+    def __str__(self):
+        return f"Ward {self.name}"
+    
+    @property
+    def available_beds(self):
+        return self.beds.filter(status="available").count()
 
 class HospitalStaffProfile(BaseModel):
     class StaffRole(models.TextChoices):
@@ -137,15 +149,12 @@ class HospitalStaffProfile(BaseModel):
     firstname = models.CharField(max_length=100)
     lastname = models.CharField(max_length=100)
     phone_no = models.CharField(max_length=20)
+    gender = models.CharField(choices=Gender.choices)
     
     role = models.CharField(max_length=20, choices=StaffRole.choices)
     specialization = models.CharField(max_length=100, blank=True, null=True)
     staff_id = models.CharField(max_length=20, unique=True)
-    
-    gender = models.CharField(choices=Gender.choices)
-    
-    # ward = models.CharField(max_length=50, blank=True)
-    # TODO: Add ward
+    ward = models.ForeignKey(HospitalWard, on_delete=models.SET_NULL, related_name='staff', null=True, blank=True)
     
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -171,18 +180,6 @@ class HospitalPatientActivity(BaseModel):
             models.Index(fields=['hospital', 'staff', 'created_at']),
         ]
         
-class HospitalWard(BaseModel):
-    name = models.CharField(max_length=100)
-    hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name="wards")
-    total_beds = models.IntegerField()
-    
-    def __str__(self):
-        return f"Ward {self.name}"
-    
-    @property
-    def available_beds(self):
-        return self.beds.filter(is_available=True).count()
-    
 class WardBed(BaseModel):
     class Status(models.TextChoices):
         AVAILABLE = "available", "Available"
@@ -215,7 +212,8 @@ class Admission(BaseModel):
     bed = models.ForeignKey(WardBed, on_delete=models.SET_NULL, related_name="admissions", null=True)
     
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    admission_date = models.DateTimeField(auto_now_add=True)
+    request_date = models.DateTimeField(auto_now_add=True)
+    admission_date = models.DateTimeField(null=True, blank=True)
     discharge_date = models.DateTimeField(null=True, blank=True)
     
     def __str__(self):
