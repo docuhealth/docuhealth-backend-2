@@ -18,7 +18,7 @@ from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmen
 
 from appointments.models import Appointment
 
-from patients.serializers import PatientSerializer
+from patients.serializers import PatientSerializer, PatientProfileSerializer
 
 from core.models import User, OTP
 from core.serializers import UpdatePasswordSerializer
@@ -92,7 +92,7 @@ class CreatePatientView(generics.CreateAPIView):
         
 @extend_schema(tags=["Receptionist"])
 class GetPatientDetailsView(generics.RetrieveAPIView):
-    serializer_class = PatientSerializer
+    serializer_class = PatientProfileSerializer
     lookup_url_kwarg = "hin"
     permission_classes = [IsAuthenticatedReceptionist]
     
@@ -179,20 +179,3 @@ class ListAdmissionRequestsView(generics.ListAPIView):
         hospital = staff.hospital
         
         return Admission.objects.filter(hospital=hospital, status=Admission.Status.PENDING).order_by('request_date')
-        
-# @extend_schema(tags=['Receptionist'], summary="Update account password")
-# class UpdatePasswordView(generics.GenericAPIView):
-#     serializer_class = UpdatePasswordSerializer
-#     permission_classes = [IsAuthenticatedReceptionist]
-    
-#     def patch(self, request, *args, **kwargs):
-#         serializer = self.get_serializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-        
-#         user = request.user
-#         new_password = serializer.validated_data["new_password"]
-
-#         user.set_password(new_password)
-#         user.save()
-
-#         return Response({"detail": "Password reset successfully. Please log in with your new credentials.", "status": "success"}, status=200)
