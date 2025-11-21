@@ -9,10 +9,15 @@ from drf_spectacular.utils import extend_schema
 
 from docuhealth2.permissions import IsAuthenticatedNurse
 
-from .serializers import ConfirmAdmissionSerializer
+from .serializers import ConfirmAdmissionSerializer, AssignAppointmentToDoctorSerializer
 
-from hospitals.models import HospitalPatientActivity, HospitalStaffProfile, WardBed, Admission, HospitalWard
-from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmentSerializer, HospitalStaffProfileSerializer, AdmissionSerializer, HospitalStaffStaffInfoSerilizer, WardBasicInfoSerializer
+from hospitals.models import HospitalPatientActivity, HospitalStaffProfile, WardBed, Admission, HospitalWard, VitalSignsRequest
+from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmentSerializer, HospitalStaffProfileSerializer, AdmissionSerializer, WardBasicInfoSerializer, VitalSignsRequestSerializer, ProcessVitalSignsRequestSerializer, HospitalStaffInfoSerilizer
+
+from appointments.models import Appointment
+
+from core.models import User, OTP
+from core.serializers import UpdatePasswordSerializer
 
 
 @extend_schema(tags=["Nurse"], summary='Nurse Dashboard')
@@ -26,7 +31,7 @@ class NurseDashboardView(generics.GenericAPIView):
 
         response = {}
         
-        nurse_info = HospitalStaffStaffInfoSerilizer(staff).data
+        nurse_info = HospitalStaffInfoSerilizer(staff).data
         response['nurse'] = nurse_info
         
         if ward:
@@ -88,3 +93,51 @@ class ConfirmAdmissionView(generics.UpdateAPIView):
         admission.bed.save(update_fields=["status"])
 
         return Response({"detail": "Admission confirmed successfully."}, status=status.HTTP_200_OK)
+    
+@extend_schema(tags=["Nurse"], summary="List all vital signs request to nurse")
+class ListVitalSignsRequest(generics.ListAPIView):
+    serializer_class = VitalSignsRequestSerializer
+    permission_classes = [IsAuthenticatedNurse]
+    
+    def get_queryset(self):
+        staff = self.request.user.hospital_staff_profile
+        return VitalSignsRequest.objects.filter(staff=staff, status=VitalSignsRequest.Status.REQUESTED).select_related("staff").order_by("-created_at")
+    
+@extend_schema(tags=["Nurse"], summary="Process a vital signs request")
+class ProcessVitalSignsRequestView(generics.CreateAPIView):
+    serializer_class = ProcessVitalSignsRequestSerializer
+    permission_classes = [IsAuthenticatedNurse]
+    
+    @transaction.atomic()
+    def perform_create(self, serializer):
+        vital_signs_request = serializer.validated_data.pop('request')
+        patient = vital_signs_request.patient
+        staff = self.request.user.hospital_staff_profile
+        hospital = staff.hospital
+        
+        serializer.save(patient=patient, staff=staff, hospital=hospital)
+        
+        vital_signs_request.processed_at = timezone.now()
+        vital_signs_request.status = VitalSignsRequest.Status.PROCESSED
+        vital_signs_request.save(update_fields=['processed_at', 'status'])
+        
+@extend_schema(tags=["Nurse"], summary="List appointments assigned to this nurse")
+class ListAppointmentsView(generics.ListAPIView):
+    serializer_class = HospitalAppointmentSerializer
+    permission_classes = [IsAuthenticatedNurse]
+    
+    def get_queryset(self):
+        staff = self.request.user.hospital_staff_profile
+        return Appointment.objects.filter(staff=staff, status=Appointment.Status.PENDING).order_by('scheduled_time')
+    
+@extend_schema(tags=["Nurse"], summary="Assign appointment to a doctor")
+class AssignAppointmentToDoctorView(generics.UpdateAPIView):
+    serializer_class = AssignAppointmentToDoctorSerializer
+    permission_classes = [IsAuthenticatedNurse]
+    http_method_names = ['patch']
+    
+    def get_queryset(self):
+        staff = self.request.user.hospital_staff_profile
+        hospital = staff.hospital
+        
+        return Appointment.objects.filter(staff=staff, hospital=hospital)

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from hospitals.models import Admission
+from hospitals.models import Admission, HospitalStaffProfile
+from appointments.models import Appointment
 
 class ConfirmAdmissionSerializer(serializers.Serializer):
     def validate(self, attrs):
@@ -18,3 +19,10 @@ class ConfirmAdmissionSerializer(serializers.Serializer):
             raise serializers.ValidationError({"detail": "This admission is either already confirmed or cancelled or the patient has been discharged"})
         
         return  super().validate(attrs)
+    
+class AssignAppointmentToDoctorSerializer(serializers.ModelSerializer):
+    doctor_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.all(), write_only=True)
+    
+    class Meta:
+        model = Appointment
+        fields = ['note', 'type', 'scheduled_time', 'doctor_id']

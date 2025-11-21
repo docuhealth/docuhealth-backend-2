@@ -166,6 +166,10 @@ class HospitalStaffProfile(BaseModel):
     def __str__(self):
         return f"Doctor: {self.user.email} ({self.specialization})"
     
+    @property
+    def full_name(self):
+        return f"{self.firstname} {self.lastname}"
+    
     
 class HospitalPatientActivity(BaseModel):
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE)
@@ -219,5 +223,36 @@ class Admission(BaseModel):
     def __str__(self):
         return f"Admission for {self.patient.full_name} at {self.hospital.name}"
     
+class VitalSignsRequest(BaseModel):
+    class Status(models.TextChoices):
+        REQUESTED = "requested", "Requested"
+        PROCESSED = "processed", "Processed"
+    
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="vital_sign_requests", null=True)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.SET_NULL, related_name="vital_sign_requests", null=True)
+    staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name="vital_sign_requests", null=True)
+    
+    note = models.TextField(blank=True, null=True)
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.REQUESTED)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"Vital Signs Request for {self.patient.full_name} to {self.staff.full_name} ({self.staff.role})"
+    
+class VitalSigns(BaseModel):
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="vital_signs", null=True)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.SET_NULL, related_name="vital_signs", null=True)
+    staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name="vital_signs", null=True)
+    
+    blood_pressure = models.CharField(max_length=100, blank=True, null=True)
+    temp = models.FloatField(max_length=100, blank=True, null=True)
+    resp_rate = models.FloatField(max_length=100, blank=True, null=True)
+    height = models.FloatField(max_length=100, blank=True, null=True)
+    weight = models.FloatField(max_length=100, blank=True, null=True)
+    heart_rate = models.FloatField(max_length=100, blank=True, null=True)
+    
+    def __str__(self):
+        return f"Vital Signs for {self.patient.full_name} by {self.staff.full_name} ({self.staff.role})"
     
 

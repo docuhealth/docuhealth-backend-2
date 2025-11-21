@@ -69,3 +69,18 @@ class UserProfileImageSerializer(serializers.ModelSerializer):
         model = UserProfileImage
         fields = ['id', 'image']
         
+class UpdatePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True, required=True, min_length=8)
+    new_password = serializers.CharField(write_only=True, required=True, min_length=8)
+    
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        
+        old_password = validated_data['old_password']
+        user = self.context['request'].user
+        
+        if not user.check_password(old_password):
+            raise serializers.ValidationError({"old_password": "Old password is incorrect."})
+        
+        return validated_data
+        

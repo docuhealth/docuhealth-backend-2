@@ -247,9 +247,9 @@ class ListAppointmentsView(generics.ListAPIView):
         user = self.request.user
         
         if user.role == User.Role.HOSPITAL:
-            hospital = self.request.user.hospital_profile
+            hospital = user.hospital_profile
         else:
-            hospital = self.request.user.hospital_staff_profile.hospital
+            hospital = user.hospital_staff_profile.hospital
             
         return Appointment.objects.filter(hospital=hospital).order_by('scheduled_time')
     

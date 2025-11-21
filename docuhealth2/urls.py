@@ -15,5 +15,6 @@ urlpatterns = [
     path('api/subscriptions', include('subscriptions.urls')),
     path('api/receptionists', include('receptionists.urls')),
     path('api/nurses', include('nurses.urls')),
+    path('api/doctors', include('doctors.urls')),
     path('api/users/profile-image', UploadUserProfileImageView.as_view(), name="upload-user-profile-image"),
 ]

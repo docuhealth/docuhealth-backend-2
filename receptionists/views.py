@@ -11,16 +11,17 @@ from drf_spectacular.utils import extend_schema
 from docuhealth2.permissions import IsAuthenticatedReceptionist
 from docuhealth2.utils.email_service import BrevoEmailService
 
-from .serializers import  BookAppointmentSerializer, UpdatePasswordView
+from .serializers import  BookAppointmentSerializer
 
-from hospitals.models import HospitalPatientActivity, HospitalStaffProfile, WardBed
-from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmentSerializer, HospitalStaffProfileSerializer, AdmissionSerializer, HospitalStaffStaffInfoSerilizer
+from hospitals.models import HospitalPatientActivity, HospitalStaffProfile, WardBed, Admission
+from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmentSerializer, HospitalStaffProfileSerializer, AdmissionSerializer, HospitalStaffInfoSerilizer
 
 from appointments.models import Appointment
 
 from patients.serializers import PatientSerializer
 
 from core.models import User, OTP
+from core.serializers import UpdatePasswordSerializer
 
 mailer = BrevoEmailService()
 
@@ -32,7 +33,7 @@ class ReceptionistDashboardView(generics.GenericAPIView):
         staff = request.user.hospital_staff_profile
         hospital = staff.hospital
 
-        receptionist_info = HospitalStaffStaffInfoSerilizer(staff).data
+        receptionist_info = HospitalStaffInfoSerilizer(staff).data
 
         recent_qs = (
             HospitalPatientActivity.objects.filter(hospital=hospital).select_related("patient", "staff").order_by("-created_at"))
@@ -133,9 +134,8 @@ class GetStaffByRoleView(generics.ListAPIView):
         staff_qs = HospitalStaffProfile.objects.filter(role=staff_role, hospital=hospital).select_related("hospital")
         
         return Response(self.get_serializer(staff_qs, many=True).data, status=status.HTTP_200_OK)
-        
 
-@extend_schema(tags=["Receptionist"])
+@extend_schema(tags=["Receptionist"], summary="Book an appointment for a patient")
 class BookAppointmentView(generics.CreateAPIView):
     serializer_class = BookAppointmentSerializer
     permission_classes = [IsAuthenticatedReceptionist]
@@ -168,20 +168,31 @@ class RequestAdmissionView(generics.CreateAPIView):
         hospital = staff.hospital
         
         HospitalPatientActivity.objects.create(patient=patient, staff=staff, hospital=hospital, action="request_admission")
-        
-@extend_schema(tags=['Receptionist'], summary="Update account password")
-class UpdatePasswordView(generics.GenericAPIView):
-    serializer_class = UpdatePasswordView
+    
+@extend_schema(tags=["Receptionist"], summary="List all admission requests that are pending")
+class ListAdmissionRequestsView(generics.ListAPIView):
+    serializer_class = AdmissionSerializer
     permission_classes = [IsAuthenticatedReceptionist]
     
-    def patch(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    def get_queryset(self):
+        staff = self.request.user.hospital_staff_profile
+        hospital = staff.hospital
         
-        user = request.user
-        new_password = serializer.validated_data["new_password"]
+        return Admission.objects.filter(hospital=hospital, status=Admission.Status.PENDING).order_by('request_date')
+        
+# @extend_schema(tags=['Receptionist'], summary="Update account password")
+# class UpdatePasswordView(generics.GenericAPIView):
+#     serializer_class = UpdatePasswordSerializer
+#     permission_classes = [IsAuthenticatedReceptionist]
+    
+#     def patch(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+        
+#         user = request.user
+#         new_password = serializer.validated_data["new_password"]
 
-        user.set_password(new_password)
-        user.save()
+#         user.set_password(new_password)
+#         user.save()
 
-        return Response({"detail": "Password reset successfully. Please log in with your new credentials.", "status": "success"}, status=200)
+#         return Response({"detail": "Password reset successfully. Please log in with your new credentials.", "status": "success"}, status=200)

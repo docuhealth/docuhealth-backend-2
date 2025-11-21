@@ -192,3 +192,8 @@ class GenerateSubaccountIDCardSerializer(serializers.ModelSerializer):
         fields = ['hin', 'id_card_generated']
         read_only_fields = ['hin']
         
+class PatientBasicInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientProfile
+        fields = ['hin', 'firstname', 'lastname', 'gender']
+        

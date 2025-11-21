@@ -8,9 +8,10 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from drf_spectacular.utils import extend_schema
 
 from .models import User, OTP, UserProfileImage
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer
 
 from docuhealth2.views import PublicGenericAPIView
+from docuhealth2.permissions import IsAuthenticatedHospitalStaff
 from docuhealth2.utils.email_service import BrevoEmailService
 from patients.serializers import PatientSerializer
 
@@ -33,12 +34,12 @@ def set_refresh_cookie(response):
             
     return response
 
-@extend_schema(tags=["auth"])
+@extend_schema(tags=["Auth"])
 class ListUserView(generics.ListAPIView):
     queryset = User.objects.exclude(role="subaccount").order_by("-created_at")
     serializer_class = PatientSerializer
       
-@extend_schema(tags=["auth"])  
+@extend_schema(tags=["Auth"])  
 class VerifySignupOTPView(PublicGenericAPIView):  
     serializer_class = VerifyOTPSerializer
     
@@ -55,7 +56,7 @@ class VerifySignupOTPView(PublicGenericAPIView):
         
         return Response({"detail": f"Email verified successfully, proceed to login"}, status=status.HTTP_200_OK)
 
-@extend_schema(tags=["auth"])  
+@extend_schema(tags=["Auth"])  
 class LoginView(TokenObtainPairView, PublicGenericAPIView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -90,7 +91,7 @@ class LoginView(TokenObtainPairView, PublicGenericAPIView):
             
         return response
 
-@extend_schema(tags=["auth"])  
+@extend_schema(tags=["Auth"])  
 class ForgotPassword(PublicGenericAPIView):
     serializer_class = ForgotPasswordSerializer
     
@@ -115,7 +116,7 @@ class ForgotPassword(PublicGenericAPIView):
         
         return Response({"detail": f"OTP sent successfully"}, status=status.HTTP_200_OK)
 
-@extend_schema(tags=["auth"])  
+@extend_schema(tags=["Auth"])  
 class VerifyForgotPasswordOTPView(PublicGenericAPIView):
     serializer_class = VerifyOTPSerializer
     
@@ -133,7 +134,7 @@ class VerifyForgotPasswordOTPView(PublicGenericAPIView):
 
         return response
 
-@extend_schema(tags=["auth"])  
+@extend_schema(tags=["Auth"])  
 class ResetPasswordView(GenericAPIView):
     serializer_class = ResetPasswordSerializer
     
@@ -149,7 +150,7 @@ class ResetPasswordView(GenericAPIView):
 
         return Response({"detail": "Password reset successfully. Please log in with your new credentials.", "status": "success"}, status=200)
 
-@extend_schema(tags=["auth"])  
+@extend_schema(tags=["Auth"])  
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get("refresh_token")
@@ -175,3 +176,20 @@ class UploadUserProfileImageView(generics.CreateAPIView):
         user = self.request.user
         UserProfileImage.objects.filter(user=user).delete()
         serializer.save(user=user) 
+        
+@extend_schema(tags=['Auth'], summary="Update hospital staff account password")
+class UpdatePasswordView(generics.GenericAPIView):
+    serializer_class = UpdatePasswordSerializer
+    permission_classes = [IsAuthenticatedHospitalStaff]
+    
+    def patch(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        user = request.user
+        new_password = serializer.validated_data["new_password"]
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"detail": "Password reset successfully. Please log in with your new credentials.", "status": "success"}, status=200)

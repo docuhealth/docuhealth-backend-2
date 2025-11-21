@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalPatientActivity, HospitalWard, WardBed, Admission
+from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalPatientActivity, HospitalWard, WardBed, Admission, VitalSigns, VitalSignsRequest
 
 from core.models import User
 from core.serializers import BaseUserCreateSerializer
@@ -18,7 +18,7 @@ class HospitalProfileSerializer(serializers.ModelSerializer):
         fields = ['name', 'hin', 'street', 'city', 'state', 'country', 'house_no']
         read_only_fields = ['hin']
         
-class HospitalStaffStaffInfoSerilizer(serializers.ModelSerializer):
+class HospitalStaffInfoSerilizer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email")
 
     class Meta:
@@ -235,3 +235,47 @@ class AdmissionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"ward": "Ward with provided ID not found"})
         
         return validated_data
+    
+class VitalSignsRequestSerializer(serializers.ModelSerializer):
+    patient_hin = serializers.SlugRelatedField(slug_field="hin", source="patient", queryset=PatientProfile.objects.all(), write_only=True)
+    patient = PatientBasicInfoSerializer(read_only=True)
+    
+    staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.StaffRole.NURSE), write_only=True)
+    staff = HospitalStaffInfoSerilizer(read_only=True)
+    
+    class Meta:
+        model = VitalSignsRequest
+        exclude = ['is_deleted', 'deleted_at']
+        read_only_fields = ['id', 'created_at', 'processed_at', 'status', 'hospital']
+        
+class ProcessVitalSignsRequestSerializer(serializers.ModelSerializer):
+    request = serializers.PrimaryKeyRelatedField(write_only=True, queryset=VitalSignsRequest.objects.all(), required=True)
+    
+    class Meta:
+        model = VitalSigns
+        exclude = ['is_deleted', 'deleted_at']
+        read_only_fields = ['hospital', 'patient', 'staff', 'created_at']
+        
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        
+        vital_signs_request = validated_data['request']
+        staff = self.context['request'].user.hospital_staff_profile
+        hospital = staff.hospital
+        
+        if vital_signs_request.status == VitalSignsRequest.Status.PROCESSED:
+            raise serializers.ValidationError({"request": f"This vital signs request has been processed already"})
+        
+        if vital_signs_request.staff != staff:
+            raise serializers.ValidationError({"request": "This request was not assigned to this staff"})
+        
+        if not vital_signs_request.hospital == hospital:
+            raise serializers.ValidationError({"request": "Request with provided ID not found"})
+        
+        return validated_data
+        
+    
+
+        
+        
+        
