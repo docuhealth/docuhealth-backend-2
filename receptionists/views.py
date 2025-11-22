@@ -110,7 +110,7 @@ class GetPatientDetailsView(generics.RetrieveAPIView):
         staff = request.user.hospital_staff_profile
         hospital = staff.hospital
         
-        serializer = self.get_serializer(patient_user)
+        serializer = self.get_serializer(patient_user.patient_profile)
         
         HospitalPatientActivity.objects.create(patient=patient_user.patient_profile, staff=staff, hospital=hospital, action="check_patient_info")
         
