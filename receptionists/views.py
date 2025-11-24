@@ -31,29 +31,33 @@ class ReceptionistDashboardView(generics.GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         staff = request.user.hospital_staff_profile
-        hospital = staff.hospital
-
         receptionist_info = HospitalStaffInfoSerilizer(staff).data
-
-        recent_qs = (
-            HospitalPatientActivity.objects.filter(hospital=hospital).select_related("patient", "staff").order_by("-created_at"))
-
-        recent_page = self.paginate_queryset(recent_qs)
-        recent_serializer = HospitalActivitySerializer(recent_page, many=True)
-        recent_paginated = self.get_paginated_response(recent_serializer.data).data
-
-        upcoming_qs = (
-            Appointment.objects.filter(hospital=hospital, status="pending").select_related("patient").order_by("scheduled_time"))
-
-        upcoming_page = self.paginate_queryset(upcoming_qs)
-        upcoming_serializer = HospitalAppointmentSerializer(upcoming_page, many=True)
-        upcoming_paginated = self.get_paginated_response(upcoming_serializer.data).data
-
+        
         return Response({
             "receptionist": receptionist_info,
-            "recent_patients": recent_paginated,
-            "upcoming_appointments": upcoming_paginated
         }, status=status.HTTP_200_OK)
+        
+@extend_schema(tags=["Receptionist"], summary="List recent patients on receptionist dashboard")
+class ListRecentPatientsView(generics.ListAPIView):
+    serializer_class = HospitalActivitySerializer
+    permission_classes = [IsAuthenticatedReceptionist]
+    
+    def get_queryset(self):
+        staff = self.request.user.hospital_staff_profile
+        hospital = staff.hospital
+        
+        return HospitalPatientActivity.objects.filter(hospital=hospital).select_related("patient", "staff").order_by("-created_at")
+    
+@extend_schema(tags=["Receptionist"])
+class ListUpcomingAppointmentsView(generics.ListAPIView):
+    serializer_class = HospitalAppointmentSerializer
+    permission_classes = [IsAuthenticatedReceptionist]
+    
+    def get_queryset(self):
+        staff = self.request.user.hospital_staff_profile
+        hospital = staff.hospital
+        
+        return Appointment.objects.filter(hospital=hospital, status="pending").select_related("patient").order_by("scheduled_time")
         
 @extend_schema(tags=["Receptionist"])
 class CreatePatientView(generics.CreateAPIView):
