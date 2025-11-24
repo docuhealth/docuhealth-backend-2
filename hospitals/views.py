@@ -175,13 +175,20 @@ class TeamMemberCreateView(generics.CreateAPIView):
                 recipient=user.email,
             )
         
-@extend_schema(tags=["Hospital Admin"])
+@extend_schema(tags=["Hospital Admin", "Receptionist", "Nurse", "Doctor"])
 class TeamMemberListView(generics.ListAPIView):
     serializer_class = HospitalStaffProfileSerializer
-    permission_classes = [IsAuthenticatedHospitalAdmin]
+    permission_classes = [IsAuthenticatedHospitalAdmin | IsAuthenticatedHospitalStaff]
     
     def get_queryset(self):
-        return HospitalStaffProfile.objects.filter(hospital=self.request.user.hospital_profile).order_by('-created_at')
+        user = self.request.user
+        
+        if user.role == User.Role.HOSPITAL:
+            hospital = user.hospital_profile
+        else:
+            hospital = user.hospital_staff_profile.hospital
+            
+        return HospitalStaffProfile.objects.filter(hospital=hospital).select_related("hospital").order_by('-created_at')
         
 @extend_schema(tags=["Hospital Admin"])
 class RemoveTeamMembersView(generics.GenericAPIView):

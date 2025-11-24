@@ -14,10 +14,11 @@ from hospitals.serializers import HospitalStaffSerializer
 
 class PatientProfileSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
+    email = serializers.EmailField(read_only=True, source="user.email")
     
     class Meta:
         model = PatientProfile
-        fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename', 'referred_by', 'hin', 'street', 'city', 'state', 'country', 'house_no']
+        fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename', 'referred_by', 'hin', 'street', 'city', 'state', 'country', 'house_no', 'email']
         read_only_fields = ['hin']
         
 class PatientSerializer(BaseUserCreateSerializer):

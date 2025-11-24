@@ -89,11 +89,12 @@ class ApproveVerificationRequestSerializer(serializers.Serializer):
     
 class HospitalStaffProfileSerializer(serializers.ModelSerializer):
     is_active = serializers.SerializerMethodField(read_only=True)
+    email = serializers.EmailField(read_only=True, source="user.email")
     
     class Meta:
         model = HospitalStaffProfile
-        exclude = ['is_deleted', 'deleted_at']
-        read_only_fields = ['id', 'created_at', 'updated_at', 'hospital', 'staff_id', 'user']
+        exclude = ['is_deleted', 'deleted_at', 'updated_at',]
+        read_only_fields = ['id', 'created_at', 'hospital', 'staff_id', 'user']
         
     def get_is_active(self, obj):
         return obj.user.is_active
