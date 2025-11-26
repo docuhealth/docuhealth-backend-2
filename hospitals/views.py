@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Q
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -14,11 +15,16 @@ from appointments.models import Appointment
 
 from drf_spectacular.utils import extend_schema
 
-from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, TeamMemberCreateSerializer, HospitalStaffProfileSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, HospitalAppointmentSerializer, HospitalInfoSerializer, WardSerializer, WardBedSerializer
+from .serializers.hospital import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer,  HospitalInfoSerializer
+
+from .serializers.staff import TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, HospitalStaffInfoSerilizer
+
+from .serializers.services import HospitalAppointmentSerializer, WardSerializer, WardBedSerializer, AdmissionSerializer
 
 from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalWard, WardBed
 
 from core.models import User
+from hospitals.models import Admission
 
 mailer = BrevoEmailService()
 
@@ -177,7 +183,7 @@ class TeamMemberCreateView(generics.CreateAPIView):
         
 @extend_schema(tags=["Hospital Admin", "Receptionist", "Nurse", "Doctor"])
 class TeamMemberListView(generics.ListAPIView):
-    serializer_class = HospitalStaffProfileSerializer
+    serializer_class = HospitalStaffInfoSerilizer
     permission_classes = [IsAuthenticatedHospitalAdmin | IsAuthenticatedHospitalStaff]
     
     def get_queryset(self):
@@ -334,3 +340,48 @@ class ListBedsByWardView(generics.ListAPIView):
             raise ValidationError("Ward with the provided ID not found")
         
         return WardBed.objects.filter(ward=ward).order_by('bed_number')
+    
+@extend_schema(tags=["Hospital", "Nurse", "Doctor"], summary="List admitted patient by status")
+class ListAdmittedPatientsByStatusView(generics.ListAPIView):
+    serializer_class = AdmissionSerializer
+    permission_classes = [IsAuthenticatedHospitalAdmin | IsAuthenticatedHospitalStaff]
+    
+    def get_queryset(self):
+        status_param = self.kwargs.get('status')
+
+        if status_param not in [Admission.Status.ACTIVE, Admission.Status.DISCHARGED]:
+            print(Admission.Status.ACTIVE, Admission.Status.DISCHARGED, status_param)
+            raise NotFound({"detail": "Invalid status parameter. Must be 'active' or 'discharged'."})
+
+        user = self.request.user
+
+        if hasattr(user, "hospital_profile"):
+            hospital = user.hospital_profile
+            return (
+                Admission.objects.filter(hospital=hospital, status=status_param)
+                .select_related("patient", "staff", "hospital", "ward")
+                .order_by("-admission_date")
+            )
+
+        staff = user.hospital_staff_profile
+        hospital = staff.hospital
+        ward = getattr(staff, "ward", None)
+
+        role = staff.role  
+
+        base_qs = Admission.objects.filter(hospital=hospital, status=status_param).select_related("patient", "staff", "hospital", "ward")
+        
+        if role == HospitalStaffProfile.StaffRole.RECEPTIONIST:
+            return base_qs.order_by("-admission_date")
+
+        if role == HospitalStaffProfile.StaffRole.DOCTOR:
+            return base_qs.filter(staff=staff).order_by("-admission_date")
+
+        if role == HospitalStaffProfile.StaffRole.NURSE:
+            if ward is None:
+                return base_qs.filter(staff=staff).order_by("-admission_date")
+
+            return (base_qs.filter(Q(staff=staff) | Q(ward=ward)).distinct().order_by("-admission_date"))
+        
+        return base_qs.filter(staff=staff).order_by("-admission_date")
+        

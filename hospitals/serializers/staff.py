@@ -1,0 +1,54 @@
+from rest_framework import serializers
+
+from hospitals.models import HospitalStaffProfile
+from core.models import User
+from core.serializers import BaseUserCreateSerializer
+
+class HospitalStaffInfoSerilizer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email")
+
+    class Meta:
+        model = HospitalStaffProfile
+        fields = ["firstname", "lastname", "phone_no", "role", "staff_id", "email"]
+        
+class TeamMemberCreateSerializer(BaseUserCreateSerializer):
+    profile = HospitalStaffInfoSerilizer(required=True, source="hospital_staff_profile")
+    invitation_message = serializers.CharField(write_only=True, required=True)
+    
+    class Meta(BaseUserCreateSerializer.Meta):
+        fields = BaseUserCreateSerializer.Meta.fields + ['profile', 'invitation_message']
+        
+    def create(self, validated_data):
+        profile_data = validated_data.pop("hospital_staff_profile")
+        validated_data['role'] = User.Role.HOSPITAL_STAFF
+        
+        hospital = self.context['request'].user.hospital_profile
+        
+        user = super().create(validated_data)
+        HospitalStaffProfile.objects.create(user=user, hospital=hospital, **profile_data)
+        
+        return user
+    
+class RemoveTeamMembersSerializer(serializers.Serializer):
+    staff_ids = serializers.ListField(child=serializers.CharField(), allow_empty=False, required=True)
+    
+class TeamMemberUpdateRoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HospitalStaffProfile
+        fields = ['role']
+        
+    def update(self, instance, validated_data):
+        new_role = validated_data['role']
+
+        if instance.role == new_role:
+            raise serializers.ValidationError({"role": "Role already assigned"})
+        
+        instance.role = new_role
+        instance.save(update_fields=["role"])
+        
+        return instance
+    
+class HospitalStaffBasicInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HospitalStaffProfile
+        fields = ['staff_id', 'firstname', 'lastname', 'role', 'specialization']

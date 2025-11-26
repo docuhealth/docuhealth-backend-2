@@ -1,9 +1,7 @@
-from django.shortcuts import render
 from django.db import transaction
 
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import NotFound
 
 from drf_spectacular.utils import extend_schema
@@ -14,14 +12,14 @@ from docuhealth2.utils.email_service import BrevoEmailService
 from .serializers import  BookAppointmentSerializer
 
 from hospitals.models import HospitalPatientActivity, HospitalStaffProfile, WardBed, Admission
-from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmentSerializer, HospitalStaffProfileSerializer, AdmissionSerializer, HospitalStaffInfoSerilizer
+from hospitals.serializers.services import HospitalAppointmentSerializer, AdmissionSerializer, HospitalStaffInfoSerilizer, HospitalActivitySerializer
+from hospitals.serializers.staff import HospitalStaffInfoSerilizer
 
 from appointments.models import Appointment
 
-from patients.serializers import PatientSerializer, PatientProfileSerializer
+from patients.serializers import CreatePatientSerializer, PatientFullInfoSerializer
 
 from core.models import User, OTP
-from core.serializers import UpdatePasswordSerializer
 
 mailer = BrevoEmailService()
 
@@ -61,7 +59,7 @@ class ListUpcomingAppointmentsView(generics.ListAPIView):
         
 @extend_schema(tags=["Receptionist"])
 class CreatePatientView(generics.CreateAPIView):
-    serializer_class = PatientSerializer
+    serializer_class = CreatePatientSerializer
     permission_classes = [IsAuthenticatedReceptionist]
     
     def post(self, request, *args, **kwargs):
@@ -96,7 +94,7 @@ class CreatePatientView(generics.CreateAPIView):
         
 @extend_schema(tags=["Receptionist"])
 class GetPatientDetailsView(generics.RetrieveAPIView):
-    serializer_class = PatientProfileSerializer
+    serializer_class = PatientFullInfoSerializer
     lookup_url_kwarg = "hin"
     permission_classes = [IsAuthenticatedReceptionist]
     
@@ -122,7 +120,7 @@ class GetPatientDetailsView(generics.RetrieveAPIView):
     
 @extend_schema(tags=["Receptionist"])
 class GetStaffByRoleView(generics.ListAPIView):
-    serializer_class = HospitalStaffProfileSerializer
+    serializer_class = HospitalStaffInfoSerilizer
     pagination_class = None
     
     def get(self, request, *args, **kwargs):

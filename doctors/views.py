@@ -12,7 +12,7 @@ from docuhealth2.utils.email_service import BrevoEmailService
 
 from drf_spectacular.utils import extend_schema
 
-from hospitals.serializers import VitalSignsRequestSerializer
+from hospitals.serializers.services import VitalSignsRequestSerializer
 
 @extend_schema(tags=["Doctor"])
 class RequestVitalSignsView(generics.CreateAPIView):

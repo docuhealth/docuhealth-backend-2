@@ -13,7 +13,7 @@ from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPas
 from docuhealth2.views import PublicGenericAPIView
 from docuhealth2.permissions import IsAuthenticatedHospitalStaff
 from docuhealth2.utils.email_service import BrevoEmailService
-from patients.serializers import PatientSerializer
+from patients.serializers import PatientBasicInfoSerializer
 
 mailer = BrevoEmailService()
 
@@ -37,7 +37,7 @@ def set_refresh_cookie(response):
 @extend_schema(tags=["Auth"])
 class ListUserView(generics.ListAPIView):
     queryset = User.objects.exclude(role="subaccount").order_by("-created_at")
-    serializer_class = PatientSerializer
+    serializer_class = PatientBasicInfoSerializer
       
 @extend_schema(tags=["Auth"])  
 class VerifySignupOTPView(PublicGenericAPIView):  

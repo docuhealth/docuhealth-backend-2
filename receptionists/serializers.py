@@ -1,9 +1,10 @@
 from rest_framework import serializers
 
 from hospitals.models import HospitalStaffProfile
-from hospitals.serializers import HospitalStaffInfoSerilizer, PatientBasicInfoSerializer
+from hospitals.serializers.staff import HospitalStaffInfoSerilizer
 
 from patients.models import PatientProfile
+from patients.serializers import PatientBasicInfoSerializer
 
 from appointments.models import Appointment
 

@@ -4,7 +4,7 @@ from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment
 from docuhealth2.serializers import DictSerializerMixin
 from patients.models import PatientProfile, SubaccountProfile
 from hospitals.models import HospitalProfile, HospitalStaffProfile
-from hospitals.serializers import HospitalStaffSerializer
+from hospitals.serializers.staff import HospitalStaffInfoSerilizer
 from appointments.models import Appointment
 
 class ValueRateSerializer(serializers.Serializer):
@@ -35,7 +35,7 @@ class MedicalRecordAttachmentSerializer(serializers.ModelSerializer):
         
 class MedRecordAppointmentSerializer(serializers.ModelSerializer):
     staff_id = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.all(), write_only=True, source="staff") 
-    staff = HospitalStaffSerializer(read_only=True)
+    staff = HospitalStaffInfoSerilizer(read_only=True)
     
     class Meta:
         model = Appointment

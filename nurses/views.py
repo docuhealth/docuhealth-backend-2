@@ -11,14 +11,10 @@ from docuhealth2.permissions import IsAuthenticatedNurse
 
 from .serializers import ConfirmAdmissionSerializer, AssignAppointmentToDoctorSerializer
 
-from hospitals.models import HospitalPatientActivity, HospitalStaffProfile, WardBed, Admission, HospitalWard, VitalSignsRequest
-from hospitals.serializers import HospitalActivitySerializer, HospitalAppointmentSerializer, HospitalStaffProfileSerializer, AdmissionSerializer, WardBasicInfoSerializer, VitalSignsRequestSerializer, ProcessVitalSignsRequestSerializer, HospitalStaffInfoSerilizer
+from hospitals.models import  WardBed, Admission, VitalSignsRequest
+from hospitals.serializers.services import  HospitalAppointmentSerializer, AdmissionSerializer, WardBasicInfoSerializer, VitalSignsRequestSerializer, ProcessVitalSignsRequestSerializer, HospitalStaffInfoSerilizer
 
 from appointments.models import Appointment
-
-from core.models import User, OTP
-from core.serializers import UpdatePasswordSerializer
-
 
 @extend_schema(tags=["Nurse"], summary='Nurse Dashboard')
 class NurseDashboardView(generics.GenericAPIView):
@@ -141,3 +137,4 @@ class AssignAppointmentToDoctorView(generics.UpdateAPIView):
         hospital = staff.hospital
         
         return Appointment.objects.filter(staff=staff, hospital=hospital)
+    

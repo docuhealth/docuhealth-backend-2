@@ -15,13 +15,13 @@ from docuhealth2.utils.email_service import BrevoEmailService
 from drf_spectacular.utils import extend_schema
 
 from .models import SubaccountProfile, PatientProfile
-from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, PatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer, PatientEmergencySerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer
+from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer, PatientEmergencySerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer
 
 mailer = BrevoEmailService()
 
 @extend_schema(tags=["Patient"])
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
-    serializer_class = PatientSerializer
+    serializer_class = CreatePatientSerializer
     
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')

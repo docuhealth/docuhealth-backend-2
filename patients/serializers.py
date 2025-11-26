@@ -10,9 +10,9 @@ from appointments.serializers import AppointmentHospitalSerializer
 
 from docuhealth2.serializers import StrictFieldsMixin
 
-from hospitals.serializers import HospitalStaffSerializer
+from hospitals.serializers.staff import HospitalStaffBasicInfoSerializer
 
-class PatientProfileSerializer(serializers.ModelSerializer):
+class PatientFullInfoSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
     email = serializers.EmailField(read_only=True, source="user.email")
     
@@ -21,8 +21,8 @@ class PatientProfileSerializer(serializers.ModelSerializer):
         fields = ['dob', 'gender', 'phone_num', 'firstname', 'lastname', 'middlename', 'referred_by', 'hin', 'street', 'city', 'state', 'country', 'house_no', 'email']
         read_only_fields = ['hin']
         
-class PatientSerializer(BaseUserCreateSerializer):
-    profile = PatientProfileSerializer(required=True, source="patient_profile")
+class CreatePatientSerializer(BaseUserCreateSerializer):
+    profile = PatientFullInfoSerializer(required=True, source="patient_profile")
     
     class Meta(BaseUserCreateSerializer.Meta):
         fields = BaseUserCreateSerializer.Meta.fields + ["profile"]
@@ -64,7 +64,7 @@ class UpdatePatientSerializer(serializers.ModelSerializer):
         
         profile_data = validated_data.get('profile')
         if profile_data:
-            profile_serializer = PatientProfileSerializer(
+            profile_serializer = PatientFullInfoSerializer(
                 instance=self.instance.patient_profile,
                 data=profile_data,
                 partial=True  
@@ -163,7 +163,7 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
     
 class PatientAppointmentSerializer(serializers.ModelSerializer):
     last_visited = serializers.SerializerMethodField(read_only=True)
-    staff = HospitalStaffSerializer(read_only=True)
+    staff = HospitalStaffBasicInfoSerializer(read_only=True)
     hospital = AppointmentHospitalSerializer(read_only=True)
     
     class Meta:
