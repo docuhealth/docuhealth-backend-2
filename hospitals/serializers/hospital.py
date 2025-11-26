@@ -81,12 +81,19 @@ class ApproveVerificationRequestSerializer(serializers.Serializer):
     verification_request = serializers.PrimaryKeyRelatedField(queryset=HospitalVerificationRequest.objects.all())
     redirect_url = serializers.URLField(required=True, allow_blank=True)
     
-class HospitalInfoSerializer(serializers.ModelSerializer):
+class HospitalFullInfoSerializer(serializers.ModelSerializer):
     hospital_profile = HospitalProfileSerializer(read_only=True)
 
     class Meta:
         model = User
         fields = ["id", "email", "hospital_profile"]
+        
+class HospitalBasicInfoSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email")
+    
+    class Meta:
+        model = HospitalProfile
+        fields = ['hin', 'name', 'email']
 
 
         

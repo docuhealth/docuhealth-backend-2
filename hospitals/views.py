@@ -15,10 +15,8 @@ from appointments.models import Appointment
 
 from drf_spectacular.utils import extend_schema
 
-from .serializers.hospital import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer,  HospitalInfoSerializer
-
+from .serializers.hospital import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer,  HospitalFullInfoSerializer
 from .serializers.staff import TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, HospitalStaffInfoSerilizer
-
 from .serializers.services import HospitalAppointmentSerializer, WardSerializer, WardBedSerializer, AdmissionSerializer
 
 from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalWard, WardBed
@@ -268,7 +266,7 @@ class ListAppointmentsView(generics.ListAPIView):
     
 @extend_schema(tags=["Hospital Admin"])
 class GetHospitalInfo(generics.GenericAPIView):
-    serializer_class = HospitalInfoSerializer
+    serializer_class = HospitalFullInfoSerializer
     permission_classes = [IsAuthenticatedHospitalAdmin]
 
     def get(self, request, *args, **kwargs):

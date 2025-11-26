@@ -198,3 +198,8 @@ class PatientBasicInfoSerializer(serializers.ModelSerializer):
         model = PatientProfile
         fields = ['hin', 'firstname', 'lastname', 'gender']
         
+class PatientMedRecordsInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientProfile
+        fields = ['hin', 'firstname', 'lastname', 'dob']
+        

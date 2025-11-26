@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError, NotFound
 
-from medicalrecords.serializers import MedicalRecordSerializer, ListMedicalRecordsSerializer
+from medicalrecords.serializers import MedicalRecordSerializer
 from medicalrecords.models import MedicalRecord
 from core.models import OTP, User
 from appointments.models import Appointment
@@ -59,7 +59,7 @@ class UpdatePatientView(generics.UpdateAPIView):
 
 @extend_schema(tags=["Patient"])
 class PatientDashboardView(generics.GenericAPIView):
-    serializer_class = ListMedicalRecordsSerializer
+    serializer_class = MedicalRecordSerializer
     permission_classes = [IsAuthenticatedPatient]
 
     def get(self, request, *args, **kwargs):
@@ -100,7 +100,7 @@ class ListCreateSubaccountView(generics.ListCreateAPIView):
 
 @extend_schema(tags=["auth"])  
 class ListSubaccountMedicalRecordsView(generics.ListAPIView):
-    serializer_class = ListMedicalRecordsSerializer
+    serializer_class = MedicalRecordSerializer
     permission_classes = [IsAuthenticatedPatient]
     
     def get_queryset(self):

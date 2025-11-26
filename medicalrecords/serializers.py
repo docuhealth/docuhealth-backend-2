@@ -4,8 +4,12 @@ from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment
 from docuhealth2.serializers import DictSerializerMixin
 from patients.models import PatientProfile, SubaccountProfile
 from hospitals.models import HospitalProfile, HospitalStaffProfile
-from hospitals.serializers.staff import HospitalStaffInfoSerilizer
 from appointments.models import Appointment
+
+from hospitals.serializers.staff import HospitalStaffInfoSerilizer, HospitalStaffBasicInfoSerializer
+from hospitals.serializers.hospital import HospitalBasicInfoSerializer
+from patients.serializers import PatientMedRecordsInfoSerializer
+
 
 class ValueRateSerializer(serializers.Serializer):
     value = serializers.FloatField()
@@ -43,15 +47,24 @@ class MedRecordAppointmentSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
-    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False)
+    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False, write_only=True)
+    patient_info = PatientMedRecordsInfoSerializer(read_only=True, source="patient")
+    
     subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=SubaccountProfile.objects.all(), required=False)
+    
     doctor = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.StaffRole.DOCTOR), required=False, allow_null=True, write_only=True)
+    doctor_info = HospitalStaffBasicInfoSerializer(read_only=True, source="doctor")
+    
     referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True) 
+    
     attachments = serializers.PrimaryKeyRelatedField(many=True, queryset=MedicalRecordAttachment.objects.all(), required=False, write_only=True)
+    attachments_info = MedicalRecordAttachmentSerializer(many=True, read_only=True, source="attachments")
     
     drug_records = DrugRecordSerializer(many=True, required=False, allow_null=True)
     vital_signs = VitalSignsSerializer()
     appointment = MedRecordAppointmentSerializer(required=False, allow_null=True) 
+    
+    hospital_info = HospitalBasicInfoSerializer(read_only=True)
     
     history = serializers.ListField(child=serializers.CharField(), required=False)
     physical_exam = serializers.ListField(child=serializers.CharField(), required=False)
@@ -86,37 +99,37 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         
         return medical_record
     
-class ListMedicalRecordsSerializer(serializers.ModelSerializer):
-    hospital = serializers.SerializerMethodField()
-    doctor = serializers.SerializerMethodField(read_only=True)
-    attachments = serializers.SerializerMethodField(read_only=True)
-    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False)
+# class ListMedicalRecordsSerializer(serializers.ModelSerializer):
+#     hospital = serializers.SerializerMethodField()
+#     doctor = serializers.SerializerMethodField(read_only=True)
+#     attachments = serializers.SerializerMethodField(read_only=True)
+#     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False)
     
-    drug_records = DrugRecordSerializer(many=True)
-    appointment = MedRecordAppointmentSerializer() 
+#     drug_records = DrugRecordSerializer(many=True)
+#     appointment = MedRecordAppointmentSerializer() 
     
-    class Meta:
-        model = MedicalRecord
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at', 'hospital')
+#     class Meta:
+#         model = MedicalRecord
+#         fields = '__all__'
+#         read_only_fields = ('id', 'created_at', 'updated_at', 'hospital')
         
-    def get_hospital(self, obj):
-        if obj.hospital:
-            return {"hin":obj.hospital.hin, "name":obj.hospital.name, "email": obj.hospital.user.email}
-        return None
+#     def get_hospital(self, obj):
+#         if obj.hospital:
+#             return {"hin":obj.hospital.hin, "name":obj.hospital.name, "email": obj.hospital.user.email}
+#         return None
     
-    def get_doctor(self, obj):
-        if obj.doctor:
-            return {"doc_id": obj.doctor.staff_id, "firstname": obj.doctor.firstname, "lastname": obj.doctor.lastname, "specialization": obj.doctor.specialization}
-        return None
+#     def get_doctor(self, obj):
+#         if obj.doctor:
+#             return {"doc_id": obj.doctor.staff_id, "firstname": obj.doctor.firstname, "lastname": obj.doctor.lastname, "specialization": obj.doctor.specialization}
+#         return None
     
-    def get_attachments(self, obj):
-        return [{"url": attachment.file.url, "filename": attachment.filename, "uploaded_at": attachment.uploaded_at, "file_size": f"{attachment.file_size} MB"} for attachment in obj.attachments.all()]
+#     def get_attachments(self, obj):
+#         return [{"url": attachment.file.url, "filename": attachment.filename, "uploaded_at": attachment.uploaded_at, "file_size": f"{attachment.file_size} MB"} for attachment in obj.attachments.all()]
     
-    def get_patient(self, obj):
-        if obj.patient:
-            return {"hin": obj.patient.hin, "dob": obj.patient.dob}
-        return None
+#     def get_patient(self, obj):
+#         if obj.patient:
+#             return {"hin": obj.patient.hin, "dob": obj.patient.dob}
+#         return None
     
 
     

@@ -9,10 +9,10 @@ from drf_spectacular.utils import extend_schema
 
 from docuhealth2.permissions import IsAuthenticatedNurse
 
-from .serializers import ConfirmAdmissionSerializer, AssignAppointmentToDoctorSerializer
+from .serializers import  AssignAppointmentToDoctorSerializer
 
 from hospitals.models import  WardBed, Admission, VitalSignsRequest
-from hospitals.serializers.services import  HospitalAppointmentSerializer, AdmissionSerializer, WardBasicInfoSerializer, VitalSignsRequestSerializer, ProcessVitalSignsRequestSerializer, HospitalStaffInfoSerilizer
+from hospitals.serializers.services import  HospitalAppointmentSerializer, AdmissionSerializer, WardBasicInfoSerializer, VitalSignsRequestSerializer, VitalSignsSerializer, HospitalStaffInfoSerilizer, ConfirmAdmissionSerializer
 
 from appointments.models import Appointment
 
@@ -34,16 +34,23 @@ class NurseDashboardView(generics.GenericAPIView):
             ward_info = WardBasicInfoSerializer(ward).data
             response['ward_info'] = ward_info
 
-            admissions_qs = (
-                Admission.objects.filter(hospital=hospital, ward=ward, status=Admission.Status.ACTIVE).select_related("patient", "staff", "hospital", "ward").order_by("-admission_date"))
-
-            admissions_page = self.paginate_queryset(admissions_qs)
-            admissions_serializer = AdmissionSerializer(admissions_page, many=True)
-            admissions_paginated = self.get_paginated_response(admissions_serializer.data).data
-            
-            response['admissions'] = admissions_paginated
-
         return Response(response, status=status.HTTP_200_OK)
+    
+@extend_schema(tags=["Nurse"], summary="Get admissions to Nurse' ward")
+class ListAdmissionsView(generics.ListAPIView):
+    serializer_class = AdmissionSerializer
+    permission_classes = [IsAuthenticatedNurse]
+    
+    def get_queryset(self):
+        user = self.request.user
+        staff = user.hospital_staff_profile
+        hospital = staff.hospital
+        ward = staff.ward
+        
+        if not ward:
+            raise ({"details": "Nurse is not assigned to any ward"})
+        
+        return Admission.objects.filter(hospital=hospital, ward=ward, status=Admission.Status.ACTIVE).select_related("patient", "staff", "hospital", "ward").order_by("-admission_date")
     
 @extend_schema(tags=["Nurse"], summary="List all admission requests to nurses ward")
 class ListAdmissionRequestsView(generics.ListAPIView):
@@ -101,7 +108,7 @@ class ListVitalSignsRequest(generics.ListAPIView):
     
 @extend_schema(tags=["Nurse"], summary="Process a vital signs request")
 class ProcessVitalSignsRequestView(generics.CreateAPIView):
-    serializer_class = ProcessVitalSignsRequestSerializer
+    serializer_class = VitalSignsSerializer
     permission_classes = [IsAuthenticatedNurse]
     
     @transaction.atomic()

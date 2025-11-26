@@ -8,7 +8,7 @@ from drf_spectacular.utils import extend_schema
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin
 
 from .models import MedicalRecord, MedicalRecordAttachment
-from .serializers import MedicalRecordSerializer, MedicalRecordAttachmentSerializer, ListMedicalRecordsSerializer
+from .serializers import MedicalRecordSerializer, MedicalRecordAttachmentSerializer
 
 from core.models import User
 
@@ -34,7 +34,7 @@ class CreateMedicalRecordView(generics.CreateAPIView):
 
 @extend_schema(tags=["Medical records"])    
 class ListUserMedicalrecordsView(generics.ListAPIView):
-    serializer_class = ListMedicalRecordsSerializer
+    serializer_class = MedicalRecordSerializer
     
     def get_queryset(self):
         user = self.request.user
@@ -45,6 +45,8 @@ class ListUserMedicalrecordsView(generics.ListAPIView):
         
         if role == 'hospital':
             return MedicalRecord.objects.filter(hospital=user.hospital_profile).select_related("patient", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
+        
+        return MedicalRecord.objects.none()
 
 @extend_schema(tags=["Medical records"])      
 class UploadMedicalRecordsAttachments(generics.CreateAPIView):

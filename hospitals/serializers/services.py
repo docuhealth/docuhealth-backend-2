@@ -103,7 +103,7 @@ class VitalSignsRequestSerializer(serializers.ModelSerializer):
         exclude = ['is_deleted', 'deleted_at']
         read_only_fields = ['id', 'created_at', 'processed_at', 'status', 'hospital']
         
-class ProcessVitalSignsRequestSerializer(serializers.ModelSerializer):
+class VitalSignsSerializer(serializers.ModelSerializer):
     request = serializers.PrimaryKeyRelatedField(write_only=True, queryset=VitalSignsRequest.objects.all(), required=True)
     
     class Meta:
@@ -138,3 +138,20 @@ class HospitalActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = HospitalPatientActivity
         fields = ["id", "staff", "staff_id", "patient", "patient_hin", "action", "created_at"]
+        
+class ConfirmAdmissionSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        admission = self.context['admission']
+        staff = self.context['request'].user.hospital_staff_profile
+        hospital = staff.hospital
+        
+        if admission.ward != staff.ward:
+            raise serializers.ValidationError({"detail": "You are not assigned to this ward."})
+        
+        if admission.hospital != hospital:
+            raise serializers.ValidationError({"detail": "Admission with the provided ID does not exist"})
+        
+        if admission.status != Admission.Status.PENDING:
+            raise serializers.ValidationError({"detail": "This admission is either already confirmed or cancelled or the patient has been discharged"})
+        
+        return  super().validate(attrs)
