@@ -98,7 +98,7 @@ class RequestAdmissionView(generics.CreateAPIView):
         
         HospitalPatientActivity.objects.create(patient=patient, staff=staff, hospital=hospital, action="request_admission")
         
-@extend_schema(tags=['Nurse'], summary="Confirm admission of patient in a ward")
+@extend_schema(tags=['Doctor'], summary="Confirm admission of patient in a ward")
 class ConfirmAdmissionView(generics.UpdateAPIView):
     serializer_class = ConfirmAdmissionSerializer
     permission_classes = [IsAuthenticatedDoctor]
