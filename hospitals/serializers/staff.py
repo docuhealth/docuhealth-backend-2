@@ -1,18 +1,41 @@
 from rest_framework import serializers
 
-from hospitals.models import HospitalStaffProfile
+from hospitals.models import HospitalStaffProfile, HospitalWard
 from core.models import User
 from core.serializers import BaseUserCreateSerializer
 
-class HospitalStaffInfoSerilizer(serializers.ModelSerializer):
-    email = serializers.EmailField(source="user.email")
-
+class CreateStaffProfieSerializer(serializers.ModelSerializer):
+    ward = serializers.PrimaryKeyRelatedField(write_only=True, queryset=HospitalWard.objects.all())
+    
     class Meta:
         model = HospitalStaffProfile
-        fields = ["firstname", "lastname", "phone_no", "role", "staff_id", "email"]
+        fields = ['firstname', 'lastname', 'phone_no', 'role', 'specialization', 'ward', 'gender']
         
+    def get_fields(self):
+        fields = super().get_fields()
+        
+        from .services import WardNameSerializer 
+        fields["ward_info"] = WardNameSerializer(source="ward", read_only=True)
+        
+        return fields
+
+class HospitalStaffInfoSerilizer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email")
+    
+    class Meta:
+        model = HospitalStaffProfile
+        fields = ["firstname", "lastname", "phone_no", "role", "staff_id", "email", "ward"]
+        
+    def get_fields(self):
+        fields = super().get_fields()
+        
+        from .services import WardNameSerializer 
+        fields["ward_info"] = WardNameSerializer(source="ward", read_only=True)
+        
+        return fields
+
 class TeamMemberCreateSerializer(BaseUserCreateSerializer):
-    profile = HospitalStaffInfoSerilizer(required=True, source="hospital_staff_profile")
+    profile = CreateStaffProfieSerializer(required=True, source="hospital_staff_profile")
     invitation_message = serializers.CharField(write_only=True, required=True)
     
     class Meta(BaseUserCreateSerializer.Meta):

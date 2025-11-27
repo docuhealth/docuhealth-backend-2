@@ -64,39 +64,6 @@ class ListAdmissionRequestsView(generics.ListAPIView):
         
         return Admission.objects.filter(hospital=hospital, ward=ward, status=Admission.Status.PENDING).order_by('request_date')
     
-@extend_schema(tags=['Nurse'], summary="Confirm admission of patient in a ward")
-class ConfirmAdmissionView(generics.UpdateAPIView):
-    serializer_class = ConfirmAdmissionSerializer
-    permission_classes = [IsAuthenticatedNurse]
-    lookup_url_kwarg = "admission_id"
-    http_method_names = ['patch']
-    
-    def get_object(self):
-        admission_id = self.kwargs[self.lookup_url_kwarg]
-        staff = self.request.user.hospital_staff_profile
-
-        try:
-            return Admission.objects.get(id=admission_id, hospital=staff.hospital)
-        
-        except Admission.DoesNotExist:
-            raise NotFound({"detail": "Admission not found."})
-    
-    @transaction.atomic
-    def update(self, request, *args, **kwargs):
-        admission = self.get_object()
-
-        serializer = self.get_serializer(data=request.data, context={"admission": admission, "request": request})
-        serializer.is_valid(raise_exception=True)
-        
-        admission.status = Admission.Status.ACTIVE
-        admission.admission_date = timezone.now()
-        admission.save(update_fields=["status", "admission_date"])
-
-        admission.bed.status = WardBed.Status.OCCUPIED
-        admission.bed.save(update_fields=["status"])
-
-        return Response({"detail": "Admission confirmed successfully."}, status=status.HTTP_200_OK)
-    
 @extend_schema(tags=["Nurse"], summary="List all vital signs request to nurse")
 class ListVitalSignsRequest(generics.ListAPIView):
     serializer_class = VitalSignsRequestSerializer
