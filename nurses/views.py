@@ -12,7 +12,7 @@ from docuhealth2.permissions import IsAuthenticatedNurse
 from .serializers import  AssignAppointmentToDoctorSerializer
 
 from hospitals.models import  WardBed, Admission, VitalSignsRequest
-from hospitals.serializers.services import  HospitalAppointmentSerializer, AdmissionSerializer, WardBasicInfoSerializer, VitalSignsRequestSerializer, VitalSignsSerializer, HospitalStaffInfoSerilizer, ConfirmAdmissionSerializer
+from hospitals.serializers.services import  HospitalAppointmentSerializer, AdmissionSerializer, WardBasicInfoSerializer, VitalSignsRequestSerializer, VitalSignsSerializer, HospitalStaffInfoSerilizer
 
 from appointments.models import Appointment
 

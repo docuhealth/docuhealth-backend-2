@@ -17,7 +17,7 @@ from drf_spectacular.utils import extend_schema
 
 from .serializers.hospital import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer,  HospitalFullInfoSerializer
 from .serializers.staff import TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, HospitalStaffInfoSerilizer
-from .serializers.services import HospitalAppointmentSerializer, WardSerializer, WardBedSerializer, AdmissionSerializer
+from .serializers.services import HospitalAppointmentSerializer, WardSerializer, WardBedSerializer, AdmissionSerializer, ConfirmAdmissionSerializer
 
 from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalWard, WardBed
 
@@ -382,4 +382,37 @@ class ListAdmittedPatientsByStatusView(generics.ListAPIView):
             return (base_qs.filter(Q(staff=staff) | Q(ward=ward)).distinct().order_by("-admission_date"))
         
         return base_qs.filter(staff=staff).order_by("-admission_date")
+    
+@extend_schema(tags=['Nurse', 'Receptionist', 'Doctor'], summary="Confirm admission of patient in a ward")
+class ConfirmAdmissionView(generics.UpdateAPIView):
+    serializer_class = ConfirmAdmissionSerializer
+    permission_classes = [IsAuthenticatedHospitalStaff]
+    lookup_url_kwarg = "admission_id"
+    http_method_names = ['patch']
+    
+    def get_object(self):
+        admission_id = self.kwargs[self.lookup_url_kwarg]
+        staff = self.request.user.hospital_staff_profile
+
+        try:
+            return Admission.objects.get(id=admission_id, hospital=staff.hospital)
+        
+        except Admission.DoesNotExist:
+            raise NotFound({"detail": "Admission not found."})
+    
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        admission = self.get_object()
+
+        serializer = self.get_serializer(data=request.data, context={"admission": admission, "request": request})
+        serializer.is_valid(raise_exception=True)
+        
+        admission.status = Admission.Status.ACTIVE
+        admission.admission_date = timezone.now()
+        admission.save(update_fields=["status", "admission_date"])
+
+        admission.bed.status = WardBed.Status.OCCUPIED
+        admission.bed.save(update_fields=["status"])
+
+        return Response({"detail": "Admission confirmed successfully."}, status=status.HTTP_200_OK)
         
