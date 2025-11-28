@@ -103,7 +103,7 @@ class VitalSignsRequestSerializer(serializers.ModelSerializer):
         exclude = ['is_deleted', 'deleted_at']
         read_only_fields = ['id', 'created_at', 'processed_at', 'status', 'hospital']
         
-class VitalSignsSerializer(serializers.ModelSerializer):
+class VitalSignsViaRequestSerializer(serializers.ModelSerializer):
     request = serializers.PrimaryKeyRelatedField(write_only=True, queryset=VitalSignsRequest.objects.all(), required=True)
     
     class Meta:
@@ -129,6 +129,23 @@ class VitalSignsSerializer(serializers.ModelSerializer):
         
         return validated_data
     
+class VitalSignsSerializer(serializers.ModelSerializer):
+    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), write_only=True)
+    patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
+    
+    staff = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.all(), write_only=True)
+    staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
+    
+    class Meta:
+        model = VitalSigns
+        exclude = ['is_deleted', 'deleted_at']
+        read_only_fields = ['hospital', 'created_at']
+        
+class MedRecordsVitalSignsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VitalSigns
+        exclude = ['is_deleted', 'deleted_at', 'staff', 'patient', 'hospital', 'created_at', 'id']
+        
 class HospitalActivitySerializer(serializers.ModelSerializer):
     staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.all(), write_only=True)
     staff = HospitalStaffBasicInfoSerializer(read_only=True)

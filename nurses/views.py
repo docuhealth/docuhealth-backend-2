@@ -12,7 +12,7 @@ from docuhealth2.permissions import IsAuthenticatedNurse
 from .serializers import  AssignAppointmentToDoctorSerializer
 
 from hospitals.models import  WardBed, Admission, VitalSignsRequest
-from hospitals.serializers.services import  HospitalAppointmentSerializer, AdmissionSerializer, WardBasicInfoSerializer, VitalSignsRequestSerializer, VitalSignsSerializer, HospitalStaffInfoSerilizer
+from hospitals.serializers.services import  HospitalAppointmentSerializer, AdmissionSerializer, WardBasicInfoSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, HospitalStaffInfoSerilizer
 
 from appointments.models import Appointment
 
@@ -75,7 +75,7 @@ class ListVitalSignsRequest(generics.ListAPIView):
     
 @extend_schema(tags=["Nurse"], summary="Process a vital signs request")
 class ProcessVitalSignsRequestView(generics.CreateAPIView):
-    serializer_class = VitalSignsSerializer
+    serializer_class = VitalSignsViaRequestSerializer
     permission_classes = [IsAuthenticatedNurse]
     
     @transaction.atomic()

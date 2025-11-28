@@ -9,6 +9,7 @@ from datetime import timedelta
 from docuhealth2.models import BaseModel
 from docuhealth2.utils.generate import generate_HIN, generate_staff_id
 
+# from medicalrecords.models import MedicalRecord
 from core.models import Gender
 from patients.models import PatientProfile
 
@@ -241,6 +242,8 @@ class VitalSignsRequest(BaseModel):
         return f"Vital Signs Request for {self.patient.full_name} to {self.staff.full_name} ({self.staff.role})"
     
 class VitalSigns(BaseModel):
+    # medical_record = models.ForeignKey(MedicalRecord, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
+    
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="vital_signs", null=True)
     patient = models.ForeignKey(PatientProfile, on_delete=models.SET_NULL, related_name="vital_signs", null=True)
     staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name="vital_signs", null=True)
