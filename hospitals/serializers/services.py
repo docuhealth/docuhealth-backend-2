@@ -6,7 +6,7 @@ from appointments.models import Appointment
 from appointments.serializers import AppointmentPatientSerializer
 
 from patients.models import PatientProfile
-from patients.serializers import PatientBasicInfoSerializer
+from patients.serializers import PatientFullInfoSerializer, PatientBasicInfoSerializer
 
 from .staff import HospitalStaffInfoSerilizer, HospitalStaffBasicInfoSerializer
 
@@ -56,7 +56,7 @@ class WardNameSerializer(serializers.ModelSerializer):
         
 class AdmissionSerializer(serializers.ModelSerializer):
     patient_hin = serializers.SlugRelatedField(slug_field="hin", source="patient", queryset=PatientProfile.objects.all(), write_only=True)
-    patient = PatientBasicInfoSerializer(read_only=True)
+    patient = PatientFullInfoSerializer(read_only=True)
     
     staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.all(), write_only=True)
     staff = HospitalStaffBasicInfoSerializer(read_only=True)

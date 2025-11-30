@@ -1,6 +1,5 @@
-from rest_framework import generics, status
+from rest_framework import generics
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError, NotFound
 
 from medicalrecords.serializers import MedicalRecordSerializer
@@ -14,7 +13,7 @@ from docuhealth2.utils.email_service import BrevoEmailService
 
 from drf_spectacular.utils import extend_schema
 
-from .models import SubaccountProfile, PatientProfile
+from .models import SubaccountProfile
 from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer, PatientEmergencySerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer
 
 mailer = BrevoEmailService()
@@ -143,7 +142,7 @@ class ListAppointmentsView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         
-        return Appointment.objects.filter(patient=user.patient_profile).select_related("doctor", "hospital").order_by('-scheduled_time')
+        return Appointment.objects.filter(patient=user.patient_profile).select_related("hospital").order_by('-scheduled_time')
 
 @extend_schema(tags=["Patient"])
 class DeletePatientAccountView(generics.DestroyAPIView):
