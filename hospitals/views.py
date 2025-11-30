@@ -16,11 +16,11 @@ from appointments.models import Appointment
 
 from drf_spectacular.utils import extend_schema
 
-from .serializers.hospital import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer,  HospitalFullInfoSerializer
+from .serializers.hospital import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer,  HospitalFullInfoSerializer, HospitalBasicInfoSerializer
 from .serializers.staff import TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, HospitalStaffInfoSerilizer
 from .serializers.services import HospitalAppointmentSerializer, WardSerializer, WardBedSerializer, AdmissionSerializer, ConfirmAdmissionSerializer
 
-from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalWard, WardBed
+from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalWard, WardBed, HospitalProfile
 
 from core.models import User
 from hospitals.models import Admission
@@ -416,4 +416,10 @@ class ConfirmAdmissionView(generics.UpdateAPIView):
         admission.bed.save(update_fields=["status"])
 
         return Response({"detail": "Admission confirmed successfully."}, status=status.HTTP_200_OK)
-        
+    
+@extend_schema(tags=['Hospital', 'Doctor'], summary="Get all hospitals")
+class ListHospitalsView(generics.ListAPIView):
+    queryset = HospitalProfile.objects.all().select_related("user").order_by('name')
+    serializer_class = HospitalBasicInfoSerializer
+    permission_classes = [IsAuthenticatedHospitalStaff | IsAuthenticatedHospitalAdmin]
+    

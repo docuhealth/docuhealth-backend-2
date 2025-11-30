@@ -1,8 +1,10 @@
 from django.urls import path
-from .views import CreateHospitalView, ListCreateHospitalInquiryView, ListCreateHospitalVerificationRequestView, ApproveVerificationRequestView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, ListAppointmentsView, GetHospitalInfo, ListCreateWardsView, RetrieveUpdateDeleteWardView, ListBedsByWardView, ListAdmittedPatientsByStatusView, ConfirmAdmissionView
+from .views import CreateHospitalView, ListCreateHospitalInquiryView, ListCreateHospitalVerificationRequestView, ApproveVerificationRequestView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, ListAppointmentsView, GetHospitalInfo, ListCreateWardsView, RetrieveUpdateDeleteWardView, ListBedsByWardView, ListAdmittedPatientsByStatusView, ConfirmAdmissionView, ListHospitalsView
 
 urlpatterns = [
     path('', CreateHospitalView.as_view(), name='create-hospital'),
+    path('/hospitals', ListHospitalsView.as_view(), name='list-hospitals'),
+    
     path('/inquiries', ListCreateHospitalInquiryView.as_view(), name='create-inquiry'),
     path('/verification-request', ListCreateHospitalVerificationRequestView.as_view(), name='list-create-verification-request'),
     path('/approve-verification', ApproveVerificationRequestView.as_view(), name='approve-verification-request'),
