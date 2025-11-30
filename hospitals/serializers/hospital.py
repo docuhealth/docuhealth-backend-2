@@ -1,15 +1,10 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from hospitals.models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalStaffProfile, HospitalPatientActivity
+from hospitals.models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken
 
 from core.models import User
 from core.serializers import BaseUserCreateSerializer
-
-from patients.models import PatientProfile
-from patients.serializers import PatientBasicInfoSerializer
-
-from .staff import HospitalStaffBasicInfoSerializer
 
 class HospitalProfileSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)

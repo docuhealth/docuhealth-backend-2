@@ -9,15 +9,18 @@ from patients.models import PatientProfile
 from patients.serializers import PatientFullInfoSerializer, PatientBasicInfoSerializer
 
 from .staff import HospitalStaffInfoSerilizer, HospitalStaffBasicInfoSerializer
+from .hospital import HospitalBasicInfoSerializer
 
 class HospitalAppointmentSerializer(serializers.ModelSerializer):
     last_visited = serializers.SerializerMethodField(read_only=True)
     staff = HospitalStaffBasicInfoSerializer(read_only=True)
     patient = AppointmentPatientSerializer(read_only=True)
     
+    hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
+    
     class Meta:
         model = Appointment
-        fields = ['id', 'status', 'scheduled_time', 'staff', 'patient', 'last_visited', 'note', 'type']
+        fields = ['id', 'status', 'scheduled_time', 'staff', 'patient', 'last_visited', 'note', 'type', 'hospital_info']
         read_only_fields = fields
         
     def get_last_visited(self, obj):
