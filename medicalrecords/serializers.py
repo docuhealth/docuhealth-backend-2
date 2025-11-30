@@ -3,7 +3,6 @@ from django.db import transaction
 from rest_framework import serializers
 
 from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment
-from docuhealth2.serializers import DictSerializerMixin
 from patients.models import PatientProfile, SubaccountProfile
 from hospitals.models import HospitalProfile, HospitalStaffProfile, VitalSigns
 from appointments.models import Appointment
@@ -22,7 +21,7 @@ class DrugRecordSerializer(serializers.ModelSerializer):
     duration = ValueRateSerializer()
     class Meta:
         model = DrugRecord
-        fields = ('name', 'route', 'quantity', 'frequency', 'duration', 'created_at')
+        fields = ('name', 'route', 'quantity', 'frequency', 'duration', 'status', 'created_at')
         read_only_fields = ('id', 'created_at', 'updated_at', 'medical_record')
         
 class MedicalRecordAttachmentSerializer(serializers.ModelSerializer):

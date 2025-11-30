@@ -44,6 +44,11 @@ class MedicalRecord(models.Model):
         return f'Medical Record for {user_info} created on {self.created_at}'
     
 class DrugRecord(models.Model):
+    class Status(models.TextChoices):
+        ONGOING = "ongoing", "Ongoing"
+        COMPLETED = "completed", "Completed"
+        STOPPED = "stopped", "Stopped"
+    
     medical_record = models.ForeignKey(MedicalRecord, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
@@ -54,6 +59,8 @@ class DrugRecord(models.Model):
     
     frequency = models.JSONField(default=dict)
     duration = models.JSONField(default=dict)
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ONGOING)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

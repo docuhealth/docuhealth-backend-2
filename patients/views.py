@@ -14,7 +14,7 @@ from docuhealth2.utils.email_service import BrevoEmailService
 from drf_spectacular.utils import extend_schema
 
 from .models import SubaccountProfile
-from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer, PatientEmergencySerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer
+from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientEmergencySerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer
 
 from hospitals.serializers.services import HospitalAppointmentSerializer
 

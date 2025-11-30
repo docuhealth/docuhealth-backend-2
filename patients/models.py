@@ -31,8 +31,6 @@ class PatientProfile(BaseModel):
     emergency = models.BooleanField(default=False, blank=True)
     id_card_generated = models.BooleanField(default=False)
     
-    paystack_cus_code = models.CharField(max_length=200, blank=True, null=True)
-    
     notification_settings = models.JSONField(default=default_notification_settings)
     
     def save(self, *args, **kwargs):

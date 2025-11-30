@@ -112,8 +112,6 @@ class HospitalProfile(BaseModel):
     
     notification_settings = models.JSONField(default=default_notification_settings)
     
-    paystack_cus_code = models.CharField(max_length=200, blank=True, null=True)
-    
     def save(self, *args, **kwargs):
         if not self.hin:  
             while True:
