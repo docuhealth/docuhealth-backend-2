@@ -16,6 +16,8 @@ from drf_spectacular.utils import extend_schema
 from .models import SubaccountProfile
 from .serializers import CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientAppointmentSerializer, PatientEmergencySerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer
 
+from hospitals.serializers.services import HospitalAppointmentSerializer
+
 mailer = BrevoEmailService()
 
 @extend_schema(tags=["Patient"])
@@ -136,7 +138,7 @@ class UpgradeSubaccountView(generics.CreateAPIView):
     
 @extend_schema(tags=["Patient"])
 class ListAppointmentsView(generics.ListAPIView):
-    serializer_class = PatientAppointmentSerializer
+    serializer_class = HospitalAppointmentSerializer
     permission_classes = [IsAuthenticatedPatient]
     
     def get_queryset(self):

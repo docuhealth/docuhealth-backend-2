@@ -15,6 +15,7 @@ from drf_spectacular.utils import extend_schema
 
 from .serializers import PatientMedInfoSerializer
 from hospitals.serializers.services import VitalSignsRequestSerializer, HospitalAppointmentSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer
+from hospitals.serializers.staff import HospitalStaffInfoSerilizer
 from patients.serializers import PatientFullInfoSerializer
 from medicalrecords.serializers import DrugRecordSerializer, MedicalRecordSerializer
 
@@ -24,6 +25,18 @@ from hospitals.models import VitalSigns, WardBed, HospitalPatientActivity, Admis
 from patients.models import PatientProfile
 from medicalrecords.models import DrugRecord
 
+@extend_schema(tags=["Doctor"])
+class DoctorDashboardView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticatedDoctor]
+    serializer_class = HospitalStaffInfoSerilizer
+
+    def get(self, request, *args, **kwargs):
+        staff = request.user.hospital_staff_profile
+        doctor_info = self.get_serializer(staff).data
+        
+        return Response({
+            "doctor": doctor_info,
+        }, status=status.HTTP_200_OK)
 
 @extend_schema(tags=["Doctor"])
 class RequestVitalSignsView(generics.CreateAPIView):

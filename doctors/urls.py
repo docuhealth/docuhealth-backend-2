@@ -1,7 +1,9 @@
 from django.urls import path
-from .views import RequestVitalSignsView, ListAppointmentsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, ConfirmAdmissionView, RequestAdmissionView
+from .views import RequestVitalSignsView, ListAppointmentsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, ConfirmAdmissionView, RequestAdmissionView, DoctorDashboardView
 
 urlpatterns = [
+    path('/dashboard', DoctorDashboardView.as_view(), name='doctor-dashboard'),
+    
     path('/vital-signs/request', RequestVitalSignsView.as_view(), name='request-vital-signs'),
     path('/appointments', ListAppointmentsView.as_view(), name='appointments'),
     
