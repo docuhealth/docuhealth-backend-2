@@ -43,7 +43,7 @@ class CreatePatientSerializer(BaseUserCreateSerializer):
 class UpdatePatientProfileSerializer(StrictFieldsMixin, serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
-        exclude = ['is_deleted', 'deleted_at', 'created_at', 'user', 'hin', 'id_card_generated', 'paystack_cus_code', 'referred_by', 'emergency']
+        exclude = ['is_deleted', 'deleted_at', 'created_at', 'user', 'hin', 'id_card_generated', 'referred_by', 'emergency']
         
 class UpdatePatientSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=False, write_only=True)
