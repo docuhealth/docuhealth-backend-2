@@ -5,7 +5,7 @@ from core.models import User
 from core.serializers import BaseUserCreateSerializer
 
 class CreateStaffProfieSerializer(serializers.ModelSerializer):
-    ward = serializers.PrimaryKeyRelatedField(write_only=True, queryset=HospitalWard.objects.all())
+    ward = serializers.PrimaryKeyRelatedField(write_only=True, queryset=HospitalWard.objects.all(), required=False, allow_null=True)
     
     class Meta:
         model = HospitalStaffProfile
