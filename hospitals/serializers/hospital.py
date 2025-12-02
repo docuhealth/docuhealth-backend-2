@@ -23,7 +23,7 @@ class CreateHospitalSerializer(BaseUserCreateSerializer):
     login_url = serializers.URLField(required=True, write_only=True)
     
     class Meta(BaseUserCreateSerializer.Meta):
-        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "verification_token", "verification_request"]
+        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "verification_token", "verification_request", "login_url"]
         
     def validate(self, attrs):
         validated_data = super().validate(attrs)

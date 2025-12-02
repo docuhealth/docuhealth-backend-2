@@ -40,7 +40,7 @@ class TeamMemberCreateSerializer(BaseUserCreateSerializer):
     login_url = serializers.URLField(required=True, write_only=True)
     
     class Meta(BaseUserCreateSerializer.Meta):
-        fields = BaseUserCreateSerializer.Meta.fields + ['profile', 'invitation_message']
+        fields = BaseUserCreateSerializer.Meta.fields + ['profile', 'invitation_message', 'login_url']
         
     def create(self, validated_data):
         profile_data = validated_data.pop("hospital_staff_profile")
