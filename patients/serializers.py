@@ -203,3 +203,7 @@ class PatientMedRecordsInfoSerializer(serializers.ModelSerializer):
         model = PatientProfile
         fields = ['hin', 'firstname', 'lastname', 'dob']
         
+class VerifyUserNINSerializer(serializers.Serializer):
+    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), write_only=True)
+    nin = serializers.CharField(write_only=True, required=True, min_length=11, max_length=11)
+        

@@ -1,3 +1,5 @@
+from django.db import transaction
+
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
@@ -9,9 +11,14 @@ from drf_spectacular.utils import extend_schema
 
 from .models import User, OTP, UserProfileImage
 from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer
+from .requests import verify_nin_request
+
+from patients.models import NINVerificationAttempt
+from patients.serializers import VerifyUserNINSerializer
+from patients.utils import *
 
 from docuhealth2.views import PublicGenericAPIView
-from docuhealth2.permissions import IsAuthenticatedHospitalStaff
+from docuhealth2.permissions import IsAuthenticatedHospitalStaff, IsAuthenticatedPatient
 from docuhealth2.utils.email_service import BrevoEmailService
 from patients.serializers import PatientBasicInfoSerializer
 
@@ -54,7 +61,12 @@ class VerifySignupOTPView(PublicGenericAPIView):
         serializer.user.is_active = True
         serializer.user.save(update_fields=['is_active'])
         
-        return Response({"detail": f"Email verified successfully, proceed to login"}, status=status.HTTP_200_OK)
+        response = {"detail": f"Email verified successfully, proceed to login"}
+        
+        if serializer.user.role == User.Role.PATIENT:
+            response["hin"] = serializer.user.patient_profile.hin
+            
+        return Response(response, status=status.HTTP_200_OK)
 
 @extend_schema(tags=["Auth"])  
 class LoginView(TokenObtainPairView, PublicGenericAPIView):
@@ -63,14 +75,13 @@ class LoginView(TokenObtainPairView, PublicGenericAPIView):
         email = request.data.get("email")
         
         if response.status_code == status.HTTP_200_OK:
-            mailer.send(
-                subject="New Login Alert",
-                body = "There was a login attempt on your DOCUHEALTH account. If this was you, you can ignore this message. \n\nIf this was not you, please contact our support team at support@docuhealthservices.com \n\n\nFrom the Docuhealth Team",
-                recipient=email,         
-            )
-            
             user = User.objects.get(email=email)
             role = user.role
+            
+            if role == User.Role.PATIENT:
+                profile = user.patient_profile
+                if not profile.nin_verified:
+                    return Response({"detail": "NIN not verified. Kindly verify your NIN", "status": "error", "hin": profile.hin}, status=status.HTTP_403_FORBIDDEN)
             
             set_refresh_cookie(response)
             
@@ -88,7 +99,13 @@ class LoginView(TokenObtainPairView, PublicGenericAPIView):
                 
                 response.data["data"]["hospital"] = hospital_data
                 response.data["data"]["staff_role"] = staff_role
-            
+                
+            mailer.send(
+                subject="New Login Alert",
+                body = "There was a login attempt on your DOCUHEALTH account. If this was you, you can ignore this message. \n\nIf this was not you, please contact our support team at support@docuhealthservices.com \n\n\nFrom the Docuhealth Team",
+                recipient=email,         
+            )
+                
         return response
 
 @extend_schema(tags=["Auth"])  
@@ -193,3 +210,40 @@ class UpdatePasswordView(generics.GenericAPIView):
         user.save()
 
         return Response({"detail": "Password reset successfully. Please log in with your new credentials.", "status": "success"}, status=200)
+   
+@extend_schema(tags=["Auth"])   
+class VerifyUserNINView(PublicGenericAPIView, generics.GenericAPIView):
+    serializer_class = VerifyUserNINSerializer
+    
+    @transaction.atomic()
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        nin = serializer.validated_data["nin"]
+        patient_profile = serializer.validated_data["patient"]
+        user = patient_profile.user
+        
+        if patient_profile.nin_verified:
+            return Response({"detail": "NIN already verified"}, status=200)
+        
+        nin_hash = hash_nin(nin)
+        
+        if not can_attempt_nin_verification(user):
+            return Response({"detail": "You have reached the maximum number of attempts to verify your NIN today. Please contact our support team for assistance."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if nin_checked_before(user, nin_hash):
+            return Response({"detail": "This NIN has already been checked and is invalid."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            reference = verify_nin_request(nin)
+        except Exception as e:
+            NINVerificationAttempt.objects.create(user=user, nin_hash=nin_hash, success=False)
+            return Response({"detail": str(e)}, status=400)
+        
+        NINVerificationAttempt.objects.create(user=user, nin_hash=nin_hash, success=True)
+
+        patient_profile.nin_verified = True
+        patient_profile.save(update_fields=['nin_verified'])
+        
+        return Response({"detail": "NIN verified successfully.", "status": "success"}, status=status.HTTP_200_OK)

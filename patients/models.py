@@ -4,6 +4,9 @@ from core.models import User, Gender
 from docuhealth2.models import BaseModel
 from docuhealth2.utils.generate import generate_HIN
 
+from django.utils.timezone import now, timedelta
+import hashlib
+
 def default_notification_settings():
     return  {
             "sign_in": { "email": True, "push": True, "dashboard": False },
@@ -27,9 +30,12 @@ class PatientProfile(BaseModel):
     state = models.CharField(max_length=20, blank=True, null=True)
     country = models.CharField(max_length=20, blank=True, null=True)
     
+    nin = models.CharField(max_length=15, blank=True, null=True)
+    
     referred_by = models.CharField(max_length=50, blank=True)
     emergency = models.BooleanField(default=False, blank=True)
     id_card_generated = models.BooleanField(default=False)
+    nin_verified = models.BooleanField(default=False)
     
     notification_settings = models.JSONField(default=default_notification_settings)
     
@@ -60,6 +66,17 @@ class PatientProfile(BaseModel):
     def full_name(self):
         return f"{self.firstname} {self.lastname}"
     
+class NINVerificationAttempt(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="nin_verification_attempts")
+    nin_hash = models.CharField(max_length=128, blank=True, null=True)  # hashed NIN
+    success = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+        ]
+        
 class SubaccountProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subaccount_profile")
     parent = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="subaccounts", null=True, blank=True)
@@ -84,7 +101,7 @@ class SubaccountProfile(BaseModel):
         if not self.hin:  
             while True:
                 new_hin = generate_HIN()
-                if not SubaccountProfile.all_objects.filter(hin=new_hin).exists():
+                if not self.all_objects.filter(hin=new_hin).exists():
                     self.hin = new_hin
                     break
         super().save(*args, **kwargs)
