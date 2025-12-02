@@ -20,6 +20,8 @@ class CreateHospitalSerializer(BaseUserCreateSerializer):
     verification_token = serializers.CharField(write_only=True, required=True, allow_blank=True, max_length=255)
     verification_request = serializers.PrimaryKeyRelatedField(write_only=True, queryset=HospitalVerificationRequest.objects.all(), required=True)
     
+    login_url = serializers.URLField(required=True, write_only=True)
+    
     class Meta(BaseUserCreateSerializer.Meta):
         fields = BaseUserCreateSerializer.Meta.fields + ["profile", "verification_token", "verification_request"]
         
@@ -74,7 +76,7 @@ class HospitalVerificationRequestSerializer(serializers.ModelSerializer):
         
 class ApproveVerificationRequestSerializer(serializers.Serializer):
     verification_request = serializers.PrimaryKeyRelatedField(queryset=HospitalVerificationRequest.objects.all())
-    redirect_url = serializers.URLField(required=True, allow_blank=True)
+    redirect_url = serializers.URLField(required=True, write_only=True)
     
 class HospitalFullInfoSerializer(serializers.ModelSerializer):
     hospital_profile = HospitalProfileSerializer(read_only=True)

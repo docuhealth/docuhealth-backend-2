@@ -24,7 +24,7 @@ class HospitalStaffInfoSerilizer(serializers.ModelSerializer):
     
     class Meta:
         model = HospitalStaffProfile
-        fields = ["firstname", "lastname", "phone_no", "role", "staff_id", "email", "ward"]
+        fields = ["firstname", "lastname", "phone_no", "role", "staff_id", "email", "ward", "gender"]
         
     def get_fields(self):
         fields = super().get_fields()
@@ -37,6 +37,7 @@ class HospitalStaffInfoSerilizer(serializers.ModelSerializer):
 class TeamMemberCreateSerializer(BaseUserCreateSerializer):
     profile = CreateStaffProfieSerializer(required=True, source="hospital_staff_profile")
     invitation_message = serializers.CharField(write_only=True, required=True)
+    login_url = serializers.URLField(required=True, write_only=True)
     
     class Meta(BaseUserCreateSerializer.Meta):
         fields = BaseUserCreateSerializer.Meta.fields + ['profile', 'invitation_message']

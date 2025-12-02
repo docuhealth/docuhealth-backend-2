@@ -32,6 +32,7 @@ class CreateHospitalView(PublicGenericAPIView, BaseUserCreateView):
     serializer_class = CreateHospitalSerializer
     
     def perform_create(self, serializer):
+        login_url = serializer.validated_data.pop("login_url")
         user = serializer.save(is_active=True)
         
         mailer.send(
@@ -40,11 +41,15 @@ class CreateHospitalView(PublicGenericAPIView, BaseUserCreateView):
                 f"Welcome to Docuhealth! \n\n"
                 f"You have successfully created your Docuhealth account. \n\n"
                 
+                f"Please use the link below to log in to your account: \n\n"
+                f"{login_url}\n\n"
+                
                 f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
                 f"From the Docuhealth Team"
             ),
             recipient=user.email,
         )
+        
 @extend_schema(tags=["Hospital Onboarding"])
 class ListCreateHospitalInquiryView(PublicGenericAPIView, generics.ListCreateAPIView):
     serializer_class = HospitalInquirySerializer
@@ -109,7 +114,7 @@ class ListCreateHospitalVerificationRequestView(PublicGenericAPIView, generics.L
             "inquiry": int(inquiry) if inquiry else None,
             "official_email": official_email, 
             "documents": document_urls, 
-            status: HospitalVerificationRequest.Status.PENDING, 
+            "status": HospitalVerificationRequest.Status.PENDING, 
             "reviewed_by": user
         })
         serializer.is_valid(raise_exception=True)
@@ -119,7 +124,7 @@ class ListCreateHospitalVerificationRequestView(PublicGenericAPIView, generics.L
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 @extend_schema(tags=["Hospital Onboarding"])
-class ApproveVerificationRequestView(generics.GenericAPIView):
+class ApproveVerificationRequestView(PublicGenericAPIView, generics.GenericAPIView):
     serializer_class = ApproveVerificationRequestSerializer
     
     @transaction.atomic  
@@ -168,12 +173,17 @@ class TeamMemberCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         hospital = self.request.user.hospital_profile
         invitation_message = serializer.validated_data.pop("invitation_message")
+        login_url = serializer.validated_data.pop("login_url")
         user = serializer.save(is_active=True)
         
         mailer.send(
                 subject=f"Welcome to {hospital.name} hospital",
                 body=(
                     f"{invitation_message} \n\n"
+                    
+                    f"Please use the link below to log in to your account: \n\n"
+                    f"{login_url}\n\n"
+                    
                     f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
                     f"From the Docuhealth Team"
                 ),
