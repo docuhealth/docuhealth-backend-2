@@ -30,7 +30,7 @@ class PatientProfile(BaseModel):
     state = models.CharField(max_length=20, blank=True, null=True)
     country = models.CharField(max_length=20, blank=True, null=True)
     
-    nin = models.CharField(max_length=15, blank=True, null=True)
+    nin_hash = models.CharField(max_length=128, blank=True, null=True)
     
     referred_by = models.CharField(max_length=50, blank=True)
     emergency = models.BooleanField(default=False, blank=True)

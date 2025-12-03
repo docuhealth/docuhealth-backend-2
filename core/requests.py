@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-korapay_key = os.getenv('KORAPAY_TEST_SECRET_KEY')
+korapay_key = os.getenv('KORAPAY_LIVE_SECRET_KEY')
 
 headers = {
                 "Authorization": f"Bearer {korapay_key}",
@@ -26,7 +26,7 @@ def verify_nin_request(nin):
         except Exception as e:
             raise Exception("Unable to reach verification service") from e
             
-        print("Kora Response:", data)
+        # print("Kora Response:", data)
 
         if response.ok and data.get("status"):
             return data["data"]["reference"]

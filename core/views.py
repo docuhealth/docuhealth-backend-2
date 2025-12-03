@@ -13,7 +13,7 @@ from .models import User, OTP, UserProfileImage
 from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer
 from .requests import verify_nin_request
 
-from patients.models import NINVerificationAttempt
+from patients.models import NINVerificationAttempt, PatientProfile
 from patients.serializers import VerifyUserNINSerializer
 from patients.utils import *
 
@@ -229,6 +229,9 @@ class VerifyUserNINView(PublicGenericAPIView, generics.GenericAPIView):
         
         nin_hash = hash_nin(nin)
         
+        if PatientProfile.objects.filter(nin_hash=nin_hash).exists():
+            return Response({"detail": "This NIN is already associated with another account."}, status=status.HTTP_400_BAD_REQUEST)
+        
         if not can_attempt_nin_verification(user):
             return Response({"detail": "You have reached the maximum number of attempts to verify your NIN today. Please contact our support team for assistance."}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -244,6 +247,7 @@ class VerifyUserNINView(PublicGenericAPIView, generics.GenericAPIView):
         NINVerificationAttempt.objects.create(user=user, nin_hash=nin_hash, success=True)
 
         patient_profile.nin_verified = True
-        patient_profile.save(update_fields=['nin_verified'])
+        patient_profile.nin_hash = nin_hash
+        patient_profile.save(update_fields=['nin_verified', 'nin_hash'])
         
         return Response({"detail": "NIN verified successfully.", "status": "success"}, status=status.HTTP_200_OK)
