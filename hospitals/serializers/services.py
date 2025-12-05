@@ -96,7 +96,7 @@ class AdmissionSerializer(serializers.ModelSerializer):
     
 class VitalSignsRequestSerializer(serializers.ModelSerializer):
     patient_hin = serializers.SlugRelatedField(slug_field="hin", source="patient", queryset=PatientProfile.objects.all(), write_only=True)
-    patient = PatientBasicInfoSerializer(read_only=True)
+    patient = PatientFullInfoSerializer(read_only=True)
     
     staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.StaffRole.NURSE), write_only=True)
     staff = HospitalStaffInfoSerilizer(read_only=True)
