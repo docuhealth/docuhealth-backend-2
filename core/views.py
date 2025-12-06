@@ -222,6 +222,8 @@ class VerifyUserNINView(PublicGenericAPIView, generics.GenericAPIView):
         
         nin = serializer.validated_data["nin"]
         patient_profile = serializer.validated_data["patient"]
+        patient_profile = (PatientProfile.objects.select_for_update().get(id=patient_profile.id))
+        
         user = patient_profile.user
         
         if patient_profile.nin_verified:
