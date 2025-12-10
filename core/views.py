@@ -4,6 +4,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import MultiPartParser, FormParser
 
@@ -26,8 +27,11 @@ mailer = BrevoEmailService()
 
 def set_refresh_cookie(response):
     data = response.data
+    
     refresh = data.get("refresh")
     access = data.get("access")
+    
+    print("Access Token:", access)
 
     response.set_cookie(
         key="refresh_token",
@@ -227,7 +231,7 @@ class VerifyUserNINView(PublicGenericAPIView, generics.GenericAPIView):
         user = patient_profile.user
         
         if patient_profile.nin_verified:
-            return Response({"detail": "NIN already verified"}, status=200)
+            return self._generate_login_response(user)
         
         nin_hash = hash_nin(nin)
         
@@ -252,4 +256,26 @@ class VerifyUserNINView(PublicGenericAPIView, generics.GenericAPIView):
         patient_profile.nin_hash = nin_hash
         patient_profile.save(update_fields=['nin_verified', 'nin_hash'])
         
-        return Response({"detail": "NIN verified successfully.", "status": "success"}, status=status.HTTP_200_OK)
+        return self._generate_login_response(user)
+    
+    def _generate_login_response(self, user):
+        refresh = RefreshToken.for_user(user)
+        access = str(refresh.access_token)
+
+        data = {
+                "access": access,
+                "refresh": str(refresh),
+            }
+
+        response = Response(data, status=200)
+
+        set_refresh_cookie(response)
+        response.data["data"]["role"] = user.role
+        
+        mailer.send(
+                subject="New Login Alert",
+                body = "There was a login attempt on your DOCUHEALTH account. If this was you, you can ignore this message. \n\nIf this was not you, please contact our support team at support@docuhealthservices.com \n\n\nFrom the Docuhealth Team",
+                recipient=user.email,         
+            )
+
+        return response
