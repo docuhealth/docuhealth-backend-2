@@ -3,7 +3,7 @@ from rest_framework import serializers
 from hospitals.models import HospitalStaffProfile, HospitalWard, WardBed, Admission, VitalSigns, VitalSignsRequest, HospitalPatientActivity
 
 from appointments.models import Appointment
-from appointments.serializers import AppointmentPatientSerializer
+# from appointments.serializers import AppointmentPatientSerializer
 
 from patients.models import PatientProfile
 from patients.serializers import PatientFullInfoSerializer, PatientBasicInfoSerializer
@@ -14,7 +14,7 @@ from .hospital import HospitalBasicInfoSerializer
 class HospitalAppointmentSerializer(serializers.ModelSerializer):
     last_visited = serializers.SerializerMethodField(read_only=True)
     staff = HospitalStaffBasicInfoSerializer(read_only=True)
-    patient = AppointmentPatientSerializer(read_only=True)
+    patient = PatientFullInfoSerializer(read_only=True)
     
     hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
     
@@ -51,7 +51,6 @@ class WardBasicInfoSerializer(serializers.ModelSerializer):
         read_only_fields = ['available_beds', 'id', 'hospital']
         
 class WardNameSerializer(serializers.ModelSerializer):
-    
     class Meta:
         model = HospitalWard
         fields = ['id', 'name']
