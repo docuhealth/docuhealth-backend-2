@@ -155,11 +155,11 @@ class CaseNote(BaseModel):
     staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name="case_notes", null=True)
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="case_notes", null=True)
     
-    observation = models.TextField()
-    care = models.TextField()
-    response = models.TextField()
-    abnormalities = models.TextField(blank=True, null=True)
-    follow_up = models.TextField(blank=True, null=True)
+    observation = models.JSONField(default=list)
+    care = models.JSONField(default=list)
+    response = models.JSONField(default=list)
+    abnormalities = models.JSONField(default=list, blank=True, null=True)
+    follow_up = models.JSONField(default=list, blank=True, null=True)
     
     def __str__(self):
         return f"Case Note for {self.patient.full_name} by {self.staff.full_name}"

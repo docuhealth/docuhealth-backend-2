@@ -331,8 +331,9 @@ class ListAdmissionRequestsView(generics.ListAPIView):
         
         return Admission.objects.filter(hospital=hospital, status=Admission.Status.PENDING).order_by('request_date')
     
-@extend_schema(tags=["Doctor"], summary="List patients information")
+@extend_schema(tags=["Doctor", "Nurse"], summary="List patients information")
 class RetrievePatientInfoView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
     serializer_class = PatientBasicInfoSerializer
     lookup_field = "hin"
     queryset = PatientProfile.objects.all()
@@ -342,7 +343,7 @@ class RetrievePatientInfoView(generics.RetrieveAPIView):
 
         latest_vitals = (VitalSigns.objects.filter(patient=patient).order_by('-created_at').first())
 
-        ongoing_drugs = DrugRecord.objects.filter(patient=patient) # TODO: Add status
+        ongoing_drugs = DrugRecord.objects.filter(patient=patient, status=DrugRecord.Status.ONGOING) # TODO: Add status
 
         data = {
             "patient_info": PatientFullInfoSerializer(patient).data,
@@ -375,11 +376,10 @@ class ListCaseNotesView(generics.ListAPIView):
         patient = get_object_or_404(PatientProfile, hin=hin)
         return CaseNote.objects.filter(patient=patient, hospital=staff.hospital).select_related("patient", "staff", "hospital").order_by('-created_at')
     
-@extend_schema(tags=["Nurse"], summary="Retrieve (get), Update (patch), Delete (delete) a specific case note for a patient")
-class RetrieveUpdateDeleteCaseNoteView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = UpdateCaseNoteSerializer
-    permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
-    http_method_names = ['get', 'patch', 'delete']
+# @extend_schema(tags=["Nurse"], summary="Retrieve (get) a specific case note for a patient")
+# class RetrieveCaseNoteView(generics.RetrieveAPIView):
+#     serializer_class = UpdateCaseNoteSerializer
+#     permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
     
 @extend_schema(tags=["Medical records"])  
 class ListSubaccountMedicalRecordsView(generics.ListAPIView):

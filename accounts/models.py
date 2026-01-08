@@ -220,7 +220,7 @@ class SubaccountProfile(BaseModel):
         if not self.hin:  
             while True:
                 new_hin = generate_HIN()
-                if not self.all_objects.filter(hin=new_hin).exists():
+                if not SubaccountProfile.all_objects.filter(hin=new_hin).exists():
                     self.hin = new_hin
                     break
         super().save(*args, **kwargs)

@@ -177,7 +177,7 @@ class ListHospitalsView(generics.ListAPIView):
 class ListCreateSubscriptionPlanView(generics.ListCreateAPIView):
     serializer_class = SubscriptionPlanSerializer
     pagination_class = None
-    permission_classes = [IsAuthenticatedPatient, IsAuthenticatedHospitalAdmin] 
+    permission_classes = [IsAuthenticatedPatient | IsAuthenticatedHospitalAdmin] 
     
     def get_queryset(self):
         user_role = self.request.user.role
@@ -186,7 +186,7 @@ class ListCreateSubscriptionPlanView(generics.ListCreateAPIView):
 @extend_schema(tags=["Subscriptions"])
 class CreateSubscriptionView(generics.CreateAPIView):
         serializer_class = SubscriptionSerializer
-        permission_classes = [IsAuthenticatedPatient, IsAuthenticatedHospitalAdmin] 
+        permission_classes = [IsAuthenticatedPatient | IsAuthenticatedHospitalAdmin] 
         
         def get_serializer_context(self):
             context = super().get_serializer_context()

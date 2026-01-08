@@ -229,6 +229,12 @@ class CaseNoteSerializer(serializers.ModelSerializer):
     staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
     hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
     
+    observation = serializers.ListField(child=serializers.CharField())
+    care = serializers.ListField(child=serializers.CharField())
+    response = serializers.ListField(child=serializers.CharField())
+    abnormalities = serializers.ListField(child=serializers.CharField(), required=False)
+    follow_up = serializers.ListField(child=serializers.CharField(), required=False)
+    
     class Meta:
         model = CaseNote
         exclude = ['is_deleted', 'deleted_at']
