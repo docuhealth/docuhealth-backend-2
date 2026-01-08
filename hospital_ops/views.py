@@ -1,16 +1,18 @@
 from django.db import transaction
 
-from rest_framework import generics
+from rest_framework import generics, status
+from rest_framework.response import Response
 
-from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedNurse, IsAuthenticatedDoctor, IsAuthenticatedPatient, IsAuthenticatedReceptionist
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedNurse, IsAuthenticatedPatient, IsAuthenticatedReceptionist
 from docuhealth2.utils.email_service import BrevoEmailService
 
-from .models import Appointment, HospitalPatientActivity
-from .serializers import HospitalAppointmentSerializer, AssignAppointmentToDoctorSerializer, HospitalActivitySerializer, HospitalAppointmentSerializer, BookAppointmentSerializer
+from .models import Appointment, HospitalPatientActivity, HandOverLog
+from .serializers import HospitalAppointmentSerializer, AssignAppointmentToDoctorSerializer, HospitalActivitySerializer, HospitalAppointmentSerializer, BookAppointmentSerializer, HandOverLogSerializer
 
 from drf_spectacular.utils import extend_schema
 
 from accounts.models import User
+from records.models import Admission
 
 mailer = BrevoEmailService()
 
@@ -96,3 +98,45 @@ class BookAppointmentView(generics.CreateAPIView):
         hospital = staff.hospital
         
         HospitalPatientActivity.objects.create(patient=patient, staff=staff, hospital=hospital, action="book_appointment")
+        
+@extend_schema(tags=["Nurses"], summary="Handover nurse shift to another nurse")
+class HandOverNurseShiftView(generics.GenericAPIView):
+    serializer_class = HandOverLogSerializer
+    permission_classes = [IsAuthenticatedNurse]
+    
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        validated_data = serializer.validated_data
+        
+        from_nurse = request.user.hospital_staff_profile
+        to_nurse = validated_data['to_nurse']
+        
+        items_transferred = {"appointments": [], "admissions": []}
+
+        if validated_data['handover_appointments']:
+            appointments_to_transfer = Appointment.objects.filter(staff=from_nurse, status__in=[Appointment.Status.CONFIRMED, Appointment.Status.PENDING])
+            
+            appointment_ids = list(appointments_to_transfer.values_list('id', flat=True))
+            items_transferred['appointments'] = appointment_ids
+
+            appointments_to_transfer.update(staff=to_nurse)
+                    
+        if validated_data['handover_patients']:
+            admissions_to_transfer = Admission.objects.filter(primary_nurse=from_nurse, status__in=[Admission.Status.ACTIVE, Admission.Status.PENDING])
+            
+            items_transferred['admissions'] = list(admissions_to_transfer.values_list('id', flat=True))
+            
+            admissions_to_transfer.update(primary_nurse=to_nurse)
+
+        HandOverLog.objects.create(
+            from_nurse=from_nurse,
+            to_nurse=to_nurse,
+            handover_appointments=validated_data.get('handover_appointments', False),
+            handover_patients=validated_data.get('handover_patients', False),
+            items_transferred=items_transferred
+        )
+
+        return Response({"detail": "Handover successful."}, status=status.HTTP_200_OK)

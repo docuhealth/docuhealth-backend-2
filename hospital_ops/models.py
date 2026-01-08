@@ -46,3 +46,18 @@ class Appointment(BaseModel):
         
     def __str__(self):
         return f"Appointment for {self.patient} with {self.staff} at {self.scheduled_time}"
+    
+class HandOverLog(BaseModel):
+    from_nurse = models.ForeignKey(HospitalStaffProfile, related_name='handovers_given', on_delete=models.CASCADE)
+    to_nurse = models.ForeignKey(HospitalStaffProfile, related_name='handovers_received', on_delete=models.CASCADE)
+    
+    handover_appointments = models.BooleanField(default=False)
+    handover_patients = models.BooleanField(default=False)
+    
+    items_transferred = models.JSONField()
+    
+    class Meta:
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"HandOver from {self.from_nurse} to {self.to_nurse} at {self.created_at}"

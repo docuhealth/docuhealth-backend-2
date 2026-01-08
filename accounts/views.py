@@ -658,4 +658,4 @@ class GetStaffByRoleView(generics.ListAPIView):
         staff_qs = HospitalStaffProfile.objects.filter(role=staff_role, hospital=hospital).select_related("hospital")
         
         return Response(self.get_serializer(staff_qs, many=True).data, status=status.HTTP_200_OK)
-        
+    

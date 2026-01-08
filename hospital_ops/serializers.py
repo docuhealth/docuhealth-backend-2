@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import HospitalPatientActivity, Appointment
+from .models import HospitalPatientActivity, Appointment, HandOverLog
 
 from accounts.models import PatientProfile, HospitalStaffProfile
 from accounts.serializers import PatientFullInfoSerializer, PatientBasicInfoSerializer, HospitalStaffBasicInfoSerializer, HospitalStaffInfoSerilizer
@@ -83,6 +83,16 @@ class BookAppointmentSerializer(serializers.ModelSerializer):
         model = Appointment
         fields = ["staff_id", "patient_hin", "patient", "staff", "type", "note", "scheduled_time", "hospital"]
         read_only_fields = ["hospital"]
-    
-
         
+class HandOverLogSerializer(serializers.ModelSerializer):
+    to_nurse = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.Role.NURSE), write_only=True)
+    to_nurse_info = HospitalStaffBasicInfoSerializer(source="to_nurse", read_only=True)
+    
+    from_nurse_info = HospitalStaffBasicInfoSerializer(source="from_nurse", read_only=True)
+    
+    class Meta:
+        model = HandOverLog
+        fields = ["id", "from_nurse_info", "to_nurse", "to_nurse_info", "items_transferred", "handover_appointments", "handover_patients", "created_at"]
+        read_only_fields = ["id", "from_nurse_info", "to_nurse_info", "created_at"]
+        
+
