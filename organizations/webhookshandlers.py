@@ -1,6 +1,6 @@
 from django.utils.dateparse import parse_datetime
 
-from ..subscriptions.models import Subscription
+from .models import Subscription
 from accounts.models import User
 
 def handle_subscription_create(data):

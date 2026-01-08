@@ -5,7 +5,7 @@ from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticate
 
 from drf_spectacular.utils import extend_schema
 
-from models import HospitalWard, WardBed
+from .models import HospitalWard, WardBed
 from .serializers  import WardSerializer, WardBedSerializer
 
 from accounts.models import User

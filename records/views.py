@@ -96,23 +96,6 @@ class ListPatientMedicalRecordsView(generics.ListAPIView):
             raise NotFound({"detail": "Patient not found"})
 
         return MedicalRecord.objects.filter(patient=patient).order_by('-created_at')
-    
-@extend_schema(tags=["auth"])  # TODO: Move to clinicals
-class ListSubaccountMedicalRecordsView(generics.ListAPIView):
-    serializer_class = MedicalRecordSerializer
-    permission_classes = [IsAuthenticatedPatient]
-    
-    def get_queryset(self):
-        hin = self.kwargs.get("hin")
-        
-        if not hin:
-            raise ValidationError("Subaccount hin should be provided")
-        
-        if not SubaccountProfile.objects.filter(hin=hin).exists():
-            raise NotFound("A subaccount with this HIN does not exist.")
-        
-        return MedicalRecord.objects.filter(subaccount__hin = hin).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
-    
 @extend_schema(tags=["Nurse"], summary="List all vital signs request to nurse")
 class ListVitalSignsRequest(generics.ListAPIView):
     serializer_class = VitalSignsRequestSerializer
@@ -397,6 +380,22 @@ class RetrieveCaseNoteView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UpdateCaseNoteSerializer
     permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
     http_method_names = ['get', 'patch', 'delete']
+    
+@extend_schema(tags=["Medical records"])  
+class ListSubaccountMedicalRecordsView(generics.ListAPIView):
+    serializer_class = MedicalRecordSerializer
+    permission_classes = [IsAuthenticatedPatient]
+    
+    def get_queryset(self):
+        hin = self.kwargs.get("hin")
+        
+        if not hin:
+            raise ValidationError("Subaccount hin should be provided")
+        
+        if not SubaccountProfile.objects.filter(hin=hin).exists():
+            raise NotFound("A subaccount with this HIN does not exist.")
+        
+        return MedicalRecord.objects.filter(subaccount__hin = hin).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
     
         
     

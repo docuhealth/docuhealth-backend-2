@@ -268,13 +268,13 @@ class VerifyUserNINSerializer(serializers.Serializer):
     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), write_only=True)
     nin = serializers.CharField(write_only=True, required=True, min_length=11, max_length=11)
     
-class CreateStaffProfieSerializer(serializers.ModelSerializer):
+class CreateStaffProfileSerializer(serializers.ModelSerializer):
     ward = serializers.PrimaryKeyRelatedField(write_only=True, queryset=HospitalWard.objects.all(), required=False, allow_null=True)
     ward_info = WardNameSerializer(read_only=True, source="ward")
     
     class Meta:
         model = HospitalStaffProfile
-        fields = ['firstname', 'lastname', 'phone_no', 'role', 'specialization', 'ward', 'gender']
+        fields = ['firstname', 'lastname', 'phone_no', 'role', 'specialization', 'ward', 'gender', "ward_info"]
         
     # def get_fields(self):
     #     fields = super().get_fields()
@@ -290,7 +290,7 @@ class HospitalStaffInfoSerilizer(serializers.ModelSerializer):
     
     class Meta:
         model = HospitalStaffProfile
-        fields = ["firstname", "lastname", "phone_no", "role", "staff_id", "email", "ward", "gender"]
+        fields = ["firstname", "lastname", "phone_no", "role", "staff_id", "email", "ward", "gender", "ward_info"]
         
     # def get_fields(self):
     #     fields = super().get_fields()
@@ -301,7 +301,7 @@ class HospitalStaffInfoSerilizer(serializers.ModelSerializer):
     #     return fields
 
 class TeamMemberCreateSerializer(BaseUserCreateSerializer):
-    profile = CreateStaffProfieSerializer(required=True, source="hospital_staff_profile")
+    profile = CreateStaffProfileSerializer(required=True, source="hospital_staff_profile")
     invitation_message = serializers.CharField(write_only=True, required=True)
     login_url = serializers.URLField(required=True, write_only=True)
     

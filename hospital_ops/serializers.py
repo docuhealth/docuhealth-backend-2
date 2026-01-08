@@ -85,7 +85,7 @@ class BookAppointmentSerializer(serializers.ModelSerializer):
         read_only_fields = ["hospital"]
         
 class HandOverLogSerializer(serializers.ModelSerializer):
-    to_nurse = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.Role.NURSE), write_only=True)
+    to_nurse = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.StaffRole.NURSE), write_only=True)
     to_nurse_info = HospitalStaffBasicInfoSerializer(source="to_nurse", read_only=True)
     
     from_nurse_info = HospitalStaffBasicInfoSerializer(source="from_nurse", read_only=True)
@@ -93,6 +93,6 @@ class HandOverLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = HandOverLog
         fields = ["id", "from_nurse_info", "to_nurse", "to_nurse_info", "items_transferred", "handover_appointments", "handover_patients", "created_at"]
-        read_only_fields = ["id", "from_nurse_info", "to_nurse_info", "created_at"]
+        read_only_fields = ["id", "from_nurse_info", "to_nurse_info", "created_at", "items_transferred"]
         
 

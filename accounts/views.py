@@ -638,8 +638,8 @@ class GetPatientDetailsView(generics.RetrieveAPIView):
         HospitalPatientActivity.objects.create(patient=patient_user.patient_profile, staff=staff, hospital=hospital, action="check_patient_info")
         
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-@extend_schema(tags=["Receptionist, Nurse, Doctor"], summary="Get hospital staff by role")
+
+@extend_schema(tags=["Receptionist", "Nurse", "Doctor"], summary="Get hospital staff by role")
 class GetStaffByRoleView(generics.ListAPIView):
     permission_classes = [IsAuthenticatedHospitalStaff | IsAuthenticatedHospitalAdmin]
     serializer_class = HospitalStaffInfoSerilizer

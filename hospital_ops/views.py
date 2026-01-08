@@ -31,8 +31,8 @@ class ListAllAppointmentsView(generics.ListAPIView):
             
         return Appointment.objects.filter(hospital=hospital).order_by('scheduled_time')
     
-@extend_schema(tags=["Nurse, Doctor"], summary="List appointments assigned to this staff")
-class ListAppointmentsForStaffView(generics.ListAPIView):
+@extend_schema(tags=["Nurse", "Doctor"], summary="List appointments assigned to this staff")
+class ListStaffAppointmentsView(generics.ListAPIView):
     serializer_class = HospitalAppointmentSerializer
     permission_classes = [IsAuthenticatedNurse]
     
@@ -99,7 +99,7 @@ class BookAppointmentView(generics.CreateAPIView):
         
         HospitalPatientActivity.objects.create(patient=patient, staff=staff, hospital=hospital, action="book_appointment")
         
-@extend_schema(tags=["Nurses"], summary="Handover nurse shift to another nurse")
+@extend_schema(tags=["Nurse"], summary="Handover nurse shift to another nurse")
 class HandOverNurseShiftView(generics.GenericAPIView):
     serializer_class = HandOverLogSerializer
     permission_classes = [IsAuthenticatedNurse]
