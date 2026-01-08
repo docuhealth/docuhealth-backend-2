@@ -352,7 +352,7 @@ class RetrievePatientInfoView(generics.RetrieveAPIView):
 
         return Response(data)
 
-@extend_schema(tags=["Doctor", "Nurse"], summary="Create case notes for a patient")
+@extend_schema(tags=["Nurse"], summary="Create case notes for a patient")
 class CreateCaseNotesView(generics.CreateAPIView):
     serializer_class = CaseNoteSerializer
     permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
@@ -363,7 +363,7 @@ class CreateCaseNotesView(generics.CreateAPIView):
         
         serializer.save(staff=staff, hospital=hospital)
         
-@extend_schema(tags=["Doctor", "Nurse"], summary="List case notes for a patient")
+@extend_schema(tags=["Nurse"], summary="List case notes for a patient")
 class ListCaseNotesView(generics.ListAPIView):
     serializer_class = CaseNoteSerializer
     permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
@@ -375,8 +375,8 @@ class ListCaseNotesView(generics.ListAPIView):
         patient = get_object_or_404(PatientProfile, hin=hin)
         return CaseNote.objects.filter(patient=patient, hospital=staff.hospital).select_related("patient", "staff", "hospital").order_by('-created_at')
     
-@extend_schema(tags=["Doctor", "Nurse"], summary="Retrieve a specific case note for a patient")
-class RetrieveCaseNoteView(generics.RetrieveUpdateDestroyAPIView):
+@extend_schema(tags=["Nurse"], summary="Retrieve (get), Update (patch), Delete (delete) a specific case note for a patient")
+class RetrieveUpdateDeleteCaseNoteView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UpdateCaseNoteSerializer
     permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
     http_method_names = ['get', 'patch', 'delete']
