@@ -1,6 +1,5 @@
 from rest_framework.permissions import BasePermission
-from core.models import User
-from hospitals.models import HospitalStaffProfile
+from accounts.models import User, HospitalStaffProfile
 
 class BaseRolePermission(BasePermission):
     role = None
