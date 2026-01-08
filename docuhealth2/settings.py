@@ -31,18 +31,14 @@ INSTALLED_APPS = [
     'drf_spectacular',
     "corsheaders",
     
-    'patients',
-    'core',
-    'medicalrecords',
-    'appointments',
-    'hospitals',
-    'subscriptions',
-    'receptionists',
-    'nurses',
-    'doctors'
+    'accounts',
+    'records',
+    'organizations',
+    'hospital_ops',
+    'facility',
 ]
 
-AUTH_USER_MODEL = "core.User"
+AUTH_USER_MODEL = "accounts.User"
 APPEND_SLASH=False 
 
 MIDDLEWARE = [

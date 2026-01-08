@@ -2,7 +2,7 @@ from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.pagination import PageNumberPagination
 
-from core.models import User
+from accounts.models import User
 
 class PublicGenericAPIView(generics.GenericAPIView):
     authentication_classes = []  
