@@ -3,7 +3,6 @@ from django.utils import timezone
 
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound
 
 from drf_spectacular.utils import extend_schema
 
@@ -11,7 +10,7 @@ from docuhealth2.permissions import IsAuthenticatedNurse
 
 from .serializers import  AssignAppointmentToDoctorSerializer
 
-from hospitals.models import  WardBed, Admission, VitalSignsRequest
+from hospitals.models import WardBed, Admission, VitalSignsRequest
 from hospitals.serializers.services import  HospitalAppointmentSerializer, AdmissionSerializer, WardBasicInfoSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, HospitalStaffInfoSerilizer, VitalSignsSerializer
 
 from appointments.models import Appointment
