@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 
 from rest_framework import generics
 from rest_framework.response import Response
@@ -12,8 +13,8 @@ from drf_spectacular.utils import extend_schema
 
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedNurse, IsAuthenticatedDoctor, IsAuthenticatedHospitalStaff, IsAuthenticatedReceptionist, IsAuthenticatedPatient
 
-from .models import MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission
-from .serializers import MedicalRecordSerializer, MedicalRecordAttachmentSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer
+from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission
+from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, UpdateCaseNoteSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer
 
 from facility.models import WardBed
 from hospital_ops.models import HospitalPatientActivity
@@ -367,3 +368,37 @@ class RetrievePatientInfoView(generics.RetrieveAPIView):
         }
 
         return Response(data)
+
+@extend_schema(tags=["Doctor", "Nurse"], summary="Create case notes for a patient")
+class CreateCaseNotesView(generics.CreateAPIView):
+    serializer_class = CaseNoteSerializer
+    permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
+    
+    def perform_create(self, serializer):
+        staff = self.request.user.hospital_staff_profile
+        hospital = staff.hospital
+        
+        serializer.save(staff=staff, hospital=hospital)
+        
+@extend_schema(tags=["Doctor", "Nurse"], summary="List case notes for a patient")
+class ListCaseNotesView(generics.ListAPIView):
+    serializer_class = CaseNoteSerializer
+    permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
+    
+    def get_queryset(self):
+        hin = self.kwargs.get("hin")
+        staff = self.request.user.hospital_staff_profile
+        
+        patient = get_object_or_404(PatientProfile, hin=hin)
+        return CaseNote.objects.filter(patient=patient, hospital=staff.hospital).select_related("patient", "staff", "hospital").order_by('-created_at')
+    
+@extend_schema(tags=["Doctor", "Nurse"], summary="Retrieve a specific case note for a patient")
+class RetrieveCaseNoteView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = UpdateCaseNoteSerializer
+    permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
+    http_method_names = ['get', 'patch', 'delete']
+    
+        
+    
+    
+        

@@ -149,3 +149,17 @@ class Admission(BaseModel):
     
     def __str__(self):
         return f"Admission for {self.patient.full_name} at {self.hospital.name}"
+    
+class CaseNote(BaseModel):
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="case_notes")
+    staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name="case_notes", null=True)
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="case_notes", null=True)
+    
+    observation = models.TextField()
+    care = models.TextField()
+    response = models.TextField()
+    abnormalities = models.TextField(blank=True, null=True)
+    follow_up = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return f"Case Note for {self.patient.full_name} by {self.staff.full_name}"

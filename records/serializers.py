@@ -2,7 +2,7 @@ from django.db import transaction
 
 from rest_framework import serializers
 
-from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment, VitalSigns, VitalSignsRequest, Admission
+from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment, VitalSigns, VitalSignsRequest, Admission, CaseNote
 
 from accounts.models import PatientProfile, SubaccountProfile, HospitalStaffProfile
 from accounts.serializers import PatientFullInfoSerializer, PatientBasicInfoSerializer, HospitalStaffInfoSerilizer, HospitalStaffBasicInfoSerializer
@@ -221,6 +221,22 @@ class ConfirmAdmissionSerializer(serializers.Serializer):
             raise serializers.ValidationError({"detail": "This admission is either already confirmed or cancelled or the patient has been discharged"})
         
         return  super().validate(attrs)
+    
+class CaseNoteSerializer(serializers.ModelSerializer):
+    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), write_only=True)
+    patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
+    
+    staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
+    hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
+    
+    class Meta:
+        model = CaseNote
+        exclude = ['is_deleted', 'deleted_at']
+        read_only_fields = ['id', 'created_at', 'hospital', 'staff']
+class UpdateCaseNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CaseNote
+        fields = ['observation', 'care', 'response', 'abnormalities', 'follow_up']
 
     
 
