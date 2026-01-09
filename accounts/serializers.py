@@ -120,6 +120,26 @@ class CreatePatientSerializer(BaseUserCreateSerializer):
         
         return user
     
+class ReceptionistCreatePatientSerializer(BaseUserCreateSerializer):
+    profile = PatientFullInfoSerializer(required=True, source="patient_profile")
+    verify_url = serializers.URLField(write_only=True, required=True)
+    
+    class Meta(BaseUserCreateSerializer.Meta):
+        fields = BaseUserCreateSerializer.Meta.fields + ["profile", "verify_url"]
+
+    def create(self, validated_data):
+        profile_data = validated_data.pop("patient_profile")
+        validated_data['role'] = User.Role.PATIENT
+        
+        house_no = profile_data.pop("house_no", None)
+        if house_no:
+            profile_data["street"] = f'{house_no}, {profile_data["street"]}'
+        
+        user = super().create(validated_data)
+        PatientProfile.objects.create(user=user, **profile_data)
+        
+        return user
+    
 class UpdatePatientProfileSerializer(StrictFieldsMixin , serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
@@ -202,9 +222,11 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
     phone_num = serializers.CharField(required=True, write_only=True)
     password = serializers.CharField(write_only=True, required=True, min_length=8)
     
+    verify_url = serializers.URLField(write_only=True, required=True)
+    
     class Meta:
         model = User
-        fields = ['email', 'password', 'phone_num', 'subaccount']
+        fields = ['email', 'password', 'phone_num', 'subaccount', 'verify_url']
         read_only_fields = ('id', 'created_at', 'updated_at')
         
     def validate(self, attrs):

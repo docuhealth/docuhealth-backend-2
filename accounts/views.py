@@ -12,7 +12,7 @@ from rest_framework.exceptions import NotFound
 from drf_spectacular.utils import extend_schema
 
 from .models import User, OTP, UserProfileImage, NINVerificationAttempt, PatientProfile, SubaccountProfile, HospitalStaffProfile
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff
 from .requests import verify_nin_request
 from .utils import *
@@ -370,6 +370,7 @@ class UpgradeSubaccountView(generics.CreateAPIView):
     permission_classes = [IsAuthenticatedPatient]
     
     def perform_create(self, serializer):
+        verify_url = serializer.validated_data.pop("verify_url")
         user = serializer.save()
         otp = OTP.generate_otp(user)
         
@@ -379,6 +380,10 @@ class UpgradeSubaccountView(generics.CreateAPIView):
                 f"Enter the OTP below into the required field \n"
                 f"The OTP will expire in 10 mins\n\n"
                 f"OTP: {otp}\n\n"
+                
+                f"Please use the link below and enter your OTP: \n\n"
+                f"{verify_url}\n\n"
+                
                 f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
                 f"From the Docuhealth Team"
             ),
@@ -577,8 +582,8 @@ class ReceptionistDashboardView(generics.GenericAPIView):
         }, status=status.HTTP_200_OK)
         
 @extend_schema(tags=["Receptionist"], summary="Create a new patient account")
-class CreatePatientView(generics.CreateAPIView):
-    serializer_class = CreatePatientSerializer
+class ReceptionistCreatePatientView(generics.CreateAPIView):
+    serializer_class = ReceptionistCreatePatientSerializer
     permission_classes = [IsAuthenticatedReceptionist]
     
     def post(self, request, *args, **kwargs):
@@ -594,6 +599,7 @@ class CreatePatientView(generics.CreateAPIView):
     def perform_create(self, serializer):
         staff = self.request.user.hospital_staff_profile
         hospital = staff.hospital
+        verify_url = serializer.validated_data.pop("verify_url")
         user = serializer.save()
         otp = OTP.generate_otp(user, expiry_minutes=60)
         
@@ -603,6 +609,10 @@ class CreatePatientView(generics.CreateAPIView):
                 f"Enter the OTP below into the required field \n"
                 f"The OTP will expire in 10 mins\n\n"
                 f"OTP: {otp}\n\n"
+
+                f"Please use the link below and enter your OTP: \n\n"
+                f"{verify_url}\n\n"
+                    
                 f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
                 f"From the Docuhealth Team"
             ),
