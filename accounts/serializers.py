@@ -224,9 +224,15 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
     
     verify_url = serializers.URLField(write_only=True, required=True)
     
+    state = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    country = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    street = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
+    city = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    
     class Meta:
         model = User
-        fields = ['email', 'password', 'phone_num', 'subaccount', 'verify_url']
+        fields = ['email', 'password', 'phone_num', 'subaccount', 'verify_url', 'street', 'city', 'state', 'country', 'house_no']
         read_only_fields = ('id', 'created_at', 'updated_at')
         
     def validate(self, attrs):
@@ -244,6 +250,10 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
         
         phone_num = validated_data.pop('phone_num')
         password = validated_data.pop('password')
+        
+        house_no = validated_data.pop("house_no", None)
+        if house_no:
+            validated_data["street"] = f'{house_no}, {validated_data["street"]}'
         
         subaccount_user = subaccount_profile.user
         validated_data['role'] = User.Role.PATIENT
