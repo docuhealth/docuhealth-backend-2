@@ -249,10 +249,10 @@ class ListAdmissionRequestsView(generics.ListAPIView):
         
         return Admission.objects.filter(hospital=hospital, ward=ward, status=Admission.Status.PENDING).order_by('request_date')
         
-@extend_schema(tags=['Doctor'], summary="Request admission for a patient")
+@extend_schema(tags=['Doctor', 'Receptionist'], summary="Request admission for a patient")
 class RequestAdmissionView(generics.CreateAPIView):
     serializer_class = AdmissionSerializer
-    permission_classes = [IsAuthenticatedDoctor]
+    permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedReceptionist] 
     
     @transaction.atomic
     def perform_create(self, serializer):
@@ -300,25 +300,6 @@ class ConfirmAdmissionView(generics.UpdateAPIView):
         admission.bed.save(update_fields=["status"])
 
         return Response({"detail": "Admission confirmed successfully."}, status=status.HTTP_200_OK)
-    
-@extend_schema(tags=['Receptionist'], summary="Request admission for a patient")
-class RequestAdmissionView(generics.CreateAPIView):
-    serializer_class = AdmissionSerializer
-    permission_classes = [IsAuthenticatedReceptionist]
-    
-    @transaction.atomic
-    def perform_create(self, serializer):
-        admission = serializer.save(hospital=self.request.user.hospital_staff_profile.hospital)
-        
-        bed = admission.bed
-        bed.status = WardBed.Status.REQUESTED
-        bed.save(update_fields=["status"])
-        
-        patient = admission.patient
-        staff = self.request.user.hospital_staff_profile
-        hospital = staff.hospital
-        
-        HospitalPatientActivity.objects.create(patient=patient, staff=staff, hospital=hospital, action="request_admission")
     
 @extend_schema(tags=["Receptionist"], summary="List all admission requests that are pending")
 class ListAdmissionRequestsView(generics.ListAPIView):
@@ -392,7 +373,9 @@ class ListSubaccountMedicalRecordsView(generics.ListAPIView):
         if not hin:
             raise ValidationError("Subaccount hin should be provided")
         
+        print(hin)
         if not SubaccountProfile.objects.filter(hin=hin).exists():
+            print("Not found")
             raise NotFound("A subaccount with this HIN does not exist.")
         
         return MedicalRecord.objects.filter(subaccount__hin = hin).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')

@@ -33,7 +33,7 @@ def generate_staff_id(hospital_name: str, role: str = "default") -> str:
     Format: <HOSP_ABBR>-<ROLE_ABBR><SEQUENCE>
     Example: OLVC-DR001
     """
-    from hospitals.models import HospitalStaffProfile 
+    from accounts.models import HospitalStaffProfile 
 
     # Create a short hospital abbreviation (4 chars max)
     clean_name = ''.join(ch for ch in hospital_name.upper() if ch.isalpha())

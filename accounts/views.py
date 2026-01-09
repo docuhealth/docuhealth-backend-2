@@ -28,8 +28,6 @@ from facility.serializers import WardBasicInfoSerializer
 from hospital_ops.models import HospitalPatientActivity
 from accounts.serializers import PatientFullInfoSerializer
 
-
-
 mailer = BrevoEmailService()
 
 def set_refresh_cookie(response):

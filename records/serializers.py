@@ -229,9 +229,9 @@ class CaseNoteSerializer(serializers.ModelSerializer):
     staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
     hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
     
-    observation = serializers.ListField(child=serializers.CharField())
-    care = serializers.ListField(child=serializers.CharField())
-    response = serializers.ListField(child=serializers.CharField())
+    observation = serializers.ListField(child=serializers.CharField(), required=False)
+    care = serializers.ListField(child=serializers.CharField(), required=False)
+    response = serializers.ListField(child=serializers.CharField(), required=False)
     abnormalities = serializers.ListField(child=serializers.CharField(), required=False)
     follow_up = serializers.ListField(child=serializers.CharField(), required=False)
     

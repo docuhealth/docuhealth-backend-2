@@ -38,8 +38,8 @@ doctor_urls = [
     path('/vital-signs/request', RequestVitalSignsView.as_view(), name='request-vital-signs'),
     path('/appointments', ListStaffAppointmentsView.as_view(), name='appointments'),
     
-    path('/patient/info/<int:hin>', RetrievePatientInfoView.as_view(), name='retrieve-patient-info'),
-    path('/patient/records/<int:hin>', ListPatientMedicalRecordsView.as_view(), name='list-patient-medical-records'),
+    path('/patient/info/<str:hin>', RetrievePatientInfoView.as_view(), name='retrieve-patient-info'),
+    path('/patient/records/<str:hin>', ListPatientMedicalRecordsView.as_view(), name='list-patient-medical-records'),
     
     path('/admissions/request', RequestAdmissionView.as_view(), name='request-admission'),
     path('/admissions/<str:admission_id>/confirm', ConfirmAdmissionView.as_view(), name='admission-requests'),
@@ -86,7 +86,7 @@ nurse_urls = [
     path('/handover', HandOverNurseShiftView.as_view(), name='handover-nurse-shift'),
     
     path('/case-notes', CreateCaseNotesView.as_view(), name='create-case-notes'),
-    path('/case-notes/patient/<int:hin>', ListCaseNotesView.as_view(), name='list-case-notes-by-patient'),
+    path('/case-notes/patient/<str:hin>', ListCaseNotesView.as_view(), name='list-case-notes-by-patient'),
     # path('/case-notes/<int:pk>', RetrieveCaseNoteView.as_view(), name='retrieve-case-note'),   
 ]
 
@@ -96,12 +96,12 @@ patient_urls = [
     path('/update', UpdatePatientView.as_view(), name='update-patient'),
     path('/delete', DeletePatientAccountView.as_view(), name='delete-patient'),
     path('/subaccounts', ListCreateSubaccountView.as_view(), name='create-subaccount'),
-    path('/subaccounts/medical-records/<int:hin>', ListSubaccountMedicalRecordsView.as_view(), name='get-subaccount-medical-records'),
+    path('/subaccounts/medical-records/<str:hin>', ListSubaccountMedicalRecordsView.as_view(), name='get-subaccount-medical-records'),
     path('/subaccounts/upgrade', UpgradeSubaccountView.as_view(), name='upgrade-subaccount'),
     path('/appointments', ListPatientAppointmentsView.as_view(), name='get-appointments'),
     path('/emergency', ToggleEmergencyView.as_view(), name='toggle-emergency'),
     path('/id-card', GeneratePatientIdCard.as_view(), name='generate-patient-id-card'),
-    path('/subaccounts/id-card/<int:hin>', GenerateSubaccountIdCard.as_view(), name='generate-subaccount-id-card'),
+    path('/subaccounts/id-card/<str:hin>', GenerateSubaccountIdCard.as_view(), name='generate-subaccount-id-card'),
 ]
 
 receptionist_urls = [

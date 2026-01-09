@@ -155,9 +155,9 @@ class CaseNote(BaseModel):
     staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name="case_notes", null=True)
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="case_notes", null=True)
     
-    observation = models.JSONField(default=list)
-    care = models.JSONField(default=list)
-    response = models.JSONField(default=list)
+    observation = models.JSONField(default=list, blank=True, null=True)
+    care = models.JSONField(default=list, blank=True, null=True)
+    response = models.JSONField(default=list, blank=True, null=True)
     abnormalities = models.JSONField(default=list, blank=True, null=True)
     follow_up = models.JSONField(default=list, blank=True, null=True)
     
