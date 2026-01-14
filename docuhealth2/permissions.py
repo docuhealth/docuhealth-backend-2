@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission
 from accounts.models import User, HospitalStaffProfile
+from organizations.models import PharmacyClient
 
 class BaseRolePermission(BasePermission):
     role = None
@@ -79,3 +80,10 @@ class IsAuthenticatedNurse(StaffRolePermission):
     
 class IsAuthenticatedReceptionist(StaffRolePermission):
     required_staff_role = HospitalStaffProfile.StaffRole.RECEPTIONIST
+    
+class IsAuthenticatedPharmacyClient(BasePermission):
+    """
+    Allows access only to authenticated pharmacy clients.
+    """
+    def has_permission(self, request, view):
+        return isinstance(request.auth, PharmacyClient)

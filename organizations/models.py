@@ -1,18 +1,17 @@
 from django.db import models
 from django.utils import timezone
 from django.db import models
+from django.contrib.auth.hashers import make_password
 
 from datetime import timedelta
 import secrets
 import hashlib
+import uuid
 
 from docuhealth2.utils.generate import generate_HIN
 from docuhealth2.models import BaseModel
 
 from accounts.models import User, default_notification_settings
-
-from docuhealth2.models import BaseModel
-
 
 class HospitalProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="hospital_profile")
@@ -128,7 +127,7 @@ class VerificationToken(BaseModel):
     def __str__(self):
         return self.token
     
-class SubscriptionPlan(models.Model):
+class SubscriptionPlan(BaseModel):
     class Intervals(models.TextChoices):
         MONTHLY = "monthly", "Monthly"
         YEARLY = "yearly", "Yearly"
@@ -151,7 +150,7 @@ class SubscriptionPlan(models.Model):
     def __str__(self):
         return f"{self.name} ({self.interval})"
 
-class Subscription(models.Model):
+class Subscription(BaseModel):
     class SubscriptionStatus(models.TextChoices):
         ACTIVE = "active", "Active"
         INACTIVE = "inactive", "Inactive"
@@ -180,7 +179,7 @@ class Subscription(models.Model):
     def __str__(self):
         return f"{self.user.email} - {self.plan.name}"
     
-class PaystackCustomer(models.Model):
+class PaystackCustomer(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="paystack_customer")
     customer_code = models.CharField(max_length=200, blank=True, null=True)
     
@@ -189,3 +188,51 @@ class PaystackCustomer(models.Model):
     
     class Meta:
         db_table = 'subscriptions_paystackcustomer'
+        
+class PharmacyOnboardingRequest(BaseModel):
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+
+    name = models.CharField(max_length=255)
+    
+    # license_number = models.CharField(max_length=100, unique=True)
+    documents = models.JSONField(default=dict)
+    official_email = models.EmailField()
+    contact_phone = models.CharField(max_length=20)
+    message = models.TextField(blank=True)
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.contact_email}"
+        
+class PharmacyProfile(BaseModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    request = models.OneToOneField(PharmacyOnboardingRequest, on_delete=models.CASCADE, related_name="pharmacy_profile", null=True, blank=True)
+    pharm_code = models.CharField(max_length=50, unique=True, editable=False)
+    
+    name = models.CharField(max_length=255)
+    
+    street = models.CharField(max_length=120, blank=True, null=True)
+    city = models.CharField(max_length=20, blank=True, null=True)
+    state = models.CharField(max_length=20, blank=True, null=True)
+    country = models.CharField(max_length=20, blank=True, null=True)
+    
+    def save(self, *args, **kwargs):
+        if not self.pharm_code:
+            self.pharm_code = f"PHARM-{secrets.token_hex(4).upper()}"
+        super().save(*args, **kwargs)
+
+class PharmacyClient(BaseModel):
+    pharmacy = models.OneToOneField(PharmacyProfile, on_delete=models.CASCADE, related_name="client")
+    
+    client_id = models.CharField(max_length=100, unique=True, default=uuid.uuid4)
+    client_secret_hash = models.CharField(max_length=255) 
+    is_active = models.BooleanField(default=True)
+
+    def set_secret(self, raw_secret):
+        self.client_secret_hash = make_password(raw_secret)

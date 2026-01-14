@@ -4,10 +4,9 @@ from rest_framework import serializers
 from accounts.models import User
 from accounts.serializers import BaseUserCreateSerializer
 
-from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, SubscriptionPlan, Subscription
+from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, SubscriptionPlan, Subscription, PharmacyOnboardingRequest
 
 from .requests import create_plan
-
 
 class HospitalProfileSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
@@ -15,7 +14,6 @@ class HospitalProfileSerializer(serializers.ModelSerializer):
         model= HospitalProfile
         fields = ['name', 'hin', 'street', 'city', 'state', 'country', 'house_no']
         read_only_fields = ['hin']
-        
         
 class CreateHospitalSerializer(BaseUserCreateSerializer):
     profile = HospitalProfileSerializer(required=True, source="hospital_profile")
@@ -146,7 +144,24 @@ class SubscriptionSerializer(serializers.ModelSerializer):
        
        subscription, _ = Subscription.objects.update_or_create(user=user, defaults={"plan":plan})
 
-    #    watermelon comment
-    
-       
        return subscription
+   
+class PharmacyOnboardingRequestSerializer(serializers.ModelSerializer):
+    documents = serializers.ListField(child=serializers.DictField())
+    
+    class Meta:
+        model = PharmacyOnboardingRequest
+        exclude = ["is_deleted", "deleted_at", "reviewed_by"]
+        read_only_fields = ["id", "created_at", "updated_at", "status",  "reviewed_at"]
+        
+class ApprovePharmacyOnboardingRequestSerializer(serializers.Serializer):
+    request = serializers.PrimaryKeyRelatedField(queryset=PharmacyOnboardingRequest.objects.filter(status=PharmacyOnboardingRequest.Status.PENDING), write_only=True, required=True)
+    password = serializers.CharField(write_only=True, required=True)
+    
+    street = serializers.CharField(write_only=True, required=True)
+    city = serializers.CharField(write_only=True, required=True)
+    state = serializers.CharField(write_only=True, required=True)
+    country = serializers.CharField(write_only=True, required=True)
+    house_no = serializers.CharField(write_only=True, required=False)
+    
+    login_url = serializers.URLField(write_only=True, required=True)

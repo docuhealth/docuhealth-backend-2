@@ -8,13 +8,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.permissions import AllowAny   
 
 from drf_spectacular.utils import extend_schema
 
-from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedNurse, IsAuthenticatedDoctor, IsAuthenticatedHospitalStaff, IsAuthenticatedReceptionist, IsAuthenticatedPatient
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedNurse, IsAuthenticatedDoctor, IsAuthenticatedHospitalStaff, IsAuthenticatedReceptionist, IsAuthenticatedPatient, IsAuthenticatedPharmacyClient
+from docuhealth2.authentications import PharmacyClientHeaderAuthentication
 
-from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission
-from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, UpdateCaseNoteSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer
+from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord
+from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, UpdateCaseNoteSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer
 
 from facility.models import WardBed
 from hospital_ops.models import HospitalPatientActivity
@@ -26,6 +28,7 @@ from accounts.serializers import PatientBasicInfoSerializer
 class MedicalRecordListView(generics.ListAPIView):
     queryset = MedicalRecord.objects.all().order_by('-created_at')
     serializer_class = MedicalRecordSerializer
+    permission_classes = [IsAuthenticatedHospitalStaff | IsAuthenticatedHospitalAdmin]
 
 @extend_schema(tags=["Medical records"])  
 class CreateMedicalRecordView(generics.CreateAPIView):
@@ -379,8 +382,28 @@ class ListSubaccountMedicalRecordsView(generics.ListAPIView):
             raise NotFound("A subaccount with this HIN does not exist.")
         
         return MedicalRecord.objects.filter(subaccount__hin = hin).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
-    
+
+@extend_schema(tags=["Pharmacy"], summary="Upload medication record for a patient")   
+class PharmacyDrugRecordUploadView(generics.CreateAPIView):
+    authentication_classes = [PharmacyClientHeaderAuthentication]
+    serializer_class = ClientDrugRecordSerializer
+    permission_classes = [IsAuthenticatedPharmacyClient]
+
+    def perform_create(self, serializer):
+        pharmacy_client = self.request.auth
+        validated_data = serializer.validated_data
         
-    
-    
+        serializer.save(
+            pharmacy=pharmacy_client.pharmacy,
+            upload_source=DrugRecord.UploadSource.PHARMACY_API,
+        )
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        print(response.data)
         
+        return Response({
+            "status": "success",
+            "message": "Medication record added successfully",
+            "record_id": response.data.get('id')
+        }, status=201)

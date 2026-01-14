@@ -36,8 +36,6 @@ def set_refresh_cookie(response):
     refresh = data.get("refresh")
     access = data.get("access")
     
-    print("Access Token:", access)
-
     response.set_cookie(
         key="refresh_token",
         value=refresh,

@@ -77,10 +77,22 @@ class MedRecordsVitalSignsSerializer(serializers.ModelSerializer):
 class DrugRecordSerializer(serializers.ModelSerializer):
     frequency = ValueRateSerializer()
     duration = ValueRateSerializer()
+    allergies = serializers.ListField(child=serializers.CharField())
     class Meta:
         model = DrugRecord
-        fields = ('name', 'route', 'quantity', 'frequency', 'duration', 'status', 'created_at')
-        read_only_fields = ('id', 'created_at', 'updated_at', 'medical_record')
+        fields = ('name', 'route', 'quantity', 'frequency', 'duration', 'status', 'allergies', 'created_at')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'medical_record', 'status')
+        
+class ClientDrugRecordSerializer(serializers.ModelSerializer):
+    frequency = ValueRateSerializer()
+    duration = ValueRateSerializer()
+    allergies = serializers.ListField(child=serializers.CharField())
+    patient = serializers.SlugRelatedField(slug_field='hin', queryset=PatientProfile.objects.all(), required=True)
+    
+    class Meta:
+        model = DrugRecord
+        fields = ('name', 'route', 'quantity', 'frequency', 'duration', 'status', 'allergies', 'patient', 'created_at', 'id')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'status', 'medical_record')
         
 class PatientMedInfoSerializer(serializers.Serializer): 
     patient_info = PatientFullInfoSerializer()

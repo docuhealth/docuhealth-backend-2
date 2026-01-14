@@ -7,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 from accounts.models import HospitalStaffProfile
 from docuhealth2.models import BaseModel
 
-from organizations.models import HospitalProfile
+from organizations.models import HospitalProfile, PharmacyProfile
 
 from facility.models import HospitalWard, WardBed
 
@@ -67,15 +67,22 @@ class MedicalRecord(models.Model):
             user_info = "Unknown"
         return f'Medical Record for {user_info} created on {self.created_at}'
     
-class DrugRecord(models.Model):
+class DrugRecord(BaseModel):
     class Status(models.TextChoices):
         ONGOING = "ongoing", "Ongoing"
         COMPLETED = "completed", "Completed"
         STOPPED = "stopped", "Stopped"
+        
+    class UploadSource(models.TextChoices):
+        MEDICALRECORD = "medicalrecord", "Medical Record"
+        PHARMACY = "pharmacy", "Pharmacy"
+        HOSPITAL = "hospital", "Hospital"
+        PHARMACY_API = "pharmacy_api", "Pharmacy API"
     
     medical_record = models.ForeignKey(MedicalRecord, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
+    pharmacy = models.ForeignKey(PharmacyProfile, on_delete=models.SET_NULL, related_name='drug_records', blank=True, null=True)
     
     name = models.CharField(max_length=255)
     route = models.CharField(max_length=255)
@@ -83,11 +90,12 @@ class DrugRecord(models.Model):
     
     frequency = models.JSONField(default=dict)
     duration = models.JSONField(default=dict)
+    allergies = models.JSONField(default=list)
     
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ONGOING)
     
-    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    upload_source = models.CharField(max_length=20, choices=UploadSource.choices, default=UploadSource.MEDICALRECORD)
     
     class Meta:
         db_table = 'medicalrecords_drugrecord'
