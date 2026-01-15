@@ -1,23 +1,22 @@
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 from django.template.loader import render_to_string
-
-from concurrent.futures import ThreadPoolExecutor
 
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.views import APIView
 
 from docuhealth2.views import PublicGenericAPIView, BaseUserCreateView
-from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedPatient
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedPharmacyAdmin
 from docuhealth2.utils.supabase import upload_file_to_supabase, delete_from_supabase
 from docuhealth2.utils.email_service import BrevoEmailService
 
 from drf_spectacular.utils import extend_schema
 
-from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, HospitalFullInfoSerializer, HospitalBasicInfoSerializer, SubscriptionPlanSerializer, SubscriptionSerializer, PharmacyOnboardingRequestSerializer, ApprovePharmacyOnboardingRequestSerializer
+from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, HospitalFullInfoSerializer, HospitalBasicInfoSerializer, SubscriptionPlanSerializer, SubscriptionSerializer, PharmacyOnboardingRequestSerializer, ApprovePharmacyOnboardingRequestSerializer, PharmacyRotateKeySerializer
 from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalProfile, SubscriptionPlan, PharmacyOnboardingRequest, PharmacyProfile, PharmacyClient
 from .requests import create_customer, initialize_transaction
 
@@ -25,6 +24,8 @@ from accounts.models import User
 
 import uuid
 import secrets
+from concurrent.futures import ThreadPoolExecutor
+
 
 mailer = BrevoEmailService()
 
@@ -324,7 +325,8 @@ class ApprovePharmacyOnboardingRequestView(generics.GenericAPIView):
         user = User.objects.create(
             email = onboarding.official_email,
             role = User.Role.PHARMACY,
-            password = password
+            password = password,
+            is_active = True
         )
 
         profile = PharmacyProfile.objects.create(
@@ -373,3 +375,35 @@ class ApprovePharmacyOnboardingRequestView(generics.GenericAPIView):
                 "business_name": profile.name
             }
         }, status=status.HTTP_201_CREATED)
+
+@extend_schema(tags=["Pharmacy"], summary="Rotate pharmacy keys")    
+class PharmacyRotateKeyView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticatedPharmacyAdmin]
+    serializer_class = PharmacyRotateKeySerializer
+
+    def post(self, request):
+        user: User = request.user
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            profile = user.pharmacy_profile 
+        except AttributeError:
+            return Response({"detail": "You are not allowed to perform this operation"}, status=403)
+
+        current_password = serializer.validated_data.get('password')
+        if not current_password or not user.check_password(current_password):
+            return Response({"detail": "Invalid password. Re-authentication required to rotate keys."}, status=403)
+
+        client = profile.client 
+        new_raw_secret = f"dh_sk_{secrets.token_urlsafe(32)}"
+        
+        client.client_secret_hash = make_password(new_raw_secret)
+        client.save(update_fields=['client_secret_hash'])
+
+        return Response({
+            "status": "success",
+            "message": "Keys rotated successfully. Please note down the new client secret.",
+            "client_id": client.client_id,
+            "new_client_secret": new_raw_secret
+        })

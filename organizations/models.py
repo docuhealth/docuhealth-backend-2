@@ -211,7 +211,7 @@ class PharmacyOnboardingRequest(BaseModel):
         return f"{self.name} - {self.contact_email}"
         
 class PharmacyProfile(BaseModel):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="pharmacy_profile")
     request = models.OneToOneField(PharmacyOnboardingRequest, on_delete=models.CASCADE, related_name="pharmacy_profile", null=True, blank=True)
     pharm_code = models.CharField(max_length=50, unique=True, editable=False)
     

@@ -7,11 +7,15 @@ class BaseRolePermission(BasePermission):
     require_auth = True  
 
     def has_permission(self, request, view):
+        if not request.user:
+            return False
+        
         if self.require_auth and not request.user.is_authenticated:
             return False
+        
         return (
             self.role is not None
-            and getattr(request.user, "role", None) == self.role
+            and str(getattr(request.user, "role", None)) == str(self.role)
         )
         
 class StaffRolePermission(BasePermission):
@@ -58,6 +62,9 @@ class IsAdmin(BaseRolePermission):
 class IsAuthenticatedAdmin(BaseRolePermission):
     role = User.Role.ADMIN
     
+class IsAuthenticatedPharmacyAdmin(BaseRolePermission):
+    role = User.Role.PHARMACY
+    
 class IsHospitalAdmin(BaseRolePermission):
     role = User.Role.HOSPITAL
     require_auth = False
@@ -82,8 +89,5 @@ class IsAuthenticatedReceptionist(StaffRolePermission):
     required_staff_role = HospitalStaffProfile.StaffRole.RECEPTIONIST
     
 class IsAuthenticatedPharmacyClient(BasePermission):
-    """
-    Allows access only to authenticated pharmacy clients.
-    """
     def has_permission(self, request, view):
         return isinstance(request.auth, PharmacyClient)

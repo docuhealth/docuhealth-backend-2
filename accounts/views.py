@@ -265,10 +265,7 @@ class VerifyUserNINView(PublicGenericAPIView, generics.GenericAPIView):
         refresh = RefreshToken.for_user(user)
         access = str(refresh.access_token)
 
-        data = {
-                "access": access,
-                "refresh": str(refresh),
-            }
+        data = {"access": access, "refresh": str(refresh)}
 
         response = Response(data, status=200)
 

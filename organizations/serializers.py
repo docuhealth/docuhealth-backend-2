@@ -156,7 +156,7 @@ class PharmacyOnboardingRequestSerializer(serializers.ModelSerializer):
         
 class ApprovePharmacyOnboardingRequestSerializer(serializers.Serializer):
     request = serializers.PrimaryKeyRelatedField(queryset=PharmacyOnboardingRequest.objects.filter(status=PharmacyOnboardingRequest.Status.PENDING), write_only=True, required=True)
-    password = serializers.CharField(write_only=True, required=True)
+    password = serializers.CharField(write_only=True, required=True, min_length=8)
     
     street = serializers.CharField(write_only=True, required=True)
     city = serializers.CharField(write_only=True, required=True)
@@ -165,3 +165,6 @@ class ApprovePharmacyOnboardingRequestSerializer(serializers.Serializer):
     house_no = serializers.CharField(write_only=True, required=False)
     
     login_url = serializers.URLField(write_only=True, required=True)
+    
+class PharmacyRotateKeySerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, required=True, min_length=8)
