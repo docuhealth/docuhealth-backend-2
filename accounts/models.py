@@ -50,6 +50,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         HOSPITAL_STAFF = 'hospital_staff', 'Hospital Staff'
         ADMIN = 'admin', 'Admin'
         PHARMACY = 'pharmacy', 'Pharmacy'
+        PHARMACY_PARTNER = 'pharmacy_partner', 'Pharmacy Partner'
     
     email = models.EmailField(unique=True, blank=True, null=True)
     role = models.CharField(max_length=20, choices=Role.choices)

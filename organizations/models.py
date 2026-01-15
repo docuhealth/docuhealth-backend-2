@@ -189,46 +189,71 @@ class PaystackCustomer(BaseModel):
     class Meta:
         db_table = 'subscriptions_paystackcustomer'
         
-class PharmacyOnboardingRequest(BaseModel):
+class PharmacyPartner(BaseModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="pharmacy_partner")
+    name = models.CharField(max_length=255)
+    address = models.CharField(max_length=255)
+    phone = models.CharField(max_length=20)
+    
+    def __str__(self):
+        return self.name
+        
+# class PharmacyOnboardingRequest(BaseModel):
+#     name = models.CharField(max_length=255)
+    
+#     license_number = models.CharField(max_length=100, unique=True)
+#     documents = models.JSONField(default=dict)
+#     email = models.EmailField()
+#     phone = models.CharField(max_length=20)
+#     message = models.TextField(blank=True)
+    
+#     street = models.CharField(max_length=120, blank=True, null=True)
+#     city = models.CharField(max_length=20, blank=True, null=True)
+#     state = models.CharField(max_length=20, blank=True, null=True)
+#     country = models.CharField(max_length=20, blank=True, null=True)
+    
+#     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+#     reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+#     reviewed_at = models.DateTimeField(null=True, blank=True)
+
+#     def __str__(self):
+#         return f"{self.name} - {self.contact_email}"
+        
+class PharmacyProfile(BaseModel):
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pending'
         APPROVED = 'approved', 'Approved'
         REJECTED = 'rejected', 'Rejected'
-
-    name = models.CharField(max_length=255)
     
-    # license_number = models.CharField(max_length=100, unique=True)
-    documents = models.JSONField(default=dict)
-    official_email = models.EmailField()
-    contact_phone = models.CharField(max_length=20)
-    message = models.TextField(blank=True)
-    
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    reviewed_at = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.name} - {self.contact_email}"
-        
-class PharmacyProfile(BaseModel):
+    partner = models.ForeignKey(PharmacyPartner, on_delete=models.SET_NULL, null=True, blank=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="pharmacy_profile")
-    request = models.OneToOneField(PharmacyOnboardingRequest, on_delete=models.CASCADE, related_name="pharmacy_profile", null=True, blank=True)
     pharm_code = models.CharField(max_length=50, unique=True, editable=False)
     
     name = models.CharField(max_length=255)
+    license_no = models.CharField(max_length=100, unique=True)
+    documents = models.JSONField(default=dict)
+    phone = models.CharField(max_length=20)
+    message = models.TextField(blank=True)
     
     street = models.CharField(max_length=120, blank=True, null=True)
     city = models.CharField(max_length=20, blank=True, null=True)
     state = models.CharField(max_length=20, blank=True, null=True)
     country = models.CharField(max_length=20, blank=True, null=True)
     
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.name} - {self.contact_email}"
+    
     def save(self, *args, **kwargs):
         if not self.pharm_code:
             self.pharm_code = f"PHARM-{secrets.token_hex(4).upper()}"
         super().save(*args, **kwargs)
 
-class PharmacyClient(BaseModel):
-    pharmacy = models.OneToOneField(PharmacyProfile, on_delete=models.CASCADE, related_name="client")
+class Client(BaseModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="client", null=True)
     
     client_id = models.CharField(max_length=100, unique=True, default=uuid.uuid4)
     client_secret_hash = models.CharField(max_length=255) 
@@ -236,3 +261,13 @@ class PharmacyClient(BaseModel):
 
     def set_secret(self, raw_secret):
         self.client_secret_hash = make_password(raw_secret)
+        
+# class PharmacyPartnerClient(BaseModel):
+#     partner = models.OneToOneField(PharmacyPartner, on_delete=models.CASCADE, related_name="client")
+    
+#     client_id = models.CharField(max_length=100, unique=True, default=uuid.uuid4)
+#     client_secret_hash = models.CharField(max_length=255) 
+#     is_active = models.BooleanField(default=True)
+
+#     def set_secret(self, raw_secret):
+#         self.client_secret_hash = make_password(raw_secret)

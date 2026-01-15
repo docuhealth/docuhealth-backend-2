@@ -4,7 +4,7 @@ from rest_framework import serializers
 from accounts.models import User
 from accounts.serializers import BaseUserCreateSerializer
 
-from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, SubscriptionPlan, Subscription, PharmacyOnboardingRequest
+from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, SubscriptionPlan, Subscription, PharmacyPartner, PharmacyProfile
 
 from .requests import create_plan
 
@@ -146,25 +146,52 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
        return subscription
    
-class PharmacyOnboardingRequestSerializer(serializers.ModelSerializer):
+class PharmacyProfileSerializer(serializers.ModelSerializer):
+    building_no = serializers.CharField(required=False)
     documents = serializers.ListField(child=serializers.DictField())
     
     class Meta:
-        model = PharmacyOnboardingRequest
-        exclude = ["is_deleted", "deleted_at", "reviewed_by"]
-        read_only_fields = ["id", "created_at", "updated_at", "status",  "reviewed_at"]
+        model = PharmacyProfile   
+        fields = ['name', 'license_no', 'documents', 'phone', 'message', 'building_no', 'street', 'city', 'state', 'country']
+   
+class PharmacyOnboardingRequestSerializer(BaseUserCreateSerializer):
+    profile = PharmacyProfileSerializer(required=True, source="pharmacy_profile")
+    
+    class Meta(BaseUserCreateSerializer.Meta):
+        model = User
+        fields = BaseUserCreateSerializer.Meta.fields + ["profile"]
+        
+class ListPharmacyOnboardingRequestSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email")
+    class Meta:
+        model = PharmacyProfile
+        fields = ["id", "pharm_code", "name", "license_no", "phone", "email", "status", "documents", "street", "city", "state", "country",  "created_at"]
         
 class ApprovePharmacyOnboardingRequestSerializer(serializers.Serializer):
-    request = serializers.PrimaryKeyRelatedField(queryset=PharmacyOnboardingRequest.objects.filter(status=PharmacyOnboardingRequest.Status.PENDING), write_only=True, required=True)
-    password = serializers.CharField(write_only=True, required=True, min_length=8)
-    
-    street = serializers.CharField(write_only=True, required=True)
-    city = serializers.CharField(write_only=True, required=True)
-    state = serializers.CharField(write_only=True, required=True)
-    country = serializers.CharField(write_only=True, required=True)
-    house_no = serializers.CharField(write_only=True, required=False)
-    
+    pharmacy_pharm_code = serializers.SlugRelatedField(slug_field="pharm_code", queryset=PharmacyProfile.objects.filter(status=PharmacyProfile.Status.PENDING))
     login_url = serializers.URLField(write_only=True, required=True)
     
 class PharmacyRotateKeySerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, required=True, min_length=8)
+    
+class PharmacyPartnerSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = PharmacyPartner
+        fields = ["name", "address", "phone"]
+        read_only_fields = ["id", "created_at"]
+    
+class CreatePharmacyPartnerSerializer(BaseUserCreateSerializer):
+    profile = PharmacyPartnerSerializer(required=True, source="pharmacy_partner")
+    
+    class Meta(BaseUserCreateSerializer.Meta):
+        fields = BaseUserCreateSerializer.Meta.fields + ["profile"]
+        
+    def create(self, validated_data):
+        profile_data = validated_data.pop("pharmacy_partner")
+        validated_data['role'] = User.Role.PHARMACY_PARTNER
+        
+        user = super().create(validated_data)
+        PharmacyPartner.objects.create(user=user, **profile_data)
+        
+        return user

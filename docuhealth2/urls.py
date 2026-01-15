@@ -19,6 +19,15 @@ urlpatterns = [
     path('api/nurses', include(nurse_urls)),
     path('api/doctors', include(doctor_urls)),
     path('api/pharmacy', include(pharmacy_urls)),
+    
+    path('api/pharmacy/schema/', SpectacularAPIView.as_view(
+        patterns=pharmacy_urls, 
+    ), name='pharmacy-schema'),
+    
+    path('api/pharmacy/docs', SpectacularSwaggerView.as_view(
+        url_name='pharmacy-schema'
+    ), name='pharmacy-docs'),
+    
     path('api/users/profile-image', UploadUserProfileImageView.as_view(), name="upload-user-profile-image"),
 ]
 

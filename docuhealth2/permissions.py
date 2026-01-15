@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 from accounts.models import User, HospitalStaffProfile
-from organizations.models import PharmacyClient
+from organizations.models import Client
 
 class BaseRolePermission(BasePermission):
     role = None
@@ -65,6 +65,9 @@ class IsAuthenticatedAdmin(BaseRolePermission):
 class IsAuthenticatedPharmacyAdmin(BaseRolePermission):
     role = User.Role.PHARMACY
     
+class IsAuthenticatedPharmacyPartner(BaseRolePermission):
+    role = User.Role.PHARMACY_PARTNER
+    
 class IsHospitalAdmin(BaseRolePermission):
     role = User.Role.HOSPITAL
     require_auth = False
@@ -90,4 +93,4 @@ class IsAuthenticatedReceptionist(StaffRolePermission):
     
 class IsAuthenticatedPharmacyClient(BasePermission):
     def has_permission(self, request, view):
-        return isinstance(request.auth, PharmacyClient)
+        return isinstance(request.auth, Client)

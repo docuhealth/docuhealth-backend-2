@@ -13,7 +13,7 @@ from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema
 
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedNurse, IsAuthenticatedDoctor, IsAuthenticatedHospitalStaff, IsAuthenticatedReceptionist, IsAuthenticatedPatient, IsAuthenticatedPharmacyClient
-from docuhealth2.authentications import PharmacyClientHeaderAuthentication
+from docuhealth2.authentications import ClientHeaderAuthentication
 
 from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord
 from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, UpdateCaseNoteSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer
@@ -385,13 +385,12 @@ class ListSubaccountMedicalRecordsView(generics.ListAPIView):
 
 @extend_schema(tags=["Pharmacy"], summary="Upload medication record for a patient")   
 class PharmacyDrugRecordUploadView(generics.CreateAPIView):
-    authentication_classes = [PharmacyClientHeaderAuthentication]
+    authentication_classes = [ClientHeaderAuthentication]
     serializer_class = ClientDrugRecordSerializer
     permission_classes = [IsAuthenticatedPharmacyClient]
 
     def perform_create(self, serializer):
         pharmacy_client = self.request.auth
-        validated_data = serializer.validated_data
         
         serializer.save(
             pharmacy=pharmacy_client.pharmacy,
