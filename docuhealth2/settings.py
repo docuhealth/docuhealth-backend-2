@@ -31,6 +31,8 @@ INSTALLED_APPS = [
     'drf_spectacular',
     "corsheaders",
     
+    "management",
+    
     'accounts',
     'records',
     'organizations',

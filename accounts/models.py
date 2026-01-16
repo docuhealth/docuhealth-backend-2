@@ -48,7 +48,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         SUBACCOUNT = 'subaccount', 'Subaccount'
         HOSPITAL = 'hospital', 'Hospital'
         HOSPITAL_STAFF = 'hospital_staff', 'Hospital Staff'
-        ADMIN = 'admin', 'Admin'
+        DHADMIN = 'dhadmin', 'DHAdmin'
         PHARMACY = 'pharmacy', 'Pharmacy'
         PHARMACY_PARTNER = 'pharmacy_partner', 'Pharmacy Partner'
     

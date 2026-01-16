@@ -55,12 +55,12 @@ class IsPatient(BaseRolePermission):
 class IsAuthenticatedPatient(BaseRolePermission):
     role = User.Role.PATIENT
     
-class IsAdmin(BaseRolePermission):
-    role = User.Role.ADMIN
+class IsDHAdmin(BaseRolePermission):
+    role = User.Role.DHADMIN
     require_auth = False
     
-class IsAuthenticatedAdmin(BaseRolePermission):
-    role = User.Role.ADMIN
+class IsAuthenticatedDHAdmin(BaseRolePermission):
+    role = User.Role.DHADMIN
     
 class IsAuthenticatedPharmacy(BaseRolePermission):
     role = User.Role.PHARMACY

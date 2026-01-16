@@ -3,7 +3,7 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from accounts.views import UploadUserProfileImageView
 from .api_urls import medical_records_urls, patient_urls, hospital_urls, subscription_urls, receptionist_urls, nurse_urls, doctor_urls
-from organizations.urls import pharmacy_urls
+from organizations.urls import pharmacy_urls, partner_urls
 
 urlpatterns = [
     path('', SpectacularSwaggerView.as_view(url_name='schema'), name='redoc'),
@@ -19,6 +19,7 @@ urlpatterns = [
     path('api/nurses', include(nurse_urls)),
     path('api/doctors', include(doctor_urls)),
     path('api/pharmacy', include(pharmacy_urls)),
+    path('api/partners', include(partner_urls)),
     
     path('api/pharmacy/schema/', SpectacularAPIView.as_view(
         patterns=pharmacy_urls, 
