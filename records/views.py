@@ -418,14 +418,13 @@ class ListSubaccountMedicalRecordsView(generics.ListAPIView):
         OpenApiExample(
             'Successful Medication Upload',
             value={
-                "patient": "HIN-12345678",
-                "pharm_code": "PHARM-A1B2C3D4",
-                "name": "Amoxicillin 500mg",
-                "route": "Oral",
-                "quantity": "21 Capsules",
-                "frequency": {"value": 3, "rate": "daily"},
-                "duration": {"value": 7, "rate": "days"},
-                "allergies": ["Penicillin", "Dust"],
+                "status": "success",
+                "message": "Medication record added successfully",
+                "data": {
+                    "record_id": 0,
+                    "patient_hin": "HIN-12345678",
+                    "timestamp": "2022-01-01T00:00:00.000Z"
+                }
             }
         )
     ]
@@ -442,7 +441,6 @@ class PharmacyDrugRecordUploadView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
-        print(response.data)
         
         return Response({
             "status": "success",

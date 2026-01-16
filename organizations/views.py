@@ -13,9 +13,9 @@ from docuhealth2.views import PublicGenericAPIView, BaseUserCreateView
 from docuhealth2.utils.supabase import upload_file_to_supabase, delete_from_supabase
 from docuhealth2.utils.email_service import BrevoEmailService
 from docuhealth2.authentications import ClientHeaderAuthentication
-from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedPharmacyAdmin, IsAuthenticatedPharmacyPartner
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedPharmacy, IsAuthenticatedPharmacyPartner
 
-from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, HospitalFullInfoSerializer, HospitalBasicInfoSerializer, SubscriptionPlanSerializer, SubscriptionSerializer, PharmacyRotateKeySerializer, CreatePharmacyPartnerSerializer, PharmacyOnboardingRequestSerializer, ListPharmacyOnboardingRequestSerializer, ApprovePharmacyOnboardingRequestSerializer
+from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, HospitalFullInfoSerializer, HospitalBasicInfoSerializer, SubscriptionPlanSerializer, SubscriptionSerializer, PharmacyRotateKeySerializer, CreatePharmacyPartnerSerializer, PharmacyOnboardingRequestSerializer, ListPharmacyOnboardingRequestSerializer, ApprovePharmacyOnboardingRequestSerializer, RotatePharmacyCodeSerializer
 
 from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalProfile, SubscriptionPlan, PharmacyProfile, Client
 
@@ -23,7 +23,8 @@ from .services import upload_onboarding_files
 from .requests import create_customer, initialize_transaction
 
 from accounts.models import User
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 import uuid
 import secrets
@@ -274,6 +275,27 @@ class CreatePharmacyPartnerView(PublicGenericAPIView, BaseUserCreateView):
     tags=["Pharmacy"],
     summary="Send an onboarding request for a pharmacy",
     description="Submit pharmacy details and verification documents. Use 'multipart/form-data' for file uploads.",
+    parameters=[
+        OpenApiParameter(
+            name="X-Client-ID",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            description="Your Partner Client ID",
+            required=True,
+        ),
+        OpenApiParameter(
+            name="X-Client-Secret",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            description="Your Partner Secret Key",
+            required=True,
+        ),
+    ],
+    responses={
+        201: OpenApiTypes.OBJECT,
+        401: OpenApiTypes.OBJECT,
+        404: OpenApiTypes.OBJECT,
+    },
     request={
         'multipart/form-data': {
             'type': 'object',
@@ -361,14 +383,43 @@ class CreatePharmacyOnboardingRequest(PublicGenericAPIView, generics.CreateAPIVi
             print(f"Onboarding Error: {str(e)}")
             raise e
             
-@extend_schema(tags=["Pharmacy"], summary="Get all pharmacy onboarding requests")   
+@extend_schema(
+    tags=["Pharmacy"],
+    summary="List Onboarded Pharmacies",
+    description=(
+        "Retrieves a list of all pharmacies onboarded by the authenticated partner. "
+        "This allows partners to track the status (PENDING, APPROVED, REJECTED) "
+        "and retrieve the PharmCode for approved pharmacies."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="X-Client-ID",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            description="Partner Client ID",
+            required=True,
+        ),
+        OpenApiParameter(
+            name="X-Client-Secret",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            description="Partner Secret Key",
+            required=True,
+        ),
+    ],
+    responses={
+        200: ListPharmacyOnboardingRequestSerializer(many=True),
+        401: OpenApiTypes.OBJECT,
+    }
+) 
 class ListPharmacyOnboardingView(generics.ListAPIView):
-    permission_classes = [IsAuthenticatedPharmacyPartner]
+    authentication_classes = [ClientHeaderAuthentication]
     queryset = PharmacyProfile.objects.all()
     serializer_class = ListPharmacyOnboardingRequestSerializer
     
     def get_queryset(self):
-        return PharmacyProfile.objects.filter(partner=self.request.auth.user.pharmacy_partner)
+        partner = self.request.user.pharmacy_partner
+        return PharmacyProfile.objects.filter(partner=partner).order_by('-created_at')
 
 @extend_schema(tags=["Pharmacy"], summary="Get a pharmacy onboarding request") 
 class RetrievePharmacyOnboardingRequest(generics.RetrieveAPIView):
@@ -490,3 +541,75 @@ class PharmacyPartnerRotateKeyView(generics.GenericAPIView): #TODO: Add audit
             }
         }, status=status.HTTP_200_OK)
 
+@extend_schema(
+    tags=["Pharmacy"],
+    summary="Rotate PharmCode Identifier",
+    description=(
+        "Generates a brand new PharmCode for the pharmacy. "
+        "The old PharmCode will become invalid immediately. "
+        "This action is typically taken if the current code has been compromised or during a rebranding."
+    ),
+    parameters=[
+        OpenApiParameter("X-Client-ID", OpenApiTypes.STR, location=OpenApiParameter.HEADER, required=True),
+        OpenApiParameter("X-Client-Secret", OpenApiTypes.STR, location=OpenApiParameter.HEADER, required=True),
+    ],
+    responses={
+        200: OpenApiExample(
+            'Successful Rotation',
+            value={
+                "status": "success",
+                "message": "PharmCode rotated successfully",
+                "data": {
+                    "old_code": "PHARM-A1B2",
+                    "new_code": "PHARM-F5G9"
+                }
+            }
+        )
+    }
+)
+class RotatePharmacyCodeView(generics.GenericAPIView):
+    authentication_classes = [ClientHeaderAuthentication]
+    permission_classes = [IsAuthenticatedPharmacyPartner]
+    serializer_class = RotatePharmacyCodeSerializer
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        
+        pharmacy = validated_data.get("old_code")
+        old_code = pharmacy.pharm_code
+        new_code = f"PHARM-{secrets.token_hex(4).upper()}"
+        
+        while PharmacyProfile.objects.filter(pharm_code=new_code).exists():
+            new_code = f"PHARM-{secrets.token_hex(4).upper()}"
+        
+        pharmacy.pharm_code = new_code
+        pharmacy.save(update_fields=['pharm_code'])
+
+        # TODO: Add audit
+        print(f"IDENTITY ROTATION: {pharmacy.name} changed from {old_code} to {new_code}")
+        
+        context = {
+            "pharmacy_name": pharmacy.name,
+            "old_pharm_code": old_code,
+            "new_pharm_code": new_code
+        }
+        pharmacy_html_content = render_to_string('emails/pharmacy_code_change_email.html', context)
+        
+        mailer.send(
+            subject="Pharmacy Code Rotation",
+            html_content=pharmacy_html_content,
+            recipient=pharmacy.user.email,
+            is_html=True
+        )
+
+        return Response({
+            "status": "success",
+            "message": "A new PharmCode has been generated.",
+            "data": {
+                "old_code": old_code,
+                "new_code": new_code
+            }
+        }, status=status.HTTP_200_OK)

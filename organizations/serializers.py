@@ -195,3 +195,20 @@ class CreatePharmacyPartnerSerializer(BaseUserCreateSerializer):
         PharmacyPartner.objects.create(user=user, **profile_data)
         
         return user
+    
+class RotatePharmacyCodeSerializer(serializers.Serializer):
+    old_code = serializers.SlugRelatedField(slug_field="pharm_code", queryset=PharmacyProfile.objects.all().select_related("partner"), write_only=True, required=True)
+    
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        
+        request = self.context.get('request')
+        partner = request.user.pharmacy_partner  
+        pharmacy = validated_data.get('old_code')
+
+        if pharmacy.partner != partner:
+            raise serializers.ValidationError({
+                "pharm_code": "This pharmacy is not registered under your partner account."
+            })
+            
+        return validated_data

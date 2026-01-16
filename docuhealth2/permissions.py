@@ -62,7 +62,7 @@ class IsAdmin(BaseRolePermission):
 class IsAuthenticatedAdmin(BaseRolePermission):
     role = User.Role.ADMIN
     
-class IsAuthenticatedPharmacyAdmin(BaseRolePermission):
+class IsAuthenticatedPharmacy(BaseRolePermission):
     role = User.Role.PHARMACY
     
 class IsAuthenticatedPharmacyPartner(BaseRolePermission):
