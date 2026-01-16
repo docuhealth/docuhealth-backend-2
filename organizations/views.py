@@ -18,10 +18,12 @@ from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticate
 from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, HospitalFullInfoSerializer, HospitalBasicInfoSerializer, SubscriptionPlanSerializer, SubscriptionSerializer, PharmacyRotateKeySerializer, CreatePharmacyPartnerSerializer, PharmacyOnboardingRequestSerializer, ListPharmacyOnboardingRequestSerializer, ApprovePharmacyOnboardingRequestSerializer
 
 from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalProfile, SubscriptionPlan, PharmacyProfile, Client
+
+from .services import upload_onboarding_files
 from .requests import create_customer, initialize_transaction
 
 from accounts.models import User
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample
 
 import uuid
 import secrets
@@ -231,7 +233,7 @@ class CreateSubscriptionView(generics.CreateAPIView):
         response_data["authorization_url"] = auth_url
         return Response(response_data, status=status.HTTP_201_CREATED) 
         
-@extend_schema(tags=["Pharmacy"], summary="Create pharmacy partner")
+@extend_schema(tags=["Pharmacy"], summary="Create a new pharmacy partner")
 class CreatePharmacyPartnerView(PublicGenericAPIView, BaseUserCreateView):
     serializer_class = CreatePharmacyPartnerSerializer
     
@@ -243,22 +245,19 @@ class CreatePharmacyPartnerView(PublicGenericAPIView, BaseUserCreateView):
         user = serializer.save(is_active=True)
         
         raw_secret = f"dh_sk_{secrets.token_urlsafe(32)}" 
-        
         client = Client.objects.create(
             user=user,
             client_secret_hash=make_password(raw_secret), 
         )
         
+        context = {"partner_name": user.pharmacy_partner.name}
+        html_content = render_to_string('emails/pharmacy_partner_onboarding.html', context)
+        
         mailer.send(
-            subject="Verify your email",
-            body=(
-                f"Welcome to Docuhealth! \n\n"
-                f"You have successfully created your Docuhealth account as a Partner \n\n"
-                
-                f"If you did not initiate this request, please contact support@docuhealthservices.com\n\n"
-                f"From the Docuhealth Team"
-            ),
+            subject="Welcome to Docuhealth Services!",
+            body=html_content,
             recipient=user.email,
+            is_html=True
         )
         
         return Response({
@@ -271,10 +270,40 @@ class CreatePharmacyPartnerView(PublicGenericAPIView, BaseUserCreateView):
             }
         }, status=status.HTTP_201_CREATED)
         
-@extend_schema(tags=["Pharmacy"], summary="Send an onboarding request for a pharmacy")    
+@extend_schema(
+    tags=["Pharmacy"],
+    summary="Send an onboarding request for a pharmacy",
+    description="Submit pharmacy details and verification documents. Use 'multipart/form-data' for file uploads.",
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'email': {'type': 'string', 'format': 'email'},
+                'password': {'type': 'string', 'minLength': 8},
+                # Pharmacy Profile Fields (Flattened for the UI)
+                'name': {'type': 'string', 'description': 'Pharmacy Business Name'},
+                'license_no': {'type': 'string', 'description': 'Medical/Pharmacy License Number'},
+                'phone': {'type': 'string'},
+                'building_no': {'type': 'string'},
+                'street': {'type': 'string'},
+                'city': {'type': 'string'},
+                'state': {'type': 'string'},
+                'country': {'type': 'string'},
+                'message': {'type': 'string', 'description': 'Optional note to admin'},
+                # The File Upload Field
+                'documents': {
+                    'type': 'array',
+                    'items': {'type': 'string', 'format': 'binary'},
+                    'description': 'One or more verification documents (PDF, JPG, PNG)'
+                },
+            },
+            'required': ['email', 'password', 'name', 'license_no', 'phone', 'documents']
+        }
+    }
+) 
 class CreatePharmacyOnboardingRequest(PublicGenericAPIView, generics.CreateAPIView):
     authentication_classes = [ClientHeaderAuthentication]
-    permission_classes = [IsAuthenticatedPharmacyPartner]
+    permission_classes = [permissions.AllowAny]
     serializer_class = PharmacyOnboardingRequestSerializer
     parser_classes = [MultiPartParser, FormParser]
 
@@ -282,10 +311,24 @@ class CreatePharmacyOnboardingRequest(PublicGenericAPIView, generics.CreateAPIVi
     def create(self, request, *args, **kwargs):
         documents = request.FILES.getlist('documents')
         email = request.data.get("email")
+        password = request.data.get("password")
         
-        files_data = []
-        uploaded_data = []
+        profile_data = {
+            'name': request.data.get('name'),
+            'license_no': request.data.get('license_no'),
+            'phone': request.data.get('phone'),
+            'street': request.data.get('street'),
+            'city': request.data.get('city'),
+            'state': request.data.get('state'),
+            'country': request.data.get('country'),
+        }
         
+        if request.data.get('building_no'):
+            profile_data['building_no'] = request.data.get('building_no')
+            
+        if request.data.get('message'):
+            profile_data['message'] = request.data.get('message')
+            
         if not email:
             return Response({"detail": "Email is required", "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -293,43 +336,33 @@ class CreatePharmacyOnboardingRequest(PublicGenericAPIView, generics.CreateAPIVi
             return Response({"detail": "Email already registered.", "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
         
         if len(documents) == 0:
-            return Response({"detail": "Verification documents are required", "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "At least one verification document is required", "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
         
-        for doc in documents:
-            files_data.append({"bytes": doc.read(), "name": doc.name, "type": doc.content_type})
+        uploaded_data = upload_onboarding_files(documents)
+        profile_data['documents'] = uploaded_data
+                    
+        try:
+            serializer = self.get_serializer(data={"email": email, "profile": profile_data, "password": password})
+            serializer.is_valid(raise_exception=True)
         
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            futures = futures = [
-                executor.submit(upload_file_to_supabase,  file['bytes'], file['name'], file['type'],  "pharmacy_verification_docs") for file in files_data
-            ]
+            partner = request.user.pharmacy_partner
+            user = User.objects.create(email=email, password=password, role=User.Role.PHARMACY, is_active=False)
+            PharmacyProfile.objects.create(user=user, partner=partner, **profile_data)
             
-            try:
-                for future in futures:
-                    result = future.result()
-                    uploaded_data.append(result)
-                    
-                    
-                serializer = self.get_serializer(data={**request.data.dict(), "documents": uploaded_data})
-                serializer.is_valid(raise_exception=True)
-                validated_data = serializer.validated_data
-                
-                password = validated_data.get("password")
-                profile = validated_data.get("pharmacy_profile")
-                
-                user = User.objects.create(email=email, password=password, role=User.Role.PHARMACY)
-                PharmacyProfile.objects.create(user=user, **profile)
-                
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response({
+                "status": "success",
+                "message": "Onboarding request submitted. It is now awaiting admin approval."
+            }, status=status.HTTP_201_CREATED)
 
-            except Exception as e:
-                for doc in uploaded_data:
-                    delete_from_supabase(doc['path'])
-                
-                print(f"Onboarding Error: {str(e)}")
-                raise e
+        except Exception as e:
+            for doc in uploaded_data:
+                delete_from_supabase(doc['path'])
+            
+            print(f"Onboarding Error: {str(e)}")
+            raise e
             
 @extend_schema(tags=["Pharmacy"], summary="Get all pharmacy onboarding requests")   
-class ListPharmacyOnboardingRequest(generics.ListAPIView):
+class ListPharmacyOnboardingView(generics.ListAPIView):
     permission_classes = [IsAuthenticatedPharmacyPartner]
     queryset = PharmacyProfile.objects.all()
     serializer_class = ListPharmacyOnboardingRequestSerializer
@@ -343,10 +376,11 @@ class RetrievePharmacyOnboardingRequest(generics.RetrieveAPIView):
     queryset = PharmacyProfile.objects.all()
     serializer_class = ListPharmacyOnboardingRequestSerializer
          
-@extend_schema(tags=["Pharmacy"], summary="Approve a pharmacy onboarding request") 
+@extend_schema(tags=["Pharmacy DH Admin"], summary="Approve a pharmacy onboarding request") 
 class ApprovePharmacyOnboardingRequestView(generics.GenericAPIView):
     queryset = PharmacyProfile.objects.filter(status=PharmacyProfile.Status.PENDING)
     serializer_class = ApprovePharmacyOnboardingRequestSerializer
+    #TODO: Add permission classes of DH admin
     
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -354,37 +388,44 @@ class ApprovePharmacyOnboardingRequestView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
         
-        pharmacy = validated_data.get('pharmacy')
+        pharmacy = validated_data.get('pharmacy_id')
         login_url = validated_data.get('login_url')
         
-        raw_secret = f"dh_sk_{secrets.token_urlsafe(32)}" 
-        
-        client = Client.objects.create(
-            user=pharmacy.user,
-            client_secret_hash=make_password(raw_secret), 
-        )
-
         pharmacy.status = PharmacyProfile.Status.APPROVED
         pharmacy.reviewed_at = timezone.now() 
         pharmacy.reviewed_by = request.user
-        pharmacy.save(update_fields=["status", "reviewed_at", "reviewed_by"])
+        pharmacy.save(update_fields=["status", "reviewed_at", "reviewed_by", "pharm_code"])
         
         pharmacy_user = pharmacy.user
         pharmacy_user.is_active = True
         pharmacy_user.save(update_fields=["is_active"])
         
-        context = {
+        pharmacy_context = {
             'pharmacy_name': pharmacy.name,
+            'pharm_code': pharmacy.pharm_code,
             'login_url': login_url,
         }
+        partner_context = {
+            'pharmacy_name': pharmacy.name,
+             'pharm_code': pharmacy.pharm_code,
+        }
 
-        html_content = render_to_string('emails/pharmacy_approval_email.html', context)
+        pharmacy_html_content = render_to_string('emails/pharmacy_approval_email.html', pharmacy_context)
+        partner_html_content = render_to_string('emails/partner_pharmacy_approval.html', partner_context)
             
         mailer.send(
             subject = 'Welcome to DocuHealth - Your Pharmacy Account is Ready',
-            body = html_content,
-            recipient = pharmacy.email,
+            body = pharmacy_html_content,
+            recipient = pharmacy.user.email,
             is_html = True
+        )
+        
+        mailer.send(
+            subject = 'Pharmacy Approved',
+            body = partner_html_content,
+            recipient = pharmacy.partner.user.email,
+            is_html = True
+            
         )
 
         return Response({
@@ -392,32 +433,49 @@ class ApprovePharmacyOnboardingRequestView(generics.GenericAPIView):
             "message": "Pharmacy approved and credentials generated.",
             "data": {
                 "pharm_code": pharmacy.pharm_code,
-                "client_id": client.client_id,
-                "client_secret": raw_secret,
                 "business_name": pharmacy.name
             }
         }, status=status.HTTP_201_CREATED)
 
-@extend_schema(tags=["Pharmacy"], summary="Rotate pharmacy keys")    
-class PharmacyRotateKeyView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticatedPharmacyAdmin]
+@extend_schema(
+    tags=["Pharmacy"],
+    summary="Rotate API Secret",
+    description=(
+        "Invalidates the current client_secret and generates a new one. "
+        "The old secret will stop working immediately. This action requires "
+        "the partner's account password for verification."
+    ),
+    request=PharmacyRotateKeySerializer,
+    responses={
+        200: OpenApiExample(
+            'Success Response',
+            value={
+                "status": "success",
+                "message": "Keys rotated successfully.",
+                "data": {
+                    "client_id": "uuid-string",
+                    "new_client_secret": "dh_sk_..."
+                }
+            }
+        ),
+        403: OpenApiExample('Auth Error', value={"detail": "Invalid password."})
+    }
+)
+class PharmacyPartnerRotateKeyView(generics.GenericAPIView): #TODO: Add audit
+    authentication_classes = [ClientHeaderAuthentication]
+    # permission_classes = [IsAuthenticatedPharmacyPartner]
     serializer_class = PharmacyRotateKeySerializer
 
     def post(self, request):
-        user: User = request.user
+        user = request.user
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        try:
-            profile = user.pharmacy_profile 
-        except AttributeError:
-            return Response({"detail": "You are not allowed to perform this operation"}, status=403)
-
         current_password = serializer.validated_data.get('password')
         if not current_password or not user.check_password(current_password):
-            return Response({"detail": "Invalid password. Re-authentication required to rotate keys."}, status=403)
+            return Response({"detail": "Security verification failed. Invalid password."}, status=status.HTTP_403_FORBIDDEN)
 
-        client = profile.client 
+        client = user.client
         new_raw_secret = f"dh_sk_{secrets.token_urlsafe(32)}"
         
         client.client_secret_hash = make_password(new_raw_secret)
@@ -425,8 +483,10 @@ class PharmacyRotateKeyView(generics.GenericAPIView):
 
         return Response({
             "status": "success",
-            "message": "Keys rotated successfully. Please note down the new client secret.",
-            "client_id": client.client_id,
-            "new_client_secret": new_raw_secret
-        })
+            "message": "Keys rotated successfully. Update your environment variables immediately.",
+            "data": {
+                "client_id": client.client_id,
+                "new_client_secret": new_raw_secret
+            }
+        }, status=status.HTTP_200_OK)
 

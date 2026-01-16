@@ -60,6 +60,7 @@ def delete_from_supabase(path: str, bucket_name=bucket_name):
     Deletes a file from Supabase storage using its path.
     """
     try:
+        print(f"Deleting {path}")
         response = supabase.storage.from_(bucket_name).remove([path])
         return response
     except Exception as e:

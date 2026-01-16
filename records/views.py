@@ -10,7 +10,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny   
 
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedNurse, IsAuthenticatedDoctor, IsAuthenticatedHospitalStaff, IsAuthenticatedReceptionist, IsAuthenticatedPatient, IsAuthenticatedPharmacyClient
 from docuhealth2.authentications import ClientHeaderAuthentication
@@ -383,17 +384,59 @@ class ListSubaccountMedicalRecordsView(generics.ListAPIView):
         
         return MedicalRecord.objects.filter(subaccount__hin = hin).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
 
-@extend_schema(tags=["Pharmacy"], summary="Upload medication record for a patient")   
+@extend_schema(
+    tags=["Pharmacy"],
+    summary="Upload Medication Record",
+    description=(
+        "Submits a new drug record for a patient. Access is restricted to authorized Partners "
+        "acting on behalf of a verified Pharmacy. Requires the patient's HIN (Health Identification Number) "
+        "and the Pharmacy's unique PharmCode."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="X-Client-ID",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            description="Your Partner Client ID",
+            required=True,
+        ),
+        OpenApiParameter(
+            name="X-Client-Secret",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            description="Your Partner Secret Key",
+            required=True,
+        ),
+    ],
+    request=ClientDrugRecordSerializer,
+    responses={
+        201: OpenApiTypes.OBJECT,
+        401: OpenApiTypes.OBJECT,
+        404: OpenApiTypes.OBJECT,
+    },
+    examples=[
+        OpenApiExample(
+            'Successful Medication Upload',
+            value={
+                "patient": "HIN-12345678",
+                "pharm_code": "PHARM-A1B2C3D4",
+                "name": "Amoxicillin 500mg",
+                "route": "Oral",
+                "quantity": "21 Capsules",
+                "frequency": {"value": 3, "rate": "daily"},
+                "duration": {"value": 7, "rate": "days"},
+                "allergies": ["Penicillin", "Dust"],
+            }
+        )
+    ]
+)
 class PharmacyDrugRecordUploadView(generics.CreateAPIView):
     authentication_classes = [ClientHeaderAuthentication]
     serializer_class = ClientDrugRecordSerializer
-    permission_classes = [IsAuthenticatedPharmacyClient]
+    # permission_classes = [IsAuthenticatedPharmacyClient]
 
     def perform_create(self, serializer):
-        pharmacy_client = self.request.auth
-        
         serializer.save(
-            pharmacy=pharmacy_client.pharmacy,
             upload_source=DrugRecord.UploadSource.PHARMACY_API,
         )
 
@@ -404,5 +447,9 @@ class PharmacyDrugRecordUploadView(generics.CreateAPIView):
         return Response({
             "status": "success",
             "message": "Medication record added successfully",
-            "record_id": response.data.get('id')
+            "data": {
+                "record_id": response.data.get('id'),
+                "patient_hin": request.data.get('patient'),
+                "timestamp": response.data.get('created_at')
+            }
         }, status=201)

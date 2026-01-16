@@ -168,7 +168,7 @@ class ListPharmacyOnboardingRequestSerializer(serializers.ModelSerializer):
         fields = ["id", "pharm_code", "name", "license_no", "phone", "email", "status", "documents", "street", "city", "state", "country",  "created_at"]
         
 class ApprovePharmacyOnboardingRequestSerializer(serializers.Serializer):
-    pharmacy_pharm_code = serializers.SlugRelatedField(slug_field="pharm_code", queryset=PharmacyProfile.objects.filter(status=PharmacyProfile.Status.PENDING))
+    pharmacy_id = serializers.PrimaryKeyRelatedField(queryset=PharmacyProfile.objects.filter(status=PharmacyProfile.Status.PENDING).select_related("user", "partner"))
     login_url = serializers.URLField(write_only=True, required=True)
     
 class PharmacyRotateKeySerializer(serializers.Serializer):

@@ -198,27 +198,6 @@ class PharmacyPartner(BaseModel):
     def __str__(self):
         return self.name
         
-# class PharmacyOnboardingRequest(BaseModel):
-#     name = models.CharField(max_length=255)
-    
-#     license_number = models.CharField(max_length=100, unique=True)
-#     documents = models.JSONField(default=dict)
-#     email = models.EmailField()
-#     phone = models.CharField(max_length=20)
-#     message = models.TextField(blank=True)
-    
-#     street = models.CharField(max_length=120, blank=True, null=True)
-#     city = models.CharField(max_length=20, blank=True, null=True)
-#     state = models.CharField(max_length=20, blank=True, null=True)
-#     country = models.CharField(max_length=20, blank=True, null=True)
-    
-#     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-#     reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-#     reviewed_at = models.DateTimeField(null=True, blank=True)
-
-#     def __str__(self):
-#         return f"{self.name} - {self.contact_email}"
-        
 class PharmacyProfile(BaseModel):
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pending'
@@ -248,8 +227,13 @@ class PharmacyProfile(BaseModel):
         return f"{self.name} - {self.contact_email}"
     
     def save(self, *args, **kwargs):
-        if not self.pharm_code:
-            self.pharm_code = f"PHARM-{secrets.token_hex(4).upper()}"
+        if self.status == self.Status.APPROVED and not self.pharm_code:
+            new_code = f"PHARM-{secrets.token_hex(4).upper()}"
+            while PharmacyProfile.objects.filter(pharm_code=new_code).exists():
+                new_code = f"PHARM-{secrets.token_hex(4).upper()}"
+            
+            self.pharm_code = new_code
+            
         super().save(*args, **kwargs)
 
 class Client(BaseModel):

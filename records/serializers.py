@@ -10,7 +10,7 @@ from accounts.serializers import PatientFullInfoSerializer, PatientBasicInfoSeri
 from hospital_ops.models import Appointment
 
 from organizations.serializers import HospitalBasicInfoSerializer
-from organizations.models import HospitalProfile
+from organizations.models import HospitalProfile, PharmacyProfile
 
 from facility.models import HospitalWard, WardBed
 from facility.serializers import WardBedSerializer, WardNameSerializer
@@ -84,6 +84,7 @@ class DrugRecordSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at', 'medical_record', 'status')
         
 class ClientDrugRecordSerializer(serializers.ModelSerializer):
+    pharm_code = serializers.SlugRelatedField(slug_field="pharm_code", queryset=PharmacyProfile.objects.all(), write_only=True, source="pharmacy", required=True)
     frequency = ValueRateSerializer()
     duration = ValueRateSerializer()
     allergies = serializers.ListField(child=serializers.CharField())
@@ -91,8 +92,21 @@ class ClientDrugRecordSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = DrugRecord
-        fields = ('name', 'route', 'quantity', 'frequency', 'duration', 'status', 'allergies', 'patient', 'created_at', 'id')
+        fields = ('name', 'route', 'quantity', 'frequency', 'duration', 'status', 'allergies', 'patient', 'created_at', 'id', 'pharm_code')
         read_only_fields = ('id', 'created_at', 'updated_at', 'status', 'medical_record')
+        
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        
+        request = self.context.get('request')
+        partner = request.user.pharmacy_partner  
+        pharmacy = validated_data.get('pharmacy')
+
+        if pharmacy.partner != partner:
+            raise serializers.ValidationError({
+                "pharm_code": "This pharmacy is not registered under your partner account."
+            })
+        return attrs
         
 class PatientMedInfoSerializer(serializers.Serializer): 
     patient_info = PatientFullInfoSerializer()

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #334155; }
+        .container { max-width: 600px; margin: 20px auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .content { padding: 30px; }
+        .detail-row { border-bottom: 1px solid #f1f5f9; padding: 10px 0; display: flex; justify-content: space-between; }
+        .footer { font-size: 12px; text-align: center; padding: 20px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <h3>Pharmacy Onboarding Approved</h3>
+            <p>The following pharmacy has been verified and is now active on the DocuHealth network:</p>
+            <div class="detail-row"><strong>Name:</strong> <span>{{ pharmacy_name }}</span></div>
+            <div class="detail-row"><strong>PharmCode:</strong> <span>{{ pharm_code }}</span></div>
+            <p>You can now use this PharmCode to submit records for this entity via the Partner API.</p>
+        </div>
+        <div class="footer">Automated notification from DocuHealth Partner Portal</div>
+    </div>
+</body>
+</html>

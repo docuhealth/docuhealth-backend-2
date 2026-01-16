@@ -2,54 +2,27 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to DocuHealth</title>
     <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e1e8ed; }
-        .header { background-color: #0052cc; padding: 30px; text-align: center; }
-        .logo { font-size: 24px; font-weight: bold; color: #ffffff; text-decoration: none; }
-        .content { padding: 40px; line-height: 1.6; color: #334155; }
-        .welcome-text { font-size: 20px; font-weight: 600; color: #1e293b; margin-bottom: 20px; }
-        .highlight-box { background-color: #f8fafc; border-left: 4px solid #0052cc; padding: 20px; margin: 25px 0; border-radius: 4px; }
-        .btn { display: inline-block; padding: 14px 28px; background-color: #0052cc; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }
-        .footer { background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #64748b; }
-        .warning { font-size: 13px; color: #b91c1c; margin-top: 15px; font-style: italic; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #334155; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+        .header { background-color: #0052cc; color: white; padding: 25px; text-align: center; }
+        .content { padding: 30px; }
+        .pharm-code { background: #f1f5f9; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; border-radius: 6px; color: #0052cc; margin: 20px 0; }
+        .btn { display: inline-block; padding: 12px 24px; background-color: #0052cc; color: white !important; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .footer { font-size: 12px; text-align: center; padding: 20px; color: #64748b; background: #f8fafc; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <a href="#" class="logo">DocuHealth</a>
-        </div>
-
+        <div class="header"><h2>DocuHealth</h2></div>
         <div class="content">
-            <div class="welcome-text">Welcome to the DocuHealth Network!</div>
-            <p>Hi {{ pharmacy_name }},</p>
-            <p>We are excited to inform you that your onboarding request has been <strong>approved</strong>. Your pharmacy is now a verified partner in our secure medical data ecosystem.</p>
-            
-            <div class="highlight-box">
-                <strong>What happens next?</strong>
-                <ul>
-                    <li>Log in to your pharmacy portal to view your integration dashboard.</li>
-                    <li>Access your unique <strong>PharmCode</strong> for patient record linking.</li>
-                    <li>Download our API documentation to begin the synchronization process.</li>
-                </ul>
-            </div>
-
-            <p>To get started, please log in to your account using your official email address:</p>
-            
-            <center>
-                <a href="{{ login_url }}" class="btn">Login to Pharmacy Portal</a>
-            </center>
-
-            <p class="warning">Note: If your administrator has not yet provided your API Secret Key, please contact them immediately. For security reasons, these keys are only displayed once during the approval process.</p>
+            <p>Hello <strong>{{ pharmacy_name }}</strong>,</p>
+            <p>Your account has been approved. Your unique identifier for the DocuHealth network is:</p>
+            <div class="pharm-code">{{ pharm_code }}</div>
+            <p>You may now log in to your account and begin onboarding pharmacies and transmitting health records through the DocuHealth API.</p>
+            <center><a href="{{ login_url }}" class="btn">Login to Dashboard</a></center>
         </div>
-
-        <div class="footer">
-            <p>&copy; 2026 DocuHealth Inc. | Secure Medical Data Layers</p>
-            <p>This is an automated message. Please do not reply directly to this email.</p>
-        </div>
+        <div class="footer">© 2026 DocuHealth | Secure Health Record Infrastructure</div>
     </div>
 </body>
 </html>
