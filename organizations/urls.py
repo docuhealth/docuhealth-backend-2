@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import CreatePharmacyPartnerView, CreatePharmacyOnboardingRequest, PharmacyPartnerRotateKeyView, ListPharmacyOnboardingView, ApprovePharmacyOnboardingRequestView, RotatePharmacyCodeView
+from .views import CreatePharmacyPartnerView, CreatePharmacyOnboardingRequest, PharmacyPartnerRotateKeyView, ListPharmacyOnboardingView, ApprovePharmacyOnboardingRequestView, RotatePharmacyCodeView, GetPharmacyPartnerClientInfo
 
 from records.views import PharmacyDrugRecordUploadView
 
@@ -15,6 +15,7 @@ pharmacy_urls = [
 partner_urls = [
     # path('/requests/<str:id>', RetrievePharmacyOnboardingRequest.as_view(), name='retrieve-pharmacy-onboarding-request'),
     path('/request/approve', ApprovePharmacyOnboardingRequestView.as_view(), name='approve-pharmacy-onboarding-request'),
+    path('/info', GetPharmacyPartnerClientInfo.as_view(), name="get-partner-client-info"),
     
     path('/partner', CreatePharmacyPartnerView.as_view(), name='create-pharmacy-partner'),
 ]

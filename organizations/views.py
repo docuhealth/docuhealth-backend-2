@@ -13,7 +13,7 @@ from docuhealth2.views import PublicGenericAPIView, BaseUserCreateView
 from docuhealth2.utils.supabase import upload_file_to_supabase, delete_from_supabase
 from docuhealth2.utils.email_service import BrevoEmailService
 from docuhealth2.authentications import ClientHeaderAuthentication
-from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedPharmacy, IsAuthenticatedPharmacyPartner
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedPharmacy, IsAuthenticatedPharmacyPartner, IsAuthenticatedDHAdmin
 
 from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, HospitalFullInfoSerializer, HospitalBasicInfoSerializer, SubscriptionPlanSerializer, SubscriptionSerializer, PharmacyRotateKeySerializer, CreatePharmacyPartnerSerializer, PharmacyOnboardingRequestSerializer, ListPharmacyOnboardingRequestSerializer, ApprovePharmacyOnboardingRequestSerializer, RotatePharmacyCodeSerializer
 
@@ -237,6 +237,7 @@ class CreateSubscriptionView(generics.CreateAPIView):
 @extend_schema(tags=["Pharmacy"], summary="Create a new pharmacy partner")
 class CreatePharmacyPartnerView(PublicGenericAPIView, BaseUserCreateView):
     serializer_class = CreatePharmacyPartnerSerializer
+    permission_classes = [IsAuthenticatedDHAdmin]
     
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -613,3 +614,17 @@ class RotatePharmacyCodeView(generics.GenericAPIView):
                 "new_code": new_code
             }
         }, status=status.HTTP_200_OK)
+
+@extend_schema(tags=["Pharmacy DH Admin"], summary="Get Pharmacy Partner Client Info")  
+class GetPharmacyPartnerClientInfo(generics.GenericAPIView):
+    # authentication_classes = [ClientHeaderAuthentication]
+    permission_classes = [IsAuthenticatedPharmacyPartner]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user  
+        client = user.client
+        partner = user.pharmacy_partner
+        
+        client_id = client.client_id
+        partner_name = partner.name
+        return Response({"client_id": client_id, "partner_name": partner_name}, status=status.HTTP_200_OK)
