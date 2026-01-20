@@ -425,7 +425,8 @@ class ListSubaccountMedicalRecordsView(generics.ListAPIView):
                     "patient_hin": "HIN-12345678",
                     "timestamp": "2022-01-01T00:00:00.000Z"
                 }
-            }
+            },
+            response_only=True
         )
     ]
 )
