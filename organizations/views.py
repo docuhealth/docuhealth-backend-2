@@ -515,8 +515,8 @@ class ApprovePharmacyOnboardingRequestView(generics.GenericAPIView):
     }
 )
 class PharmacyPartnerRotateKeyView(generics.GenericAPIView): #TODO: Add audit
-    authentication_classes = [ClientHeaderAuthentication]
-    # permission_classes = [IsAuthenticatedPharmacyPartner]
+    # authentication_classes = [ClientHeaderAuthentication]
+    permission_classes = [IsAuthenticatedPharmacyPartner]
     serializer_class = PharmacyRotateKeySerializer
 
     def post(self, request):
