@@ -19,7 +19,7 @@ from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, Ho
 
 from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalProfile, SubscriptionPlan, PharmacyProfile, Client
 
-from .services import upload_onboarding_files
+from .services import upload_files
 from .requests import create_customer, initialize_transaction
 
 from accounts.models import User
@@ -106,26 +106,27 @@ class ListCreateHospitalVerificationRequestView(PublicGenericAPIView, generics.L
         if len(documents) == 0:
             return Response({"detail": "No documents provided", "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
         
-        document_urls = []
-        for document in documents:
-            public_url = upload_file_to_supabase(document, "hospital_verification_docs")
-            document_urls.append({
-                "name": document.name,
-                "url": public_url,
-                "content_type": document.content_type,
+        uploaded_data = upload_files(documents, "hospital_verification_docs")
+        
+        try:
+            print(request.data)   
+            serializer = self.get_serializer(data={
+                "inquiry": int(inquiry) if inquiry else None,
+                "official_email": official_email, 
+                "documents": uploaded_data, 
+                "status": HospitalVerificationRequest.Status.PENDING, 
+                "reviewed_by": user
             })
-         
-        print(request.data)   
-        serializer = self.get_serializer(data={
-            "inquiry": int(inquiry) if inquiry else None,
-            "official_email": official_email, 
-            "documents": document_urls, 
-            "status": HospitalVerificationRequest.Status.PENDING, 
-            "reviewed_by": user
-        })
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            
+        except Exception as e:
+            for doc in uploaded_data:
+                delete_from_supabase(doc['path'])
+            
+            print(f"Onboarding Error: {str(e)}")
+            raise e
         
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
@@ -237,7 +238,7 @@ class CreateSubscriptionView(generics.CreateAPIView):
 @extend_schema(tags=["Pharmacy"], summary="Create a new pharmacy partner")
 class CreatePharmacyPartnerView(PublicGenericAPIView, BaseUserCreateView):
     serializer_class = CreatePharmacyPartnerSerializer
-    permission_classes = [IsAuthenticatedDHAdmin]
+    permission_classes = [permissions.AllowAny]
     
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -361,7 +362,7 @@ class CreatePharmacyOnboardingRequest(PublicGenericAPIView, generics.CreateAPIVi
         if len(documents) == 0:
             return Response({"detail": "At least one verification document is required", "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
         
-        uploaded_data = upload_onboarding_files(documents)
+        uploaded_data = upload_files(documents, "pharmacy_verification_docs")
         profile_data['documents'] = uploaded_data
                     
         try:
@@ -569,7 +570,7 @@ class PharmacyPartnerRotateKeyView(generics.GenericAPIView): #TODO: Add audit
     }
 )
 class RotatePharmacyCodeView(generics.GenericAPIView):
-    authentication_classes = [ClientHeaderAuthentication]
+    # authentication_classes = [ClientHeaderAuthentication]
     permission_classes = [IsAuthenticatedPharmacyPartner]
     serializer_class = RotatePharmacyCodeSerializer
 
