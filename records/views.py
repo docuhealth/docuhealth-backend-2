@@ -8,16 +8,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.exceptions import NotFound, ValidationError
-from rest_framework.permissions import AllowAny   
 
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
-from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedNurse, IsAuthenticatedDoctor, IsAuthenticatedHospitalStaff, IsAuthenticatedReceptionist, IsAuthenticatedPatient, IsAuthenticatedPharmacyClient
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedNurse, IsAuthenticatedDoctor, IsAuthenticatedHospitalStaff, IsAuthenticatedReceptionist, IsAuthenticatedPatient
 from docuhealth2.authentications import ClientHeaderAuthentication
 
 from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord
-from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, UpdateCaseNoteSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer
+from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer, DrugRecordSerializer
 
 from facility.models import WardBed
 from hospital_ops.models import HospitalPatientActivity
@@ -452,3 +451,11 @@ class PharmacyDrugRecordUploadView(generics.CreateAPIView):
                 "timestamp": response.data.get('created_at')
             }
         }, status=201)
+
+class ListPatientDrugRecordsView(generics.ListAPIView):
+    serializer_class = DrugRecordSerializer
+    permission_classes = [IsAuthenticatedPatient]
+    
+    def get_queryset(self):
+        patient = self.request.user.patient_profile
+        return DrugRecord.objects.filter(patient=patient).order_by('-created_at')

@@ -2,7 +2,7 @@ from django.urls import path
 
 from accounts.views import LoginView, CustomTokenRefreshView, ForgotPassword, VerifyForgotPasswordOTPView, ResetPasswordView, ListUserView, VerifySignupOTPView, UpdatePasswordView, VerifyUserNINView, DoctorDashboardView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, PatientDashboardView, CreatePatientView, UpdatePatientView, DeletePatientAccountView, ListCreateSubaccountView, UpgradeSubaccountView, ToggleEmergencyView, GeneratePatientIdCard, GenerateSubaccountIdCard, NurseDashboardView, ReceptionistDashboardView, GetPatientDetailsView, GetStaffByRoleView, ReceptionistCreatePatientView
 
-from records.views import CreateMedicalRecordView, MedicalRecordListView, UploadMedicalRecordsAttachments, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView
+from records.views import CreateMedicalRecordView, MedicalRecordListView, UploadMedicalRecordsAttachments, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView, ListPatientDrugRecordsView
 
 from hospital_ops.views import ListAllAppointmentsView, ListStaffAppointmentsView, AssignAppointmentToDoctorView, HandOverNurseShiftView, ListPatientAppointmentsView, BookAppointmentView, ListUpcomingAppointmentsView, ListRecentPatientsView
 
@@ -91,7 +91,7 @@ nurse_urls = [
 ]
 
 patient_urls = [
-     path('', CreatePatientView.as_view(), name='create-patient'),
+    path('', CreatePatientView.as_view(), name='create-patient'),
     path('/dashboard', PatientDashboardView.as_view(), name='patient-dashboard'),
     path('/update', UpdatePatientView.as_view(), name='update-patient'),
     path('/delete', DeletePatientAccountView.as_view(), name='delete-patient'),
@@ -99,6 +99,7 @@ patient_urls = [
     path('/subaccounts/medical-records/<str:hin>', ListSubaccountMedicalRecordsView.as_view(), name='get-subaccount-medical-records'),
     path('/subaccounts/upgrade', UpgradeSubaccountView.as_view(), name='upgrade-subaccount'),
     path('/appointments', ListPatientAppointmentsView.as_view(), name='get-appointments'),
+    path('/drug-records', ListPatientDrugRecordsView.as_view(), name='get-drug-records'),
     path('/emergency', ToggleEmergencyView.as_view(), name='toggle-emergency'),
     path('/id-card', GeneratePatientIdCard.as_view(), name='generate-patient-id-card'),
     path('/subaccounts/id-card/<str:hin>', GenerateSubaccountIdCard.as_view(), name='generate-subaccount-id-card'),
