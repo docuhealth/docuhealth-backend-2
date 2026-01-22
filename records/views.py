@@ -194,7 +194,7 @@ class ListAdmittedPatientsByStatusView(generics.ListAPIView):
 @extend_schema(tags=['Nurse', 'Receptionist', 'Doctor'], summary="Confirm admission of patient in a ward")
 class ConfirmAdmissionView(generics.UpdateAPIView):
     serializer_class = ConfirmAdmissionSerializer
-    permission_classes = [IsAuthenticatedHospitalStaff]
+    permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse | IsAuthenticatedReceptionist]
     lookup_url_kwarg = "admission_id"
     http_method_names = ['patch']
     
