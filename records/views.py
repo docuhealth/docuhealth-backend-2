@@ -15,7 +15,7 @@ from drf_spectacular.types import OpenApiTypes
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedNurse, IsAuthenticatedDoctor, IsAuthenticatedHospitalStaff, IsAuthenticatedReceptionist, IsAuthenticatedPatient
 from docuhealth2.authentications import ClientHeaderAuthentication
 
-from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord
+from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord, VitalSigns
 from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer, DrugRecordSerializer
 
 from facility.models import WardBed
