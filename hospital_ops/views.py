@@ -125,11 +125,11 @@ class HandOverNurseShiftView(generics.GenericAPIView):
             appointments_to_transfer.update(staff=to_nurse)
                     
         if validated_data['handover_patients']:
-            admissions_to_transfer = Admission.objects.filter(primary_nurse=from_nurse, status__in=[Admission.Status.ACTIVE, Admission.Status.PENDING])
+            admissions_to_transfer = Admission.objects.filter(nurse=from_nurse, status__in=[Admission.Status.ACTIVE, Admission.Status.PENDING])
             
             items_transferred['admissions'] = list(admissions_to_transfer.values_list('id', flat=True))
             
-            admissions_to_transfer.update(primary_nurse=to_nurse)
+            admissions_to_transfer.update(nurse=to_nurse)
 
         HandOverLog.objects.create(
             from_nurse=from_nurse,
