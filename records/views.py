@@ -22,7 +22,7 @@ from facility.models import WardBed
 from hospital_ops.models import HospitalPatientActivity
 
 from accounts.models import User, HospitalStaffProfile, PatientProfile, SubaccountProfile
-from accounts.serializers import PatientBasicInfoSerializer
+from accounts.serializers import PatientBasicInfoSerializer, PatientFullInfoSerializer
 
 @extend_schema(tags=["Medical records"])  
 class MedicalRecordListView(generics.ListAPIView):
