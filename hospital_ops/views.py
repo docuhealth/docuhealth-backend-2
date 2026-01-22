@@ -3,7 +3,7 @@ from django.db import transaction
 from rest_framework import generics, status
 from rest_framework.response import Response
 
-from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedNurse, IsAuthenticatedPatient, IsAuthenticatedReceptionist
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedNurse, IsAuthenticatedPatient, IsAuthenticatedReceptionist, IsAuthenticatedDoctor
 from docuhealth2.utils.email_service import BrevoEmailService
 
 from .models import Appointment, HospitalPatientActivity, HandOverLog
@@ -34,7 +34,7 @@ class ListAllAppointmentsView(generics.ListAPIView):
 @extend_schema(tags=["Nurse", "Doctor"], summary="List appointments assigned to this staff")
 class ListStaffAppointmentsView(generics.ListAPIView):
     serializer_class = HospitalAppointmentSerializer
-    permission_classes = [IsAuthenticatedNurse]
+    permission_classes = [IsAuthenticatedNurse | IsAuthenticatedDoctor]
     
     def get_queryset(self):
         staff = self.request.user.hospital_staff_profile
