@@ -172,7 +172,7 @@ class ApprovePharmacyOnboardingRequestSerializer(serializers.Serializer):
     login_url = serializers.URLField(write_only=True, required=True)
     
 class PharmacyRotateKeySerializer(serializers.Serializer):
-    password = serializers.CharField(write_only=True, required=True, min_length=8)
+    password = serializers.CharField(write_only=True, required=True)
     
 class PharmacyPartnerSerializer(serializers.ModelSerializer):
     
