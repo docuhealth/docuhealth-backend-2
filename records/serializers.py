@@ -237,8 +237,8 @@ class ConfirmAdmissionSerializer(serializers.Serializer):
         if Admission.objects.filter(patient=admission.patient, status=Admission.Status.ACTIVE).exists():
             raise serializers.ValidationError({"detail": "Patient is already admitted"})
         
-        if admission.ward != staff.ward:
-            raise serializers.ValidationError({"detail": "You are not assigned to this ward."})
+        # if admission.ward != staff.ward:
+        #     raise serializers.ValidationError({"detail": "You are not assigned to this ward."})
         
         if admission.hospital != hospital:
             raise serializers.ValidationError({"detail": "Admission with the provided ID does not exist"})
