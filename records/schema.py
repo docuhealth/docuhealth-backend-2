@@ -1,69 +1,53 @@
 from drf_spectacular.utils import OpenApiExample
+from rest_framework import serializers
+from drf_spectacular.utils import extend_schema, inline_serializer
 
-from .serializers import SoapNoteSerializer
+from .serializers import SoapNoteSerializer, DrugRecordSerializer
+from hospital_ops.serializers import BookAppointmentSerializer
 
+# Full Schema Definition
 CREATE_SOAP_NOTE_SCHEMA = {
-    "description": (
-        "Create a comprehensive SOAP note. Note: Since this is a multipart/form-data request, "
-        "complex fields like 'drug_records', 'investigations', 'problem_list', and 'care_instructions' "
-        "must be sent as JSON strings if your client does not support nested form-data."
-    ),
     "request": {
-        "multipart/form-data": {
-            "type": "object",
-            "properties": {
-                # File field
-                "investigations_docs": {
-                    "type": "array",
-                    "items": {"type": "string", "format": "binary"},
-                    "description": "Upload one or more investigation documents (PDF, Images)."
-                },
+        "multipart/form-data": inline_serializer(
+            name="SoapNoteMultipartRequest",
+            fields={
+                # Files
+                "investigations_docs": serializers.ListField(
+                    child=serializers.FileField(), required=False
+                ),
                 # Identifiers
-                "patient": {"type": "string", "description": "Patient HIN"},
-                "staff": {"type": "string", "description": "Staff ID"},
-                "vital_signs": {"type": "integer", "description": "ID of the VitalSigns record"},
+                "patient": serializers.CharField(help_text="Patient HIN"),
+                "staff": serializers.CharField(help_text="Staff ID"),
+                "vital_signs": serializers.IntegerField(required=False),
+                "referred_docuhealhosp": serializers.CharField(required=False),
                 
-                # Nested JSON Strings
-                "drug_records": {
-                    "type": "array",
-                    "items": {"$ref": "#/components/schemas/DrugRecord"},
-                    "description": "JSON string representing list of drug prescriptions."
-                },
-                "appointment": {
-                    "type": "object",
-                    "description": "JSON string representing appointment details."
-                },
+                # Nested JSON objects (Handled by Serializers)
+                "drug_records": DrugRecordSerializer(many=True),
+                "appointment": BookAppointmentSerializer(required=False),
                 
-                # List fields
-                "investigations": {"type": "array", "items": {"type": "string"}},
-                "problems_list": {"type": "array", "items": {"type": "string"}},
-                "care_instructions": {"type": "array", "items": {"type": "string"}},
+                # JSON Lists
+                "investigations": serializers.ListField(child=serializers.CharField(), required=False),
+                "problems_list": serializers.ListField(child=serializers.CharField(), required=False),
+                "care_instructions": serializers.ListField(child=serializers.CharField()),
+                "drug_history_allergies": serializers.ListField(child=serializers.CharField(), required=False),
                 
-                # Text fields
-                "chief_complaint": {"type": "string"},
-                "history": {"type": "string"},
-                "past_med_history": {"type": "string"},
-                "family_history": {"type": "string"},
-                "social_history": {"type": "string"},
-                "primary_diagnosis": {"type": "string"},
-                "treatment_plan": {"type": "string"},
-            },
-            "required": ["patient", "staff", "chief_complaint", "primary_diagnosis", "treatment_plan", "care_instructions", "drug_records"]
-        }
-    },
-    "responses": {201: SoapNoteSerializer},
-    "examples": [
-        OpenApiExample(
-            'Multipart Payload Example',
-            summary='How to format the drug_records string',
-            value={
-                "patient": "PAT-12345",
-                "staff": "STF-999",
-                "chief_complaint": "Persistent cough",
-                "drug_records": '[{"name": "Amoxicillin", "quantity": 1, "route": "Oral", "frequency": {"morning": 1}, "duration": {"days": 7}}]',
-                "care_instructions": '["Drink plenty of water", "Rest for 3 days"]',
-                "primary_diagnosis": "Upper Respiratory Infection"
+                # Text Fields
+                "chief_complaint": serializers.CharField(),
+                "history": serializers.CharField(required=False),
+                "past_med_history": serializers.CharField(required=False),
+                "family_history": serializers.CharField(required=False),
+                "social_history": serializers.CharField(required=False),
+                "review": serializers.CharField(required=False),
+                "general_exam": serializers.CharField(required=False),
+                "systemic_exam": serializers.CharField(required=False),
+                "bedside_tests": serializers.CharField(required=False),
+                "primary_diagnosis": serializers.CharField(),
+                "differential_diagnosis": serializers.CharField(required=False),
+                "treatment_plan": serializers.CharField(),
+                "patient_education": serializers.CharField(required=False),
+                "referred_hosp": serializers.CharField(required=False),
             }
         )
-    ]
+    },
+    "responses": {201: SoapNoteSerializer},
 }

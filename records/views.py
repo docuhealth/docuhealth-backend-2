@@ -430,7 +430,7 @@ class ListPatientDrugRecordsView(generics.ListAPIView):
         patient = self.request.user.patient_profile
         return DrugRecord.objects.filter(patient=patient).order_by('-created_at')
     
-@extend_schema(tags=["Medical Records"], summary="Create soap note with medications and files", **CREATE_SOAP_NOTE_SCHEMA)
+@extend_schema(tags=["Medical records"], summary="Create soap note with medications and files", **CREATE_SOAP_NOTE_SCHEMA)
 class CreateSoapNoteView(generics.CreateAPIView):
     serializer_class = SoapNoteSerializer
     permission_classes = [IsAuthenticatedDoctor]

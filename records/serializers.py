@@ -297,7 +297,7 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
     problems_list = serializers.ListField(child=serializers.CharField(), required=False)
     care_instructions = serializers.ListField(child=serializers.CharField(), required=True)
     
-    referred_docuhealhosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True)
+    referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True)
     
     class Meta:
         model = SoapNote
