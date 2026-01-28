@@ -8,8 +8,8 @@ from accounts.models import HospitalStaffProfile
 from docuhealth2.models import BaseModel
 
 from organizations.models import HospitalProfile, PharmacyProfile
-
 from facility.models import HospitalWard, WardBed
+from hospital_ops.models import Appointment
 
 class VitalSigns(BaseModel):
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="vital_signs", null=True)
@@ -66,42 +66,6 @@ class MedicalRecord(models.Model):
         else:
             user_info = "Unknown"
         return f'Medical Record for {user_info} created on {self.created_at}'
-    
-class DrugRecord(BaseModel):
-    class Status(models.TextChoices):
-        ONGOING = "ongoing", "Ongoing"
-        COMPLETED = "completed", "Completed"
-        STOPPED = "stopped", "Stopped"
-        
-    class UploadSource(models.TextChoices):
-        MEDICALRECORD = "medicalrecord", "Medical Record"
-        PHARMACY = "pharmacy", "Pharmacy"
-        HOSPITAL = "hospital", "Hospital"
-        PHARMACY_API = "pharmacy_api", "Pharmacy API"
-    
-    medical_record = models.ForeignKey(MedicalRecord, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
-    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
-    hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
-    pharmacy = models.ForeignKey(PharmacyProfile, on_delete=models.SET_NULL, related_name='drug_records', blank=True, null=True)
-    
-    name = models.CharField(max_length=255)
-    route = models.CharField(max_length=255)
-    quantity = models.FloatField()
-    
-    frequency = models.JSONField(default=dict)
-    duration = models.JSONField(default=dict)
-    allergies = models.JSONField(default=list)
-    
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ONGOING)
-    
-    updated_at = models.DateTimeField(auto_now=True)
-    upload_source = models.CharField(max_length=20, choices=UploadSource.choices, default=UploadSource.MEDICALRECORD)
-    
-    class Meta:
-        db_table = 'medicalrecords_drugrecord'
-
-    def __str__(self):
-        return self.name
     
 class MedicalRecordAttachment(models.Model):
     medical_record = models.ForeignKey(MedicalRecord, related_name="attachments", on_delete=models.CASCADE, null=True, blank=True)
@@ -171,3 +135,76 @@ class CaseNote(BaseModel):
     
     def __str__(self):
         return f"Case Note for {self.patient.full_name} by {self.staff.full_name}"
+    
+class SoapNote(BaseModel):
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="soap_notes")
+    staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name="soap_notes", null=True)
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="soap_notes", null=True)
+    
+    chief_complaint = models.TextField(blank=False, null=False)
+    history = models.TextField(blank=True, null=True)
+    past_med_history = models.TextField(blank=True, null=True)
+    family_history = models.TextField(blank=True, null=True)
+    social_history = models.TextField(blank=True, null=True)
+    drug_history_allergies = models.TextField(blank=True, null=True)
+    review = models.TextField(blank=True, null=True)
+    
+    vital_signs = models.ForeignKey(VitalSigns, on_delete=models.SET_NULL, null=True, blank=True)
+    general_exam = models.TextField(blank=True, null=True)
+    systemic_exam = models.TextField(blank=True, null=True)
+    bedside_tests = models.TextField(blank=True, null=True)
+    investigations = models.JSONField(default=list, blank=True, null=True)
+    investigations_docs = models.JSONField(default=list, blank=True, null=True)
+    
+    primary_diagnosis = models.TextField(blank=False, null=False)
+    differential_diagnosis = models.TextField(blank=True, null=True)
+    problem_list = models.JSONField(default=list, blank=True, null=True)
+    
+    treatment_plan = models.TextField(blank=True, null=True)
+    care_instructions = models.JSONField(default=list, blank=False)
+    appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=False, related_name='soap_notes')
+    referred_docuhealth_hosp = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_soap_notes')
+    referred_hosp = models.TextField(blank=True, null=True)
+    patient_education = models.TextField(blank=True, null=True)
+    
+    
+    def __str__(self):
+        return f"SOAP Note for {self.patient.full_name} by {self.staff.full_name}"
+    
+class DrugRecord(BaseModel):
+    class Status(models.TextChoices):
+        ONGOING = "ongoing", "Ongoing"
+        COMPLETED = "completed", "Completed"
+        STOPPED = "stopped", "Stopped"
+        
+    class UploadSource(models.TextChoices):
+        MEDICALRECORD = "medicalrecord", "Medical Record"
+        PHARMACY = "pharmacy", "Pharmacy"
+        HOSPITAL = "hospital", "Hospital"
+        PHARMACY_API = "pharmacy_api", "Pharmacy API"
+        SOAPNOTE = "soap_note", "SOAP Note"
+    
+    medical_record = models.ForeignKey(MedicalRecord, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
+    pharmacy = models.ForeignKey(PharmacyProfile, on_delete=models.SET_NULL, related_name='drug_records', blank=True, null=True)
+    soap_note = models.ForeignKey(SoapNote, on_delete=models.SET_NULL, related_name='drug_records', blank=True, null=True)
+    
+    name = models.CharField(max_length=255)
+    route = models.CharField(max_length=255)
+    quantity = models.FloatField()
+    
+    frequency = models.JSONField(default=dict)
+    duration = models.JSONField(default=dict)
+    allergies = models.JSONField(default=list)
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ONGOING)
+    
+    updated_at = models.DateTimeField(auto_now=True)
+    upload_source = models.CharField(max_length=20, choices=UploadSource.choices, default=UploadSource.MEDICALRECORD)
+    
+    class Meta:
+        db_table = 'medicalrecords_drugrecord'
+
+    def __str__(self):
+        return self.name

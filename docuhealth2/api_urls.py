@@ -2,7 +2,7 @@ from django.urls import path
 
 from accounts.views import LoginView, CustomTokenRefreshView, ForgotPassword, VerifyForgotPasswordOTPView, ResetPasswordView, ListUserView, VerifySignupOTPView, UpdatePasswordView, VerifyUserNINView, DoctorDashboardView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, PatientDashboardView, CreatePatientView, UpdatePatientView, DeletePatientAccountView, ListCreateSubaccountView, UpgradeSubaccountView, ToggleEmergencyView, GeneratePatientIdCard, GenerateSubaccountIdCard, NurseDashboardView, ReceptionistDashboardView, GetPatientDetailsView, GetStaffByRoleView, ReceptionistCreatePatientView
 
-from records.views import CreateMedicalRecordView, MedicalRecordListView, UploadMedicalRecordsAttachments, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView, ListPatientDrugRecordsView
+from records.views import CreateMedicalRecordView, MedicalRecordListView, UploadMedicalRecordsAttachments, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView, ListPatientDrugRecordsView, CreateSoapNoteView
 
 from hospital_ops.views import ListAllAppointmentsView, ListStaffAppointmentsView, AssignAppointmentToDoctorView, HandOverNurseShiftView, ListPatientAppointmentsView, BookAppointmentView, ListUpcomingAppointmentsView, ListRecentPatientsView
 
@@ -13,7 +13,7 @@ from organizations.webhooks import PaystackWebhookView
 from facility.views import ListCreateWardsView, RetrieveUpdateDeleteWardView, ListBedsByWardView
 
 auth_urls = [
-     path('signup/verify-otp', VerifySignupOTPView.as_view(), name='verify-signup-otp'),
+    path('signup/verify-otp', VerifySignupOTPView.as_view(), name='verify-signup-otp'),
     path('login', LoginView.as_view(), name='user-login'),
     path('refresh', CustomTokenRefreshView.as_view(), name='token_refresh'),
     path('forgot-password', ForgotPassword.as_view(), name='forgot-password'),
@@ -30,6 +30,7 @@ medical_records_urls = [
     path('/upload-attachments', UploadMedicalRecordsAttachments.as_view(), name='medical-records-attachments'),
     path('/user-records', ListUserMedicalrecordsView.as_view(), name='patient-medical-records'),
     path('/all', MedicalRecordListView.as_view(), name='get-medical-records'),
+    path('/soap-note', CreateSoapNoteView.as_view(), name='create-soap-note'),
 ]
 
 doctor_urls = [

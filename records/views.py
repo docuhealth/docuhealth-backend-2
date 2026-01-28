@@ -14,15 +14,18 @@ from drf_spectacular.types import OpenApiTypes
 
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedNurse, IsAuthenticatedDoctor, IsAuthenticatedHospitalStaff, IsAuthenticatedReceptionist, IsAuthenticatedPatient
 from docuhealth2.authentications import ClientHeaderAuthentication
+from docuhealth2.utils.supabase import upload_files, delete_from_supabase
 
-from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord, VitalSigns
-from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer, DrugRecordSerializer
+from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord, VitalSigns, SoapNote
+from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer, DrugRecordSerializer, SoapNoteSerializer
+from .schema import CREATE_SOAP_NOTE_SCHEMA
 
 from facility.models import WardBed
 from hospital_ops.models import HospitalPatientActivity
 
 from accounts.models import User, HospitalStaffProfile, PatientProfile, SubaccountProfile
 from accounts.serializers import PatientBasicInfoSerializer, PatientFullInfoSerializer
+
 
 @extend_schema(tags=["Medical records"])  
 class MedicalRecordListView(generics.ListAPIView):
@@ -271,39 +274,6 @@ class RequestAdmissionView(generics.CreateAPIView):
         
         HospitalPatientActivity.objects.create(patient=patient, staff=staff, hospital=hospital, action="request_admission")
         
-# @extend_schema(tags=['Doctor'], summary="Confirm admission of patient in a ward")
-# class ConfirmAdmissionView(generics.UpdateAPIView):
-#     serializer_class = ConfirmAdmissionSerializer
-#     permission_classes = [IsAuthenticatedDoctor]
-#     lookup_url_kwarg = "admission_id"
-#     http_method_names = ['patch']
-    
-#     def get_object(self):
-#         admission_id = self.kwargs[self.lookup_url_kwarg]
-#         staff = self.request.user.hospital_staff_profile
-
-#         try:
-#             return Admission.objects.get(id=admission_id, hospital=staff.hospital)
-        
-#         except Admission.DoesNotExist:
-#             raise NotFound({"detail": "Admission not found."})
-    
-#     @transaction.atomic
-#     def update(self, request, *args, **kwargs):
-#         admission = self.get_object()
-
-#         serializer = self.get_serializer(data=request.data, context={"admission": admission, "request": request})
-#         serializer.is_valid(raise_exception=True)
-        
-#         admission.status = Admission.Status.ACTIVE
-#         admission.admission_date = timezone.now()
-#         admission.save(update_fields=["status", "admission_date"])
-
-#         admission.bed.status = WardBed.Status.OCCUPIED
-#         admission.bed.save(update_fields=["status"])
-
-#         return Response({"detail": "Admission confirmed successfully."}, status=status.HTTP_200_OK)
-    
 @extend_schema(tags=["Receptionist"], summary="List all admission requests that are pending")
 class ListAdmissionRequestsView(generics.ListAPIView):
     serializer_class = AdmissionSerializer
@@ -459,3 +429,33 @@ class ListPatientDrugRecordsView(generics.ListAPIView):
     def get_queryset(self):
         patient = self.request.user.patient_profile
         return DrugRecord.objects.filter(patient=patient).order_by('-created_at')
+    
+@extend_schema(tags=["Medical Records"], summary="Create soap note with medications and files", **CREATE_SOAP_NOTE_SCHEMA)
+class CreateSoapNoteView(generics.CreateAPIView):
+    serializer_class = SoapNoteSerializer
+    permission_classes = [IsAuthenticatedDoctor]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def create(self, request, *args, **kwargs):
+        hospital = self.request.user.hospital_staff_profile.hospital
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        investigations_docs = request.FILES.getlist("investigations_docs")
+        uploaded_data = []
+        if investigations_docs:
+            uploaded_data = upload_files(investigations_docs, "soapnote_investigations")
+        
+        try: 
+            instance = serializer.save(hospital=hospital, investigations_docs=uploaded_data)
+            
+            headers = self.get_success_headers(serializer.data)
+            return Response(self.get_serializer(instance).data, status=status.HTTP_201_CREATED, headers=headers)
+            
+        except Exception as e:
+            for doc in uploaded_data:
+                delete_from_supabase(doc['path'])
+            
+            print(f"Soap Note Error: {str(e)}")
+            raise e

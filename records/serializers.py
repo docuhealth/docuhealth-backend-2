@@ -2,18 +2,21 @@ from django.db import transaction
 
 from rest_framework import serializers
 
-from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment, VitalSigns, VitalSignsRequest, Admission, CaseNote
+from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment, VitalSigns, VitalSignsRequest, Admission, CaseNote, SoapNote
+from .mixins import CreateSoapMultipartJsonMixin
 
 from accounts.models import PatientProfile, SubaccountProfile, HospitalStaffProfile
 from accounts.serializers import PatientFullInfoSerializer, PatientBasicInfoSerializer, HospitalStaffInfoSerilizer, HospitalStaffBasicInfoSerializer
 
 from hospital_ops.models import Appointment
+from hospital_ops.serializers import AppointmentSerializer
 
 from organizations.serializers import HospitalBasicInfoSerializer
 from organizations.models import HospitalProfile, PharmacyProfile
 
 from facility.models import HospitalWard, WardBed
 from facility.serializers import WardBedSerializer, WardNameSerializer
+
 
 class ValueRateSerializer(serializers.Serializer):
     value = serializers.FloatField()
@@ -138,6 +141,7 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
     doctor_info = HospitalStaffBasicInfoSerializer(read_only=True, source="doctor")
     
     referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True) 
+    referred_docuhealth_hosp_info = HospitalBasicInfoSerializer(read_only=True, source="referred_docuhealth_hosp")
     
     attachments = serializers.PrimaryKeyRelatedField(many=True, queryset=MedicalRecordAttachment.objects.all(), required=False, write_only=True)
     attachments_info = MedicalRecordAttachmentSerializer(many=True, read_only=True, source="attachments")
@@ -146,7 +150,7 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
     vital_signs = MedRecordsVitalSignsSerializer(required=False, allow_null=True)
     appointment = MedRecordAppointmentSerializer(required=False, allow_null=True) 
     
-    hospital_info = HospitalBasicInfoSerializer(read_only=True)
+    hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
     
     history = serializers.ListField(child=serializers.CharField(), required=False)
     physical_exam = serializers.ListField(child=serializers.CharField(), required=False)
@@ -186,7 +190,6 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
             attachment.save()
             
         if appointment_data:
-            print(appointment_data)
             Appointment.objects.create(patient=patient, medical_record=medical_record, hospital=hospital, **appointment_data) 
             
         return medical_record
@@ -269,6 +272,59 @@ class UpdateCaseNoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaseNote
         fields = ['observation', 'care', 'response', 'abnormalities', 'follow_up']
+        
+
+class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializer):
+    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), write_only=True)
+    patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
+    
+    staff = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.all(), write_only=True)
+    staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
+    
+    hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
+    
+    vital_signs = serializers.PrimaryKeyRelatedField(queryset=VitalSigns.objects.all(), required=False, allow_null=True)
+    vital_signs_info = MedRecordsVitalSignsSerializer(read_only=True, source="vital_signs")
+    
+    appointment = AppointmentSerializer(required=False, allow_null=True, write_only=True)
+    appointment_info = MedRecordAppointmentSerializer(read_only=True, source="appointment")
+    
+    drug_records = DrugRecordSerializer(many=True, required=True)
+    
+    drug_history_allergies = serializers.ListField(child=serializers.CharField(), required=False)
+    investigations = serializers.ListField(child=serializers.CharField(), required=False)
+    investigations_docs = serializers.ListField(child=serializers.DictField(), required=False)
+    problems_list = serializers.ListField(child=serializers.CharField(), required=False)
+    care_instructions = serializers.ListField(child=serializers.CharField(), required=True)
+    
+    referred_docuhealhosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True)
+    
+    class Meta:
+        model = SoapNote
+        exclude = ["is_deleted", "deleted_at"]
+    
+    @transaction.atomic() 
+    def create(self, validated_data):
+        user = self.context['request'].user
+        staff = user.hospital_staff_profile
+        
+        drug_records_data = validated_data.pop('drug_records', [])
+        appointment_data = validated_data.pop('appointment', None)
+        
+        hospital = validated_data.get("hospital")
+        patient = validated_data.get('patient')
+        
+        soap_note = SoapNote.objects.create(**validated_data)
+        
+        for drug_data in drug_records_data:
+            DrugRecord.objects.create(soap_note=soap_note, patient=patient, hospital=hospital, **drug_data, upload_source=DrugRecord.UploadSource.SOAPNOTE)
+            
+        if appointment_data:
+            Appointment.objects.create(patient=patient, staff=staff, soap_note=soap_note, hospital=hospital, **appointment_data) 
+            
+        return soap_note
+            
+        
 
     
 

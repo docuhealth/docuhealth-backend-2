@@ -43,10 +43,18 @@ class AssignAppointmentToDoctorSerializer(serializers.ModelSerializer):
         fields = ['note', 'type', 'scheduled_time', 'doctor_id']
         
 class AppointmentSerializer(serializers.ModelSerializer):
+    last_visited = serializers.SerializerMethodField(read_only=True)
+    
+    staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
+    hospital_info  = HospitalBasicInfoSerializer(read_only=True, source="hospital")
     class Meta:
         model = Appointment
-        fields = ['id', 'status', 'scheduled_time', 'doctor', 'hospital', 'last_visited']
+        fields = ['id', 'status', 'scheduled_time', 'staff_info', 'hospital_info', 'last_visited']
         read_only_fields = fields
+        
+    def get_last_visited(self, obj):
+        last_completed_appointment = Appointment.objects.filter(patient=obj.patient, status=Appointment.Status.COMPLETED, scheduled_time__lt=obj.scheduled_time).order_by('-scheduled_time').first()
+        return last_completed_appointment.scheduled_time if last_completed_appointment else None
         
 class AppointmentHospitalSerializer(serializers.ModelSerializer):
     class Meta:

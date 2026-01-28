@@ -3,7 +3,6 @@ from django.db import models
 from docuhealth2.models import BaseModel
 
 from accounts.models import HospitalStaffProfile, PatientProfile
-from records.models import MedicalRecord
 from organizations.models import HospitalProfile
 from docuhealth2.models import BaseModel
 
@@ -29,9 +28,10 @@ class Appointment(BaseModel):
         COMPLETED = "completed", "Completed"
     
     patient = models.ForeignKey(PatientProfile, related_name='appointments', on_delete=models.SET_NULL, null=True)
-    medical_record = models.OneToOneField(MedicalRecord, related_name='appointment', on_delete=models.SET_NULL, null=True, blank=True)
+    medical_record = models.OneToOneField("records.MedicalRecord", related_name='appointment', on_delete=models.SET_NULL, null=True, blank=True)
     hospital = models.ForeignKey(HospitalProfile, related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
     staff = models.ForeignKey(HospitalStaffProfile, related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
+    soap_note = models.ForeignKey("records.SoapNote", related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
     
     type = models.CharField(max_length=20, blank=True, null=True)
     note = models.TextField(blank=True, null=True)

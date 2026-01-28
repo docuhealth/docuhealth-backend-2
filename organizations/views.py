@@ -10,7 +10,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 
 from docuhealth2.views import PublicGenericAPIView, BaseUserCreateView
-from docuhealth2.utils.supabase import upload_file_to_supabase, delete_from_supabase
+from docuhealth2.utils.supabase import delete_from_supabase, upload_files
 from docuhealth2.utils.email_service import BrevoEmailService
 from docuhealth2.authentications import ClientHeaderAuthentication
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedPharmacy, IsAuthenticatedPharmacyPartner, IsAuthenticatedDHAdmin
@@ -19,16 +19,13 @@ from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, Ho
 
 from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalProfile, SubscriptionPlan, PharmacyProfile, Client
 
-from .services import upload_files
 from .requests import create_customer, initialize_transaction
 
 from accounts.models import User
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
-import uuid
 import secrets
-from concurrent.futures import ThreadPoolExecutor
 
 
 mailer = BrevoEmailService()

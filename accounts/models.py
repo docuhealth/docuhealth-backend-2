@@ -69,6 +69,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     class Meta:
         db_table = 'core_user'
+        
+    # def get_profile
     
     def __str__(self):
         return f"{self.email} ({self.role})"

@@ -1,8 +1,9 @@
 from supabase import create_client, Client
 from django.conf import settings
-from rest_framework.response import Response
-from rest_framework import status
 import uuid
+
+from concurrent.futures import ThreadPoolExecutor
+
 
 supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 bucket_name  = settings.SUPABASE_BUCKET_NAME 
@@ -66,3 +67,23 @@ def delete_from_supabase(path: str, bucket_name=bucket_name):
     except Exception as e:
         print(f"Cleanup failed for {path}: {str(e)}")
         return None
+
+def upload_files(documents, folder):
+    files_data = [{"bytes": doc.read(), "name": doc.name, "type": doc.content_type} for doc in documents]
+    uploaded_data = []
+    
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [
+            executor.submit(upload_file_to_supabase,  file['bytes'], file['name'], file['type'], folder) for file in files_data
+        ]
+        
+        try:
+            for future in futures:
+                uploaded_data.append(future.result())
+                
+            return uploaded_data
+                
+        except Exception as e:
+            for doc in uploaded_data:
+                delete_from_supabase(doc['path'])
+            raise e
