@@ -2,7 +2,7 @@ from django.urls import path
 
 from accounts.views import LoginView, CustomTokenRefreshView, ForgotPassword, VerifyForgotPasswordOTPView, ResetPasswordView, ListUserView, VerifySignupOTPView, UpdatePasswordView, VerifyUserNINView, DoctorDashboardView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, PatientDashboardView, CreatePatientView, UpdatePatientView, DeletePatientAccountView, ListCreateSubaccountView, UpgradeSubaccountView, ToggleEmergencyView, GeneratePatientIdCard, GenerateSubaccountIdCard, NurseDashboardView, ReceptionistDashboardView, GetPatientDetailsView, GetStaffByRoleView, ReceptionistCreatePatientView
 
-from records.views import CreateMedicalRecordView, MedicalRecordListView, UploadMedicalRecordsAttachments, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView, ListPatientDrugRecordsView, CreateSoapNoteView
+from records.views import CreateMedicalRecordView, MedicalRecordListView, UploadMedicalRecordsAttachments, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView, ListPatientDrugRecordsView, CreateSoapNoteView, ListPatientSoapNotesView
 
 from hospital_ops.views import ListAllAppointmentsView, ListStaffAppointmentsView, AssignAppointmentToDoctorView, HandOverNurseShiftView, ListPatientAppointmentsView, BookAppointmentView, ListUpcomingAppointmentsView, ListRecentPatientsView
 
@@ -31,6 +31,7 @@ medical_records_urls = [
     path('/user-records', ListUserMedicalrecordsView.as_view(), name='patient-medical-records'),
     path('/all', MedicalRecordListView.as_view(), name='get-medical-records'),
     path('/soap-note', CreateSoapNoteView.as_view(), name='create-soap-note'),
+    path('/soap-note/<str:hin>', ListPatientSoapNotesView.as_view(), name='list-patient-soap-notes'),
 ]
 
 doctor_urls = [

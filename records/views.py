@@ -459,3 +459,15 @@ class CreateSoapNoteView(generics.CreateAPIView):
             
             print(f"Soap Note Error: {str(e)}")
             raise e
+        
+@extend_schema(tags=["Medical records"], summary="List soap notes for a patient")
+class ListPatientSoapNotesView(generics.ListAPIView):
+    serializer_class = SoapNoteSerializer
+    permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
+    
+    def get_queryset(self):
+        hin = self.kwargs.get("hin")
+        staff = self.request.user.hospital_staff_profile
+        
+        patient = get_object_or_404(PatientProfile, hin=hin)
+        return SoapNote.objects.filter(patient=patient, hospital=staff.hospital).select_related("patient", "staff", "hospital").order_by('-created_at')
