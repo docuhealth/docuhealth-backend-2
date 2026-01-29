@@ -2,10 +2,9 @@ from drf_spectacular.utils import OpenApiExample
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema, inline_serializer
 
-from .serializers import SoapNoteSerializer, DrugRecordSerializer
+from .serializers import SoapNoteSerializer, DrugRecordSerializer, DischargeFormSerializer
 from hospital_ops.serializers import BookAppointmentSerializer
 
-# Full Schema Definition
 CREATE_SOAP_NOTE_SCHEMA = {
     "request": {
         "multipart/form-data": inline_serializer(
@@ -50,4 +49,34 @@ CREATE_SOAP_NOTE_SCHEMA = {
         )
     },
     "responses": {201: SoapNoteSerializer},
+}
+
+
+CREATE_DISCHARGE_FORM_SCHEMA = {
+    "request": {
+        "multipart/form-data": inline_serializer(
+            name="DischargeFormMultipartRequest",
+            fields={
+                "investigations_docs": serializers.ListField(
+                    child=serializers.FileField(), required=False
+                ),
+                
+                "patient": serializers.CharField(help_text="Patient HIN"),
+                "staff": serializers.CharField(help_text="Staff ID"),
+                
+                "drug_records": DrugRecordSerializer(many=True),
+                "follow_up_appointment": BookAppointmentSerializer(required=False),
+                
+                # JSON Lists
+                "condition_on_discharge": serializers.ListField(child=serializers.CharField(), required=False),
+                "diagnosis": serializers.ListField(child=serializers.CharField(), required=False),
+                "treatment_plan": serializers.ListField(child=serializers.CharField()),
+                "care_instructions": serializers.ListField(child=serializers.CharField(), required=False),
+                            
+                # Text Fields
+                "chief_complaint": serializers.CharField(),
+            }
+        )
+    },
+    "responses": {201: DischargeFormSerializer},
 }

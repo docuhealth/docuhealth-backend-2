@@ -172,6 +172,26 @@ class SoapNote(BaseModel):
     def __str__(self):
         return f"SOAP Note for {self.patient.full_name} by {self.staff.full_name}"
     
+class DischargeForm(BaseModel):
+    
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="discharge_form")
+    staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name="discharge_form", null=True)
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="discharge_form", null=True),
+
+    chief_complaint = models.TextField(),
+    diagnosis = models.JSONField(default=list),
+    treatment_plan = models.JSONField(default=list),
+    care_instructions = models.JSONField(default=list),
+    
+    # drug_records
+    
+    condition_on_discharge = models.TextField(),
+    investigation_docs = models.JSONField(default=list, blank=True, null=True)
+    follow_up_appointment = models.ForeignKey(Appointment, on_delete=models.DO_NOTHING, related_name='discharge_forms')
+    
+    def __str__(self):
+        return f"Discharge Form for {self.patient.full_name} by {self.staff.full_name}"
+    
 class DrugRecord(BaseModel):
     class Status(models.TextChoices):
         ONGOING = "ongoing", "Ongoing"
@@ -184,13 +204,15 @@ class DrugRecord(BaseModel):
         HOSPITAL = "hospital", "Hospital"
         PHARMACY_API = "pharmacy_api", "Pharmacy API"
         SOAPNOTE = "soap_note", "SOAP Note"
+        DISCHARGEFORM = "discharge_form", "Discharge Form"
     
     medical_record = models.ForeignKey(MedicalRecord, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.CASCADE, related_name='drug_records', blank=True, null=True)
     pharmacy = models.ForeignKey(PharmacyProfile, on_delete=models.SET_NULL, related_name='drug_records', blank=True, null=True)
     soap_note = models.ForeignKey(SoapNote, on_delete=models.SET_NULL, related_name='drug_records', blank=True, null=True)
-    
+    discharge_form = models.ForeignKey(DischargeForm, on_delete=models.SET_NULL, related_name='drug_records', blank=True, null=True)
+
     name = models.CharField(max_length=255)
     route = models.CharField(max_length=255)
     quantity = models.FloatField()
@@ -209,3 +231,4 @@ class DrugRecord(BaseModel):
 
     def __str__(self):
         return self.name
+     

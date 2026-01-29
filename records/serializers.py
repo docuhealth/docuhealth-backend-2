@@ -2,7 +2,7 @@ from django.db import transaction
 
 from rest_framework import serializers
 
-from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment, VitalSigns, VitalSignsRequest, Admission, CaseNote, SoapNote
+from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment, VitalSigns, VitalSignsRequest, Admission, CaseNote, SoapNote, DischargeForm
 from .mixins import CreateSoapMultipartJsonMixin
 
 from accounts.models import PatientProfile, SubaccountProfile, HospitalStaffProfile
@@ -306,7 +306,8 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
     class Meta:
         model = SoapNote
         exclude = ["is_deleted", "deleted_at"]
-    
+        read_only_fields = ['id', 'created_at', 'hospital']
+        
     @transaction.atomic() 
     def create(self, validated_data):
         user = self.context['request'].user
@@ -327,6 +328,51 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
             Appointment.objects.create(patient=patient, staff=staff, soap_note=soap_note, hospital=hospital, **appointment_data) 
             
         return soap_note
+    
+class DischargeFormSerializer(serializers.ModelSerializer):
+    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), write_only=True)
+    patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
+    
+    staff = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.all(), write_only=True)
+    staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
+    
+    hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
+    
+    condition_on_discharge = serializers.ListField(child=serializers.CharField(), required=True)
+    diagnosis = serializers.ListField(child=serializers.CharField(), required=True)
+    treatment_plan = serializers.ListField(child=serializers.CharField(), required=True)
+    care_instructions = serializers.ListField(child=serializers.CharField(), required=True)
+    
+    follow_up_appointment = AppointmentSerializer(required=False, allow_null=True, write_only=True)
+    follow_up_appointment_info = MedRecordAppointmentSerializer(read_only=True, source="appointment")
+    
+    drug_records = DrugRecordSerializer(many=True, required=True)
+    
+    class Meta:
+        model = DischargeForm
+        exclude = ['is_deleted', 'deleted_at']
+        read_only_fields = ['id', 'created_at', 'hospital']
+        
+    @transaction.atomic() 
+    def create(self, validated_data):
+        user = self.context['request'].user
+        staff = user.hospital_staff_profile
+        
+        drug_records_data = validated_data.pop('drug_records', [])
+        appointment_data = validated_data.pop('follow_up_appointment', None)
+        
+        hospital = validated_data.get("hospital")
+        patient = validated_data.get('patient')
+        
+        discharge_form = DischargeForm.objects.create(**validated_data)
+        
+        for drug_data in drug_records_data:
+            DrugRecord.objects.create(discharge_form=discharge_form, patient=patient, hospital=hospital, **drug_data, upload_source=DrugRecord.UploadSource.DISCHARGEFORM)
+            
+        if appointment_data:
+            Appointment.objects.create(patient=patient, staff=staff, discharge_form=discharge_form, hospital=hospital, **appointment_data) 
+            
+        return discharge_form
             
         
 

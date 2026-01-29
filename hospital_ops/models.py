@@ -32,6 +32,7 @@ class Appointment(BaseModel):
     hospital = models.ForeignKey(HospitalProfile, related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
     staff = models.ForeignKey(HospitalStaffProfile, related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
     soap_note = models.ForeignKey("records.SoapNote", related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
+    discharge_form = models.ForeignKey("records.DischargeForm", related_name='appointments', on_delete=models.SET_NULL, null=True, blank=True)
     
     type = models.CharField(max_length=20, blank=True, null=True)
     note = models.TextField(blank=True, null=True)
