@@ -2,7 +2,7 @@ from django.db import transaction
 
 from rest_framework import serializers
 
-from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment, VitalSigns, VitalSignsRequest, Admission, CaseNote, SoapNote, DischargeForm
+from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment, VitalSigns, VitalSignsRequest, Admission, CaseNote, SoapNote, DischargeForm, SoapNoteAdditionalNotes
 from .mixins import CreateSoapMultipartJsonMixin
 
 from accounts.models import PatientProfile, SubaccountProfile, HospitalStaffProfile
@@ -273,6 +273,14 @@ class UpdateCaseNoteSerializer(serializers.ModelSerializer):
         model = CaseNote
         fields = ['observation', 'care', 'response', 'abnormalities', 'follow_up']
         
+class SoapNoteAdditionalNotesSerializer(serializers.ModelSerializer):
+    soap_note = serializers.PrimaryKeyRelatedField(queryset=SoapNote.objects.all())
+
+    class Meta:
+        model = SoapNoteAdditionalNotes
+        fields = ['id', 'soap_note', 'note', 'created_at']
+        read_only_fields = ['id', 'created_at']
+        
 
 class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializer):
     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), write_only=True)
@@ -302,6 +310,8 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
     treatment_plan = serializers.ListField(child=serializers.CharField(), required=False)
     
     referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True)
+    
+    additional_notes = SoapNoteAdditionalNotesSerializer(many=True, required=False, read_only=True, source="additional_notes")
     
     class Meta:
         model = SoapNote
@@ -373,11 +383,3 @@ class DischargeFormSerializer(serializers.ModelSerializer):
             Appointment.objects.create(patient=patient, staff=staff, discharge_form=discharge_form, hospital=hospital, **appointment_data) 
             
         return discharge_form
-            
-        
-
-    
-
-        
-
-    

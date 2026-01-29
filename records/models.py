@@ -168,9 +168,15 @@ class SoapNote(BaseModel):
     referred_hosp = models.TextField(blank=True, null=True)
     patient_education = models.TextField(blank=True, null=True)
     
-    
     def __str__(self):
         return f"SOAP Note for {self.patient.full_name} by {self.staff.full_name}"
+    
+class SoapNoteAdditionalNotes(BaseModel):
+    soap_note = models.ForeignKey(SoapNote, on_delete=models.CASCADE, related_name="additional_notes")
+    note = models.TextField()
+    
+    def __str__(self):
+        return f"Additional Note for SOAP Note ID {self.soap_note.id}"
     
 class DischargeForm(BaseModel):
     

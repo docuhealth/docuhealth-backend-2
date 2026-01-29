@@ -16,8 +16,8 @@ from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticate
 from docuhealth2.authentications import ClientHeaderAuthentication
 from docuhealth2.utils.supabase import upload_files, delete_from_supabase
 
-from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord, VitalSigns, SoapNote, DischargeForm
-from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer, DrugRecordSerializer, SoapNoteSerializer, DischargeFormSerializer
+from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord, VitalSigns, SoapNote, DischargeForm, SoapNoteAdditionalNotes
+from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer, DrugRecordSerializer, SoapNoteSerializer, DischargeFormSerializer, SoapNoteAdditionalNotesSerializer
 from .schema import CREATE_SOAP_NOTE_SCHEMA, CREATE_DISCHARGE_FORM_SCHEMA
 
 from facility.models import WardBed
@@ -513,3 +513,20 @@ class ListPatientDischargeFormsView(generics.ListAPIView):
         
         patient = get_object_or_404(PatientProfile, hin=hin)
         return DischargeForm.objects.filter(patient=patient, hospital=staff.hospital).select_related("patient", "staff", "hospital").order_by('-created_at')
+    
+@extend_schema(tags=["Medical records"], summary="Create additional notes for a SOAP note")
+class CreateSoapNoteAdditionalNotesView(generics.CreateAPIView):
+    serializer_class = SoapNoteAdditionalNotesSerializer
+    permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
+    
+# @extend_schema(tags=["Medical records"], summary="List additional notes for a SOAP note")
+# class ListSoapNoteAdditionalNotesView(generics.ListAPIView):
+#     serializer_class = SoapNoteAdditionalNotesSerializer
+#     permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
+    
+#     def get_queryset(self):
+#         soap_note_id = self.kwargs.get("soap_note_id")
+#         staff = self.request.user.hospital_staff_profile
+        
+#         soap_note = get_object_or_404(SoapNote, id=soap_note_id, hospital=staff.hospital)
+#         return SoapNoteAdditionalNotes.objects.filter(soap_note=soap_note).order_by('-created_at')
