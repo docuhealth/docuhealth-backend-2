@@ -274,7 +274,7 @@ class UpdateCaseNoteSerializer(serializers.ModelSerializer):
         fields = ['observation', 'care', 'response', 'abnormalities', 'follow_up']
         
 class SoapNoteAdditionalNotesSerializer(serializers.ModelSerializer):
-    soap_note = serializers.PrimaryKeyRelatedField(queryset=SoapNote.objects.all())
+    soap_note = serializers.PrimaryKeyRelatedField(queryset=SoapNote.objects.all(), write_only=True)
 
     class Meta:
         model = SoapNoteAdditionalNotes
@@ -311,7 +311,7 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
     
     referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True)
     
-    additional_notes = SoapNoteAdditionalNotesSerializer(many=True, required=False, read_only=True, source="additional_notes")
+    additional_notes = SoapNoteAdditionalNotesSerializer(many=True, required=False, read_only=True)
     
     class Meta:
         model = SoapNote
