@@ -142,17 +142,18 @@ class SoapNote(BaseModel):
     hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="soap_notes", null=True)
     
     chief_complaint = models.TextField(blank=False, null=False)
-    history = models.TextField(blank=True, null=True)
+    history_of_complain = models.TextField(blank=True, null=True)
     past_med_history = models.TextField(blank=True, null=True)
     family_history = models.TextField(blank=True, null=True)
     social_history = models.TextField(blank=True, null=True)
+    other_history = models.TextField(blank=True, null=True)
     drug_history_allergies = models.TextField(blank=True, null=True)
     review = models.TextField(blank=True, null=True)
     
     vital_signs = models.ForeignKey(VitalSigns, on_delete=models.SET_NULL, null=True, blank=True)
-    general_exam = models.TextField(blank=True, null=True)
-    systemic_exam = models.TextField(blank=True, null=True)
-    bedside_tests = models.TextField(blank=True, null=True)
+    general_exam = models.JSONField(default=list, blank=True, null=True)
+    systemic_exam = models.JSONField(default=list, blank=True, null=True)
+    bedside_tests = models.JSONField(default=list, blank=True, null=True)
     investigations = models.JSONField(default=list, blank=True, null=True)
     investigations_docs = models.JSONField(default=list, blank=True, null=True)
     
@@ -160,7 +161,7 @@ class SoapNote(BaseModel):
     differential_diagnosis = models.TextField(blank=True, null=True)
     problem_list = models.JSONField(default=list, blank=True, null=True)
     
-    treatment_plan = models.TextField(blank=True, null=True)
+    treatment_plan = models.JSONField(default=list, blank=True, null=True)
     care_instructions = models.JSONField(default=list, blank=False)
     appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=False, related_name='soap_notes')
     referred_docuhealth_hosp = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_soap_notes')

@@ -30,7 +30,11 @@ CREATE_SOAP_NOTE_SCHEMA = {
                 "problems_list": serializers.ListField(child=serializers.CharField(), required=False),
                 "care_instructions": serializers.ListField(child=serializers.CharField()),
                 "drug_history_allergies": serializers.ListField(child=serializers.CharField(), required=False),
-                
+                "general_exam": serializers.ListField(child=serializers.CharField(), required=False),
+                "systemic_exam": serializers.ListField(child=serializers.CharField(), required=False),
+                "bedside_tests": serializers.ListField(child=serializers.CharField(), required=False),
+                "treatment_plan": serializers.ListField(child=serializers.CharField(), required=False),
+                            
                 # Text Fields
                 "chief_complaint": serializers.CharField(),
                 "history": serializers.CharField(required=False),
@@ -38,12 +42,8 @@ CREATE_SOAP_NOTE_SCHEMA = {
                 "family_history": serializers.CharField(required=False),
                 "social_history": serializers.CharField(required=False),
                 "review": serializers.CharField(required=False),
-                "general_exam": serializers.CharField(required=False),
-                "systemic_exam": serializers.CharField(required=False),
-                "bedside_tests": serializers.CharField(required=False),
                 "primary_diagnosis": serializers.CharField(),
                 "differential_diagnosis": serializers.CharField(required=False),
-                "treatment_plan": serializers.CharField(),
                 "patient_education": serializers.CharField(required=False),
                 "referred_hosp": serializers.CharField(required=False),
             }

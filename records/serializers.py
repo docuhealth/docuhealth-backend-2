@@ -296,6 +296,10 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
     investigations_docs = serializers.ListField(child=serializers.DictField(), required=False)
     problems_list = serializers.ListField(child=serializers.CharField(), required=False)
     care_instructions = serializers.ListField(child=serializers.CharField(), required=True)
+    general_exam = serializers.ListField(child=serializers.CharField(), required=False)
+    systemic_exam = serializers.ListField(child=serializers.CharField(), required=False)
+    bedside_tests = serializers.ListField(child=serializers.CharField(), required=False)
+    treatment_plan = serializers.ListField(child=serializers.CharField(), required=False)
     
     referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True)
     
