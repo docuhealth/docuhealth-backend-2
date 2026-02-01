@@ -11,12 +11,11 @@ CREATE_SOAP_NOTE_SCHEMA = {
             name="SoapNoteMultipartRequest",
             fields={
                 # Files
-                "investigations_docs": serializers.ListField(
+                "investigation_docs": serializers.ListField(
                     child=serializers.FileField(), required=False
                 ),
                 # Identifiers
                 "patient": serializers.CharField(help_text="Patient HIN"),
-                # "staff": serializers.CharField(help_text="Staff ID"),
                 "vital_signs": serializers.IntegerField(required=False),
                 "referred_docuhealhosp": serializers.CharField(required=False),
                 
@@ -37,7 +36,8 @@ CREATE_SOAP_NOTE_SCHEMA = {
                             
                 # Text Fields
                 "chief_complaint": serializers.CharField(),
-                "history": serializers.CharField(required=False),
+                "other_history": serializers.CharField(required=False),
+                "history_of_complain": serializers.CharField(required=False),
                 "past_med_history": serializers.CharField(required=False),
                 "family_history": serializers.CharField(required=False),
                 "social_history": serializers.CharField(required=False),

@@ -13,7 +13,6 @@ class CreateSoapMultipartJsonMixin:
         
         for field in json_fields:
             value = standard_data.get(field)
-            print(field, value)
             if value and isinstance(value, str):
                 try:
                     standard_data[field] = json.loads(value)

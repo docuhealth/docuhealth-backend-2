@@ -163,7 +163,6 @@ class SoapNote(BaseModel):
     
     treatment_plan = models.JSONField(default=list, blank=True, null=True)
     care_instructions = models.JSONField(default=list, blank=False)
-    # appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=False, related_name='soap_notes')
     referred_docuhealth_hosp = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_soap_notes')
     referred_hosp = models.TextField(blank=True, null=True)
     patient_education = models.TextField(blank=True, null=True)
