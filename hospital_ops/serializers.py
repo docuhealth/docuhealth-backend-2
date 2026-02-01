@@ -55,6 +55,12 @@ class AppointmentSerializer(serializers.ModelSerializer):
     def get_last_visited(self, obj):
         last_completed_appointment = Appointment.objects.filter(patient=obj.patient, status=Appointment.Status.COMPLETED, scheduled_time__lt=obj.scheduled_time).order_by('-scheduled_time').first()
         return last_completed_appointment.scheduled_time if last_completed_appointment else None
+    
+class SoapNoteAppointmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appointment
+        fields = ['type', 'note', 'scheduled_time']
+        read_only_fields = ['created_at', 'updated_at', 'id', 'status']
         
 class AppointmentHospitalSerializer(serializers.ModelSerializer):
     class Meta:
@@ -81,15 +87,15 @@ class PatientAppointmentSerializer(serializers.ModelSerializer):
         return last_completed_appointment.scheduled_time if last_completed_appointment else None
     
 class BookAppointmentSerializer(serializers.ModelSerializer):
-    staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.all(), write_only=True)
-    staff = HospitalStaffInfoSerilizer(read_only=True)
+    staff = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.all(), write_only=True)
+    staff_info = HospitalStaffInfoSerilizer(read_only=True, source="staff")
     
-    patient_hin = serializers.SlugRelatedField(slug_field="hin", source="patient", queryset=PatientProfile.objects.all(), write_only=True)
-    patient = PatientBasicInfoSerializer(read_only=True)
+    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), write_only=True)
+    patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
     
     class Meta:
         model = Appointment
-        fields = ["staff_id", "patient_hin", "patient", "staff", "type", "note", "scheduled_time", "hospital"]
+        fields = ["staff_info", "patient_info", "patient", "staff", "type", "note", "scheduled_time", "hospital"]
         read_only_fields = ["hospital"]
         
 class HandOverLogSerializer(serializers.ModelSerializer):

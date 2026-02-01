@@ -437,18 +437,19 @@ class CreateSoapNoteView(generics.CreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def create(self, request, *args, **kwargs):
-        hospital = self.request.user.hospital_staff_profile.hospital
+        staff = self.request.user.hospital_staff_profile
+        hospital = staff.hospital
         
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        investigations_docs = request.FILES.getlist("investigations_docs")
+        investigations_docs = request.FILES.getlist("investigation_docs")
         uploaded_data = []
         if investigations_docs:
             uploaded_data = upload_files(investigations_docs, "soapnote_investigations")
         
         try: 
-            instance = serializer.save(hospital=hospital, investigations_docs=uploaded_data)
+            instance = serializer.save(hospital=hospital, staff=staff, investigations_docs=uploaded_data)
             
             headers = self.get_success_headers(serializer.data)
             return Response(self.get_serializer(instance).data, status=status.HTTP_201_CREATED, headers=headers)

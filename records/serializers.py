@@ -9,7 +9,7 @@ from accounts.models import PatientProfile, SubaccountProfile, HospitalStaffProf
 from accounts.serializers import PatientFullInfoSerializer, PatientBasicInfoSerializer, HospitalStaffInfoSerilizer, HospitalStaffBasicInfoSerializer
 
 from hospital_ops.models import Appointment
-from hospital_ops.serializers import AppointmentSerializer
+from hospital_ops.serializers import AppointmentSerializer, SoapNoteAppointmentSerializer
 
 from organizations.serializers import HospitalBasicInfoSerializer
 from organizations.models import HospitalProfile, PharmacyProfile
@@ -81,9 +81,10 @@ class DrugRecordSerializer(serializers.ModelSerializer):
     frequency = ValueRateSerializer()
     duration = ValueRateSerializer()
     allergies = serializers.ListField(child=serializers.CharField())
+    
     class Meta:
         model = DrugRecord
-        fields = ('name', 'route', 'quantity', 'frequency', 'duration', 'status', 'allergies', 'created_at')
+        fields = ('name', 'route', 'quantity', 'frequency', 'duration', 'allergies')
         read_only_fields = ('id', 'created_at', 'updated_at', 'medical_record', 'status')
         
 class ClientDrugRecordSerializer(serializers.ModelSerializer):
@@ -278,7 +279,7 @@ class SoapNoteAdditionalNotesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SoapNoteAdditionalNotes
-        fields = ['id', 'soap_note', 'note', 'created_at']
+        fields = ['soap_note', 'note']
         read_only_fields = ['id', 'created_at']
         
 
@@ -286,16 +287,16 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), write_only=True)
     patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
     
-    staff = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.all(), write_only=True)
+    # staff = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.all(), write_only=True)
     staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
     
     hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
     
-    vital_signs = serializers.PrimaryKeyRelatedField(queryset=VitalSigns.objects.all(), required=False, allow_null=True)
+    vital_signs = serializers.PrimaryKeyRelatedField(queryset=VitalSigns.objects.all(), required=False, allow_null=True, write_only=True)
     vital_signs_info = MedRecordsVitalSignsSerializer(read_only=True, source="vital_signs")
     
-    appointment = AppointmentSerializer(required=False, allow_null=True, write_only=True)
-    appointment_info = MedRecordAppointmentSerializer(read_only=True, source="appointment")
+    appointment = SoapNoteAppointmentSerializer(required=False, allow_null=True)
+    # appointment_info = MedRecordAppointmentSerializer(read_only=True, source="appointment")
     
     drug_records = DrugRecordSerializer(many=True, required=True)
     
@@ -322,11 +323,11 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
     def create(self, validated_data):
         user = self.context['request'].user
         staff = user.hospital_staff_profile
+        hospital = staff.hospital
         
         drug_records_data = validated_data.pop('drug_records', [])
         appointment_data = validated_data.pop('appointment', None)
         
-        hospital = validated_data.get("hospital")
         patient = validated_data.get('patient')
         
         soap_note = SoapNote.objects.create(**validated_data)
@@ -335,7 +336,8 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
             DrugRecord.objects.create(soap_note=soap_note, patient=patient, hospital=hospital, **drug_data, upload_source=DrugRecord.UploadSource.SOAPNOTE)
             
         if appointment_data:
-            Appointment.objects.create(patient=patient, staff=staff, soap_note=soap_note, hospital=hospital, **appointment_data) 
+            appointment = Appointment.objects.create(patient=patient, staff=staff, soap_note=soap_note, hospital=hospital, **appointment_data) 
+            print(appointment)
             
         return soap_note
     

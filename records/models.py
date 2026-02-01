@@ -159,11 +159,11 @@ class SoapNote(BaseModel):
     
     primary_diagnosis = models.TextField(blank=False, null=False)
     differential_diagnosis = models.TextField(blank=True, null=True)
-    problem_list = models.JSONField(default=list, blank=True, null=True)
+    problems_list = models.JSONField(default=list, blank=True, null=True)
     
     treatment_plan = models.JSONField(default=list, blank=True, null=True)
     care_instructions = models.JSONField(default=list, blank=False)
-    appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=False, related_name='soap_notes')
+    # appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True, blank=False, related_name='soap_notes')
     referred_docuhealth_hosp = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='referred_soap_notes')
     referred_hosp = models.TextField(blank=True, null=True)
     patient_education = models.TextField(blank=True, null=True)

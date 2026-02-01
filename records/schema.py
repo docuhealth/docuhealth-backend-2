@@ -2,12 +2,12 @@ from drf_spectacular.utils import OpenApiExample
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema, inline_serializer
 
-from .serializers import SoapNoteSerializer, DrugRecordSerializer, DischargeFormSerializer
-from hospital_ops.serializers import BookAppointmentSerializer
+from .serializers import SoapNoteSerializer, DrugRecordSerializer, DischargeFormSerializer, SoapNoteAdditionalNotesSerializer
+from hospital_ops.serializers import SoapNoteAppointmentSerializer
 
 CREATE_SOAP_NOTE_SCHEMA = {
     "request": {
-        "multipart/form-data": inline_serializer(
+        "application/json": inline_serializer(
             name="SoapNoteMultipartRequest",
             fields={
                 # Files
@@ -16,13 +16,14 @@ CREATE_SOAP_NOTE_SCHEMA = {
                 ),
                 # Identifiers
                 "patient": serializers.CharField(help_text="Patient HIN"),
-                "staff": serializers.CharField(help_text="Staff ID"),
+                # "staff": serializers.CharField(help_text="Staff ID"),
                 "vital_signs": serializers.IntegerField(required=False),
                 "referred_docuhealhosp": serializers.CharField(required=False),
                 
                 # Nested JSON objects (Handled by Serializers)
                 "drug_records": DrugRecordSerializer(many=True),
-                "appointment": BookAppointmentSerializer(required=False),
+                "appointment": SoapNoteAppointmentSerializer(required=False),
+                "additional_notes": SoapNoteAdditionalNotesSerializer(many=True, required=False, read_only=True),
                 
                 # JSON Lists
                 "investigations": serializers.ListField(child=serializers.CharField(), required=False),
@@ -65,7 +66,7 @@ CREATE_DISCHARGE_FORM_SCHEMA = {
                 "staff": serializers.CharField(help_text="Staff ID"),
                 
                 "drug_records": DrugRecordSerializer(many=True),
-                "follow_up_appointment": BookAppointmentSerializer(required=False),
+                "follow_up_appointment": SoapNoteAppointmentSerializer(required=False),
                 
                 # JSON Lists
                 "condition_on_discharge": serializers.ListField(child=serializers.CharField(), required=False),

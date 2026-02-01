@@ -2,20 +2,24 @@ import json
 from rest_framework import serializers
 
 class CreateSoapMultipartJsonMixin:
-    """
-    Translates JSON strings in multipart requests into dictionaries/lists.
-    """
     def to_internal_value(self, data):
-        data = data.copy()
+        standard_data = data.dict()
         
-        json_fields = ['drug_records', 'investigations', 'problem_list', 'care_instructions', 'appointment']
+        json_fields = [
+            'drug_records', 'appointment', 'investigations', 
+            'problems_list', 'care_instructions', 'drug_history_allergies',
+            'general_exam', 'systemic_exam', 'bedside_tests', 'treatment_plan'
+        ]
         
         for field in json_fields:
-            value = data.get(field)
-            if isinstance(value, str):
+            value = standard_data.get(field)
+            print(field, value)
+            if value and isinstance(value, str):
                 try:
-                    data[field] = json.loads(value)
-                except (ValueError, TypeError):
+                    standard_data[field] = json.loads(value)
+                    print(f"DEBUG: {field} type: {type(standard_data[field])}")
+                except (ValueError, TypeError) as e:
+                    print(f"JSON Parse Error in field {field}: {e}")
                     pass
         
-        return super().to_internal_value(data)
+        return super().to_internal_value(standard_data)
