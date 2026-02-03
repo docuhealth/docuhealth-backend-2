@@ -8,6 +8,12 @@ from accounts.serializers import PatientFullInfoSerializer, PatientBasicInfoSeri
 from organizations.serializers import HospitalBasicInfoSerializer
 from organizations.models import HospitalProfile
 
+from facility.models import HospitalWard, WardBed
+from facility.serializers import WardBedSerializer, WardNameSerializer
+
+from records.models import Admission
+# from records.serializers import AdmissionSerializer
+
 class HospitalAppointmentSerializer(serializers.ModelSerializer):
     last_visited = serializers.SerializerMethodField(read_only=True)
     staff = HospitalStaffBasicInfoSerializer(read_only=True)
@@ -108,5 +114,43 @@ class HandOverLogSerializer(serializers.ModelSerializer):
         model = HandOverLog
         fields = ["id", "from_nurse_info", "to_nurse", "to_nurse_info", "items_transferred", "handover_appointments", "handover_patients", "created_at"]
         read_only_fields = ["id", "from_nurse_info", "to_nurse_info", "created_at", "items_transferred"]
+        
+class TransferPatientToWardSerializer(serializers.Serializer):
+    admission = serializers.PrimaryKeyRelatedField(queryset=Admission.objects.filter(status=Admission.Status.ACTIVE))
+    new_ward = serializers.PrimaryKeyRelatedField(queryset=HospitalWard.objects.all(), write_only=True)
+    new_bed = serializers.PrimaryKeyRelatedField(queryset=WardBed.objects.all(), write_only=True)
+    
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        admission = validated_data['admission']
+        patient = admission.patient
+        ward = validated_data['new_ward']
+        bed = validated_data['new_bed']
+        
+        if not admission.hospital == self.context['request'].user.hospital_staff_profile.hospital:
+            raise serializers.ValidationError({"admission": "Admission with the provided ID does not exist"})
+        
+        if admission.patient != patient:
+            raise serializers.ValidationError({"admission": "Admission does not belong to the specified patient"})
+        
+        if admission.status != Admission.Status.ACTIVE:
+            raise serializers.ValidationError({"admission": "This admission is not confirmed, cancelled or the patient has been discharged"})
+        
+        if bed.status == WardBed.Status.OCCUPIED:
+            raise serializers.ValidationError({"bed": f"Bed {bed.bed_number} is occupied"})
+        
+        if not bed.ward == ward:
+            raise serializers.ValidationError({"ward": "Bed not available in this ward"})
+        
+        if not ward.hospital == self.context['request'].user.hospital_staff_profile.hospital:
+            raise serializers.ValidationError({"ward": "Ward with provided ID not found"})
+        
+        return validated_data
+    
+    def get_admission_info(self, obj):
+        from records.serializers import AdmissionSerializer
+        
+        admission = obj.admission
+        return AdmissionSerializer(admission).data
         
 

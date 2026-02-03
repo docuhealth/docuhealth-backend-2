@@ -4,7 +4,7 @@ from accounts.views import LoginView, CustomTokenRefreshView, ForgotPassword, Ve
 
 from records.views import CreateMedicalRecordView, MedicalRecordListView, UploadMedicalRecordsAttachments, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView, ListPatientDrugRecordsView, CreateSoapNoteView, ListPatientSoapNotesView, CreateDischargeFormView, ListPatientDischargeFormsView, CreateSoapNoteAdditionalNotesView
 
-from hospital_ops.views import ListAllAppointmentsView, ListStaffAppointmentsView, AssignAppointmentToDoctorView, HandOverNurseShiftView, ListPatientAppointmentsView, BookAppointmentView, ListUpcomingAppointmentsView, ListRecentPatientsView
+from hospital_ops.views import ListAllAppointmentsView, ListStaffAppointmentsView, AssignAppointmentToDoctorView, HandOverNurseShiftView, ListPatientAppointmentsView, BookAppointmentView, ListUpcomingAppointmentsView, ListRecentPatientsView, TransferPatientToWardView
 
 from organizations.views import CreateHospitalView, ListHospitalsView, ListCreateHospitalInquiryView, ListCreateHospitalVerificationRequestView, ApproveVerificationRequestView,  GetHospitalInfo, ListCreateSubscriptionPlanView, CreateSubscriptionView
 
@@ -50,6 +50,8 @@ doctor_urls = [
     
     path('/admissions/request', RequestAdmissionView.as_view(), name='request-admission'),
     path('/admissions/<str:admission_id>/confirm', ConfirmAdmissionView.as_view(), name='admission-requests'),
+    
+    path('/admissions/transfer', TransferPatientToWardView.as_view(), name='transfer-patient-to-ward'),
 ]
 
 hospital_urls = [
@@ -73,7 +75,7 @@ hospital_urls = [
     path('/wards/<str:ward_id>/beds', ListBedsByWardView.as_view(), name='list-beds-by-ward'),
     
     path('/admissions/<str:status>', ListAdmittedPatientsByStatusView.as_view(), name='list-admitted-patients-by-status'),
-    path('/admissions/<str:admission_id>/confirm', ConfirmAdmissionView.as_view(), name='admission-requests'),
+    path('/admissions/<str:admission_id>/confirm', ConfirmAdmissionView.as_view(), name='confirm-admission-requests'),
 
 ]
 

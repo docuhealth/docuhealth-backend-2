@@ -7,12 +7,13 @@ from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticate
 from docuhealth2.utils.email_service import BrevoEmailService
 
 from .models import Appointment, HospitalPatientActivity, HandOverLog
-from .serializers import HospitalAppointmentSerializer, AssignAppointmentToDoctorSerializer, HospitalActivitySerializer, HospitalAppointmentSerializer, BookAppointmentSerializer, HandOverLogSerializer
+from .serializers import HospitalAppointmentSerializer, AssignAppointmentToDoctorSerializer, HospitalActivitySerializer, HospitalAppointmentSerializer, BookAppointmentSerializer, HandOverLogSerializer, TransferPatientToWardSerializer
 
 from drf_spectacular.utils import extend_schema
 
 from accounts.models import User
 from records.models import Admission
+from facility.models import HospitalWard, WardBed
 
 mailer = BrevoEmailService()
 
@@ -140,3 +141,27 @@ class HandOverNurseShiftView(generics.GenericAPIView):
         )
 
         return Response({"detail": "Handover successful."}, status=status.HTTP_200_OK)
+
+@extend_schema(tags=["Doctor"], summary="Transfer a patient to a different ward and bed")   
+class TransferPatientToWardView(generics.GenericAPIView):
+    serializer_class = TransferPatientToWardSerializer
+    permission_classes = [IsAuthenticatedDoctor]
+    
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        validated_data = serializer.validated_data
+        
+        admission = validated_data['admission']
+        old_bed = admission.bed
+        new_bed = validated_data['new_bed']
+        
+        old_bed.status = WardBed.Status.AVAILABLE
+        old_bed.save(update_fields=["status"])
+        
+        new_bed.status = WardBed.Status.OCCUPIED
+        new_bed.save(update_fields=["status"])
+        
+        return Response({"detail": f"Patient transferred to {new_bed.ward.name} ward successfully."}, status=status.HTTP_200_OK)

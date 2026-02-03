@@ -194,10 +194,10 @@ class ListAdmittedPatientsByStatusView(generics.ListAPIView):
         
         return base_qs.filter(staff=staff).order_by("-admission_date")
     
-@extend_schema(tags=['Receptionist'], summary="Confirm admission of patient in a ward")
+@extend_schema(tags=['Doctor'], summary="Confirm admission of patient in a ward")
 class ConfirmAdmissionView(generics.UpdateAPIView):
     serializer_class = ConfirmAdmissionSerializer
-    permission_classes = [IsAuthenticatedReceptionist]
+    permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedReceptionist]
     lookup_url_kwarg = "admission_id"
     http_method_names = ['patch']
     
