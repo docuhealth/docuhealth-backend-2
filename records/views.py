@@ -16,7 +16,7 @@ from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticate
 from docuhealth2.authentications import ClientHeaderAuthentication
 from docuhealth2.utils.supabase import upload_files, delete_from_supabase
 
-from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord, VitalSigns, SoapNote, DischargeForm, SoapNoteAdditionalNotes
+from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord, VitalSigns, SoapNote, DischargeForm
 from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer, DrugRecordSerializer, SoapNoteSerializer, DischargeFormSerializer, SoapNoteAdditionalNotesSerializer
 from .schema import CREATE_SOAP_NOTE_SCHEMA, CREATE_DISCHARGE_FORM_SCHEMA
 
@@ -445,11 +445,11 @@ class CreateSoapNoteView(generics.CreateAPIView):
         
         investigations_docs = request.FILES.getlist("investigation_docs")
         uploaded_data = []
-        if investigations_docs:
+        if investigation_docs:
             uploaded_data = upload_files(investigations_docs, "soapnote_investigations")
         
         try: 
-            instance = serializer.save(hospital=hospital, staff=staff, investigations_docs=uploaded_data)
+            instance = serializer.save(hospital=hospital, staff=staff, investigation_docs=uploaded_data)
             
             headers = self.get_success_headers(serializer.data)
             return Response(self.get_serializer(instance).data, status=status.HTTP_201_CREATED, headers=headers)
@@ -473,28 +473,38 @@ class ListPatientSoapNotesView(generics.ListAPIView):
         patient = get_object_or_404(PatientProfile, hin=hin)
         return SoapNote.objects.filter(patient=patient, hospital=staff.hospital).select_related("patient", "staff", "hospital").order_by('-created_at')
     
-@extend_schema(tags=["Medical records"], summary="Create discharge form for a patient", **CREATE_DISCHARGE_FORM_SCHEMA)    
-class CreateDischargeFormView(generics.CreateAPIView):
+@extend_schema(tags=["Medical records"], summary="Discharge a patient", **CREATE_DISCHARGE_FORM_SCHEMA)    
+class DischargePatientView(generics.CreateAPIView):
     serializer_class = DischargeFormSerializer
     permission_classes = [IsAuthenticatedDoctor | IsAuthenticatedNurse]
     parser_classes = [MultiPartParser, FormParser]
     
     def create(self, request, *args, **kwargs):
-        hospital = self.request.user.hospital_staff_profile.hospital
+        staff = self.request.user.hospital_staff_profile
+        hospital = staff.hospital
         
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        investigations_docs = request.FILES.getlist("investigations_docs")
+        investigation_docs = request.FILES.getlist("investigation_docs")
         uploaded_data = []
-        if investigations_docs:
-            uploaded_data = upload_files(investigations_docs, "discharge_form_investigations")
+        if investigation_docs:
+            uploaded_data = upload_files(investigation_docs, "discharge_form_investigations")
         
-        try: 
-            instance = serializer.save(hospital=hospital, investigations_docs=uploaded_data)
-            
-            headers = self.get_success_headers(serializer.data)
-            return Response(self.get_serializer(instance).data, status=status.HTTP_201_CREATED, headers=headers)
+        try:
+            with transaction.atomic():
+                serializer.save(hospital=hospital, staff=staff, investigation_docs=uploaded_data)
+                
+                admission = serializer.validated_data.get('admission')
+                admission.status = Admission.Status.DISCHARGED
+                admission.discharge_date = timezone.now()
+                admission.save(update_fields=['status', 'discharge_date'])
+                
+                admission.bed.status = WardBed.Status.AVAILABLE
+                admission.bed.save(update_fields=["status"])
+                
+                headers = self.get_success_headers(serializer.data)
+                return Response({"detail": "Patient discharged successfully."}, status=status.HTTP_201_CREATED, headers=headers)
             
         except Exception as e:
             for doc in uploaded_data:

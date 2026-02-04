@@ -147,14 +147,15 @@ class SoapNote(BaseModel):
     family_history = models.TextField(blank=True, null=True)
     social_history = models.TextField(blank=True, null=True)
     other_history = models.TextField(blank=True, null=True)
-    drug_history_allergies = models.TextField(blank=True, null=True)
     review = models.TextField(blank=True, null=True)
     
     vital_signs = models.ForeignKey(VitalSigns, on_delete=models.SET_NULL, null=True, blank=True)
+    
     general_exam = models.JSONField(default=list, blank=True, null=True)
     systemic_exam = models.JSONField(default=list, blank=True, null=True)
     bedside_tests = models.JSONField(default=list, blank=True, null=True)
     investigations = models.JSONField(default=list, blank=True, null=True)
+    drug_history_allergies = models.JSONField(default=list, blank=True, null=True)
     investigations_docs = models.JSONField(default=list, blank=True, null=True)
     
     primary_diagnosis = models.TextField(blank=False, null=False)
@@ -178,21 +179,21 @@ class SoapNoteAdditionalNotes(BaseModel):
         return f"Additional Note for SOAP Note ID {self.soap_note.id}"
     
 class DischargeForm(BaseModel):
+    admission = models.OneToOneField(Admission, on_delete=models.CASCADE, related_name="discharge_form")
     
-    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="discharge_form")
-    staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name="discharge_form", null=True)
-    hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="discharge_form", null=True),
-
-    chief_complaint = models.TextField(),
-    diagnosis = models.JSONField(default=list),
-    treatment_plan = models.JSONField(default=list),
-    care_instructions = models.JSONField(default=list),
+    staff = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, related_name="discharge_forms", null=True)
+    hospital = models.ForeignKey(HospitalProfile, on_delete=models.SET_NULL, related_name="discharge_forms", null=True)
+    
+    chief_complaint = models.TextField()
+    condition_on_discharge = models.TextField()
+    
+    diagnosis = models.JSONField(default=list)
+    treatment_plan = models.JSONField(default=list)
+    care_instructions = models.JSONField(default=list)
     
     # drug_records
     
-    condition_on_discharge = models.TextField(),
     investigation_docs = models.JSONField(default=list, blank=True, null=True)
-    follow_up_appointment = models.ForeignKey(Appointment, on_delete=models.DO_NOTHING, related_name='discharge_forms')
     
     def __str__(self):
         return f"Discharge Form for {self.patient.full_name} by {self.staff.full_name}"

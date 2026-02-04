@@ -165,3 +165,22 @@ class TransferPatientToWardView(generics.GenericAPIView):
         new_bed.save(update_fields=["status"])
         
         return Response({"detail": f"Patient transferred to {new_bed.ward.name} ward successfully."}, status=status.HTTP_200_OK)
+    
+# @extend_schema(tags=["Doctor"], summary="Discharge a patient from the hospital")
+# class DischargePatientView(generics.GenericAPIView):
+#     serializer_class = DischargePatientSerializer
+#     permission_classes = [IsAuthenticatedDoctor]
+    
+#     @transaction.atomic
+#     def post(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+        
+#         validated_data = serializer.validated_data
+        
+#         admission = validated_data['admission']
+#         admission.status = Admission.Status.DISCHARGED
+#         admission.discharged_at = timezone.now()
+#         admission.save(update_fields=["status", "discharged_at"])
+        
+#         return Response({"detail": "Patient discharged successfully."}, status=status.HTTP_200_OK)

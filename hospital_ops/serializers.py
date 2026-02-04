@@ -30,7 +30,6 @@ class HospitalAppointmentSerializer(serializers.ModelSerializer):
         last_completed_appointment = Appointment.objects.filter(patient=obj.patient, status=Appointment.Status.COMPLETED, scheduled_time__lt=obj.scheduled_time).order_by('-scheduled_time').first()
         return last_completed_appointment.scheduled_time if last_completed_appointment else None
     
-        
 class HospitalActivitySerializer(serializers.ModelSerializer):
     staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.all(), write_only=True)
     staff = HospitalStaffBasicInfoSerializer(read_only=True)
@@ -62,7 +61,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
         last_completed_appointment = Appointment.objects.filter(patient=obj.patient, status=Appointment.Status.COMPLETED, scheduled_time__lt=obj.scheduled_time).order_by('-scheduled_time').first()
         return last_completed_appointment.scheduled_time if last_completed_appointment else None
     
-class SoapNoteAppointmentSerializer(serializers.ModelSerializer):
+class RecordAppointmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Appointment
         fields = ['type', 'note', 'scheduled_time']
@@ -152,5 +151,21 @@ class TransferPatientToWardSerializer(serializers.Serializer):
         
         admission = obj.admission
         return AdmissionSerializer(admission).data
+    
+class DischargePatientSerializer(serializers.Serializer):
+    admission = serializers.PrimaryKeyRelatedField(queryset=Admission.objects.filter(status=Admission.Status.ACTIVE))
+    discharge_summary = serializers.CharField()
+    
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        admission = validated_data['admission']
+        
+        if not admission.hospital == self.context['request'].user.hospital_staff_profile.hospital:
+            raise serializers.ValidationError({"admission": "Admission with the provided ID does not exist"})
+        
+        if admission.status != Admission.Status.ACTIVE:
+            raise serializers.ValidationError({"admission": "This admission is not active"})
+        
+        return validated_data
         
 

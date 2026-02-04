@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 
-from docuhealth2.serializers import StrictFieldsMixin
+from docuhealth2.mixins import StrictFieldsMixin
 
 from .models import User, OTP, UserProfileImage, PatientProfile, SubaccountProfile, HospitalStaffProfile
 

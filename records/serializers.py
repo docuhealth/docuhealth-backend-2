@@ -3,19 +3,20 @@ from django.db import transaction
 from rest_framework import serializers
 
 from .models import MedicalRecord, DrugRecord, MedicalRecordAttachment, VitalSigns, VitalSignsRequest, Admission, CaseNote, SoapNote, DischargeForm, SoapNoteAdditionalNotes
-from .mixins import CreateSoapMultipartJsonMixin
 
 from accounts.models import PatientProfile, SubaccountProfile, HospitalStaffProfile
 from accounts.serializers import PatientFullInfoSerializer, PatientBasicInfoSerializer, HospitalStaffInfoSerilizer, HospitalStaffBasicInfoSerializer
 
 from hospital_ops.models import Appointment
-from hospital_ops.serializers import AppointmentSerializer, SoapNoteAppointmentSerializer
+from hospital_ops.serializers import AppointmentSerializer, RecordAppointmentSerializer
 
 from organizations.serializers import HospitalBasicInfoSerializer
 from organizations.models import HospitalProfile, PharmacyProfile
 
 from facility.models import HospitalWard, WardBed
 from facility.serializers import WardBedSerializer, WardNameSerializer
+
+from docuhealth2.mixins import MultipartJsonMixin
 
 
 class ValueRateSerializer(serializers.Serializer):
@@ -289,21 +290,17 @@ class SoapNoteAdditionalNotesSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
         
 
-class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializer):
+class SoapNoteSerializer(MultipartJsonMixin, serializers.ModelSerializer):
     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), write_only=True)
     patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
     
-    # staff = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.all(), write_only=True)
     staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
-    
     hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
     
     vital_signs = serializers.PrimaryKeyRelatedField(queryset=VitalSigns.objects.all(), required=False, allow_null=True, write_only=True)
     vital_signs_info = MedRecordsVitalSignsSerializer(read_only=True, source="vital_signs")
     
-    appointment = SoapNoteAppointmentSerializer(required=False, allow_null=True)
-    # appointment_info = MedRecordAppointmentSerializer(read_only=True, source="appointment")
-    
+    appointment = RecordAppointmentSerializer(required=False, allow_null=True)
     drug_records = DrugRecordSerializer(many=True, required=True)
     
     drug_history_allergies = serializers.ListField(child=serializers.CharField(), required=False)
@@ -324,6 +321,11 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
         model = SoapNote
         exclude = ["is_deleted", "deleted_at"]
         read_only_fields = ['id', 'created_at', 'hospital']
+        multipart_json_fields = [
+            'drug_records', 'appointment', 'investigations', 
+            'problems_list', 'care_instructions', 'drug_history_allergies',
+            'general_exam', 'systemic_exam', 'bedside_tests', 'treatment_plan'
+        ]
         
     @transaction.atomic() 
     def create(self, validated_data):
@@ -333,7 +335,6 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
         
         drug_records_data = validated_data.pop('drug_records', [])
         appointment_data = validated_data.pop('appointment', None)
-        
         patient = validated_data.get('patient')
         
         soap_note = SoapNote.objects.create(**validated_data)
@@ -347,40 +348,50 @@ class SoapNoteSerializer(CreateSoapMultipartJsonMixin, serializers.ModelSerializ
             
         return soap_note
     
-class DischargeFormSerializer(serializers.ModelSerializer):
-    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), write_only=True)
-    patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
+class DischargeFormSerializer(MultipartJsonMixin, serializers.ModelSerializer):
+    admission = serializers.PrimaryKeyRelatedField(queryset=Admission.objects.all(), write_only=True, required=True)
     
-    staff = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.all(), write_only=True)
-    staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
-    
-    hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
-    
-    condition_on_discharge = serializers.ListField(child=serializers.CharField(), required=True)
     diagnosis = serializers.ListField(child=serializers.CharField(), required=True)
     treatment_plan = serializers.ListField(child=serializers.CharField(), required=True)
     care_instructions = serializers.ListField(child=serializers.CharField(), required=True)
     
-    follow_up_appointment = AppointmentSerializer(required=False, allow_null=True, write_only=True)
-    follow_up_appointment_info = MedRecordAppointmentSerializer(read_only=True, source="appointment")
-    
+    follow_up_appointment = RecordAppointmentSerializer(required=True, allow_null=True)
     drug_records = DrugRecordSerializer(many=True, required=True)
     
     class Meta:
         model = DischargeForm
         exclude = ['is_deleted', 'deleted_at']
         read_only_fields = ['id', 'created_at', 'hospital']
+        multipart_json_fields = [
+            'drug_records', 'follow_up_appointment', 'diagnosis', 'treatment_plan', 'care_instructions'
+        ]
+        
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        
+        admission = validated_data['admission']
+        staff = self.context['request'].user.hospital_staff_profile
+        hospital = staff.hospital
+        
+        if not admission.hospital == hospital:
+            raise serializers.ValidationError({"admission": "Admission with provided ID not found"})
+        
+        if admission.status != Admission.Status.ACTIVE:
+            raise serializers.ValidationError({"admission": "Patient is not currently admitted"})
+        
+        return validated_data
         
     @transaction.atomic() 
     def create(self, validated_data):
         user = self.context['request'].user
         staff = user.hospital_staff_profile
+        hospital = staff.hospital
         
         drug_records_data = validated_data.pop('drug_records', [])
         appointment_data = validated_data.pop('follow_up_appointment', None)
         
-        hospital = validated_data.get("hospital")
-        patient = validated_data.get('patient')
+        admission = validated_data.get('admission')
+        patient = admission.patient
         
         discharge_form = DischargeForm.objects.create(**validated_data)
         

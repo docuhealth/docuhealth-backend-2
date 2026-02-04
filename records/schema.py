@@ -3,7 +3,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema, inline_serializer
 
 from .serializers import SoapNoteSerializer, DrugRecordSerializer, DischargeFormSerializer, SoapNoteAdditionalNotesSerializer
-from hospital_ops.serializers import SoapNoteAppointmentSerializer
+from hospital_ops.serializers import RecordAppointmentSerializer
 
 CREATE_SOAP_NOTE_SCHEMA = {
     "request": {
@@ -21,7 +21,7 @@ CREATE_SOAP_NOTE_SCHEMA = {
                 
                 # Nested JSON objects (Handled by Serializers)
                 "drug_records": DrugRecordSerializer(many=True),
-                "appointment": SoapNoteAppointmentSerializer(required=False),
+                "appointment": RecordAppointmentSerializer(required=False),
                 "additional_notes": SoapNoteAdditionalNotesSerializer(many=True, required=False, read_only=True),
                 
                 # JSON Lists
@@ -55,27 +55,26 @@ CREATE_SOAP_NOTE_SCHEMA = {
 
 CREATE_DISCHARGE_FORM_SCHEMA = {
     "request": {
-        "multipart/form-data": inline_serializer(
+        "application/json": inline_serializer(
             name="DischargeFormMultipartRequest",
             fields={
-                "investigations_docs": serializers.ListField(
+                "investigation_docs": serializers.ListField(
                     child=serializers.FileField(), required=False
                 ),
                 
-                "patient": serializers.CharField(help_text="Patient HIN"),
-                "staff": serializers.CharField(help_text="Staff ID"),
+                "admission": serializers.IntegerField(),
                 
                 "drug_records": DrugRecordSerializer(many=True),
-                "follow_up_appointment": SoapNoteAppointmentSerializer(required=False),
+                "follow_up_appointment": RecordAppointmentSerializer(required=False),
                 
                 # JSON Lists
-                "condition_on_discharge": serializers.ListField(child=serializers.CharField(), required=False),
                 "diagnosis": serializers.ListField(child=serializers.CharField(), required=False),
                 "treatment_plan": serializers.ListField(child=serializers.CharField()),
                 "care_instructions": serializers.ListField(child=serializers.CharField(), required=False),
                             
                 # Text Fields
                 "chief_complaint": serializers.CharField(),
+                "condition_on_discharge": serializers.CharField()
             }
         )
     },
