@@ -6,7 +6,7 @@ from records.views import CreateMedicalRecordView, MedicalRecordListView, Upload
 
 from hospital_ops.views import ListAllAppointmentsView, ListStaffAppointmentsView, AssignAppointmentToDoctorView, HandOverNurseShiftView, ListPatientAppointmentsView, BookAppointmentView, ListUpcomingAppointmentsView, ListRecentPatientsView, TransferPatientToWardView
 
-from organizations.views import CreateHospitalView, ListHospitalsView, ListCreateHospitalInquiryView, ListCreateHospitalVerificationRequestView, ApproveVerificationRequestView,  GetHospitalInfo, ListCreateSubscriptionPlanView, CreateSubscriptionView
+from organizations.views import CreateHospitalView, ListHospitalsView, ListCreateHospitalInquiryView, ListCreateHospitalVerificationRequestView, ApproveVerificationRequestView,  GetHospitalInfo, ListCreateSubscriptionPlanView, CreateSubscriptionView, ListSubscriptionPlansByRoleView
 
 from organizations.webhooks import PaystackWebhookView
 
@@ -134,4 +134,5 @@ subscription_urls = [
     path('/plans', ListCreateSubscriptionPlanView.as_view(), name='create-subscription-plan'),
     path('/subscribe', CreateSubscriptionView.as_view(), name='subscribe to plan'),
     path('/paystack_webhook', PaystackWebhookView.as_view(), name='paystack-webhook'),
+    path('/plans/<str:role>', ListSubscriptionPlansByRoleView.as_view(), name='list-subscription-plans-by-role'),
 ]

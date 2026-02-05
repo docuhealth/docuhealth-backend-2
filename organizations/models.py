@@ -129,9 +129,12 @@ class VerificationToken(BaseModel):
     
 class SubscriptionPlan(BaseModel):
     class Intervals(models.TextChoices):
-        MONTHLY = "monthly", "Monthly"
-        YEARLY = "yearly", "Yearly"
+        DAILY = "daily", "Daily"
         WEEKLY = "weekly", "Weekly"     
+        MONTHLY = "monthly", "Monthly"
+        ANNUALLY = "annually", "Annually"
+        QUATERLY = "quarterly", "Quarterly"
+        BIANNUALLY = "biannually", "Biannually"
         
     name = models.CharField(max_length=100)
     price = models.IntegerField()

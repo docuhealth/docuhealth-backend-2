@@ -188,11 +188,24 @@ class ListHospitalsView(generics.ListAPIView):
 class ListCreateSubscriptionPlanView(generics.ListCreateAPIView):
     serializer_class = SubscriptionPlanSerializer
     pagination_class = None
-    permission_classes = [IsAuthenticatedPatient | IsAuthenticatedHospitalAdmin] 
+    permission_classes = [IsAuthenticatedPatient | IsAuthenticatedHospitalAdmin] #TODO: Cahnge to docuhealth admin only
     
     def get_queryset(self):
         user_role = self.request.user.role
         return SubscriptionPlan.objects.filter(role=user_role)
+    
+@extend_schema(tags=["Subscriptions"], summary="List subscription plans by role")
+class ListSubscriptionPlansByRoleView(generics.ListAPIView):
+    serializer_class = SubscriptionPlanSerializer
+    pagination_class = None
+    permission_classes = [IsAuthenticatedPatient | IsAuthenticatedHospitalAdmin]
+    
+    def get_queryset(self):
+        role_param = self.kwargs.get("role")
+        if role_param not in [User.Role.PATIENT, User.Role.HOSPITAL]:
+            return SubscriptionPlan.objects.none()
+        
+        return SubscriptionPlan.objects.filter(role=role_param)
     
 @extend_schema(tags=["Subscriptions"])
 class CreateSubscriptionView(generics.CreateAPIView):

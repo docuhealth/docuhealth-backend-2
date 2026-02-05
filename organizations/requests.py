@@ -23,11 +23,11 @@ def create_plan(payload):
     response_data = response.json()
     
     print(response_data)
-    
+
     if response.status_code == 201 and response_data.get("status"):
         return response_data["data"]["plan_code"]
     
-    raise Exception(response_data.get("message", "Failed to create Paystack plan"))
+    raise Exception(f"Paystack error: {response_data.get('message', 'Failed to create Paystack plan')}")
 
 def create_customer(payload):
     response = send_paystack_request("POST", "customer", payload)
@@ -38,7 +38,7 @@ def create_customer(payload):
     if response.ok and response_data.get("status"):
         return response_data["data"]["customer_code"]
     
-    raise Exception(response_data.get("message", "Failed to create Paystack customer"))
+    raise Exception(f"Paystack error: {response_data.get('message', 'Failed to create Paystack customer')}")
 
 def initialize_transaction(payload):
     response = send_paystack_request("POST", "transaction/initialize", payload)
@@ -49,4 +49,4 @@ def initialize_transaction(payload):
     if response.ok and response_data.get("status"):
         return response_data["data"]["authorization_url"]
     
-    raise Exception(response_data.get("message", "Failed to initialize Paystack transaction"))
+    raise Exception(f"Paystack error: {response_data.get('message', 'Failed to initialize Paystack transaction')}")

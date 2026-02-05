@@ -98,8 +98,8 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = SubscriptionPlan
-        fields = "__all__"
-        read_only_fields = ["paystack_plan_code"]
+        exclude = ["deleted_at", "is_deleted", ]
+        read_only_fields = ["paystack_plan_code", "created_at", "updated_at", ]
         
     def create(self, validated_data):
         payload = {
@@ -120,7 +120,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Subscription
-        fields = "__all__"
+        exclude = ["deleted_at", "is_deleted"]
         read_only_fields = ["user", "paystack_subscription_code", "status", "will_renew", "start_date", "end_date", "next_payment_date", "last_payment_date", "authorization_code", "created_at", "updated_at"]
         
     def validate(self, attrs):
