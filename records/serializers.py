@@ -305,7 +305,7 @@ class SoapNoteSerializer(MultipartJsonMixin, serializers.ModelSerializer):
     
     drug_history_allergies = serializers.ListField(child=serializers.CharField(), required=False)
     investigations = serializers.ListField(child=serializers.CharField(), required=False)
-    investigation_docs = serializers.ListField(child=serializers.DictField(), required=False)
+    # investigation_docs = serializers.ListField(child=serializers.DictField(), required=False)
     problems_list = serializers.ListField(child=serializers.CharField(), required=False)
     care_instructions = serializers.ListField(child=serializers.CharField(), required=True)
     general_exam = serializers.ListField(child=serializers.CharField(), required=False)
@@ -320,7 +320,7 @@ class SoapNoteSerializer(MultipartJsonMixin, serializers.ModelSerializer):
     class Meta:
         model = SoapNote
         exclude = ["is_deleted", "deleted_at"]
-        read_only_fields = ['id', 'created_at', 'hospital']
+        read_only_fields = ['id', 'created_at', 'hospital', 'investigation_docs']
         multipart_json_fields = [
             'drug_records', 'appointment', 'investigations', 
             'problems_list', 'care_instructions', 'drug_history_allergies',
@@ -361,7 +361,7 @@ class DischargeFormSerializer(MultipartJsonMixin, serializers.ModelSerializer):
     class Meta:
         model = DischargeForm
         exclude = ['is_deleted', 'deleted_at']
-        read_only_fields = ['id', 'created_at', 'hospital']
+        read_only_fields = ['id', 'created_at', 'hospital', 'investigation_docs']
         multipart_json_fields = [
             'drug_records', 'follow_up_appointment', 'diagnosis', 'treatment_plan', 'care_instructions'
         ]
