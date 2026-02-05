@@ -156,7 +156,17 @@ class TransferPatientToWardView(generics.GenericAPIView):
         
         admission = validated_data['admission']
         old_bed = admission.bed
+        old_ward = admission.ward
+        
+        new_ward = validated_data['new_ward']
         new_bed = validated_data['new_bed']
+        
+        if old_ward != new_ward:
+            admission.ward = new_ward
+            admission.save(update_fields=["ward"])
+            
+        admission.bed = new_bed
+        admission.save(update_fields=["bed"])
         
         old_bed.status = WardBed.Status.AVAILABLE
         old_bed.save(update_fields=["status"])
