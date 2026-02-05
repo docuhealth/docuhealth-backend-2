@@ -156,7 +156,7 @@ class SoapNote(BaseModel):
     bedside_tests = models.JSONField(default=list, blank=True, null=True)
     investigations = models.JSONField(default=list, blank=True, null=True)
     drug_history_allergies = models.JSONField(default=list, blank=True, null=True)
-    investigations_docs = models.JSONField(default=list, blank=True, null=True)
+    investigation_docs = models.JSONField(default=list, blank=True, null=True)
     
     primary_diagnosis = models.TextField(blank=False, null=False)
     differential_diagnosis = models.TextField(blank=True, null=True)

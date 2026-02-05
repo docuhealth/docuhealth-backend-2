@@ -443,10 +443,10 @@ class CreateSoapNoteView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        investigations_docs = request.FILES.getlist("investigation_docs")
+        investigation_docs = request.FILES.getlist("investigation_docs")
         uploaded_data = []
         if investigation_docs:
-            uploaded_data = upload_files(investigations_docs, "soapnote_investigations")
+            uploaded_data = upload_files(investigation_docs, "soapnote_investigations")
         
         try: 
             instance = serializer.save(hospital=hospital, staff=staff, investigation_docs=uploaded_data)

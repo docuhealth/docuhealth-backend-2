@@ -305,7 +305,7 @@ class SoapNoteSerializer(MultipartJsonMixin, serializers.ModelSerializer):
     
     drug_history_allergies = serializers.ListField(child=serializers.CharField(), required=False)
     investigations = serializers.ListField(child=serializers.CharField(), required=False)
-    investigations_docs = serializers.ListField(child=serializers.DictField(), required=False)
+    investigation_docs = serializers.ListField(child=serializers.DictField(), required=False)
     problems_list = serializers.ListField(child=serializers.CharField(), required=False)
     care_instructions = serializers.ListField(child=serializers.CharField(), required=True)
     general_exam = serializers.ListField(child=serializers.CharField(), required=False)
