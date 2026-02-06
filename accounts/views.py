@@ -14,7 +14,7 @@ from drf_spectacular.utils import extend_schema
 
 from .models import User, OTP, UserProfileImage, NINVerificationAttempt, PatientProfile, SubaccountProfile, HospitalStaffProfile, EmailChange
 
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer
 
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff
 from .requests import verify_nin_request
@@ -349,7 +349,22 @@ class VerifyEmailOTPView(generics.GenericAPIView):
         user.save(update_fields=['email'])
         
         return Response({"detail": "Email updated successfully"}, status=status.HTTP_200_OK)
-
+    
+@extend_schema(tags=["Auth"], summary="Update user profile information")
+class UpdateProfileView(generics.UpdateAPIView):
+    serializer_class = UpdateProfileSerializer
+    permission_classes = [IsAuthenticatedHospitalStaff | IsAuthenticatedPatient]
+    http_method_names = ['patch']
+    
+    def get_object(self):
+        user = self.request.user
+        if hasattr(user, 'hospital_staff_profile'):
+            return user.hospital_staff_profile
+        elif hasattr(user, 'patient_profile'):
+            return user.patient_profile
+        else:
+            raise NotFound("Profile not found for the user.")
+        
 @extend_schema(tags=["Patient"], summary="Patient sign up")
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
     serializer_class = CreatePatientSerializer

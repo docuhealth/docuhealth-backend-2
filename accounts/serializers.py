@@ -116,6 +116,17 @@ class VerifyEmailOTPSerializer(serializers.Serializer):
         
         return validated_data
     
+class UpdateProfileSerializer(serializers.Serializer):
+    firstname = serializers.CharField(required=False, allow_blank=True)
+    lastname = serializers.CharField(required=False, allow_blank=True)
+    phone_num = serializers.CharField(required=False, allow_blank=True)
+    
+    def update(self, instance, validated_data):
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        return instance
+    
 class PatientFullInfoSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
     email = serializers.EmailField(read_only=True, source="user.email")
@@ -330,7 +341,7 @@ class CreateStaffProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = HospitalStaffProfile
-        fields = ['firstname', 'lastname', 'phone_no', 'role', 'specialization', 'ward', 'gender', "ward_info"]
+        fields = ['firstname', 'lastname', 'phone_num', 'role', 'specialization', 'ward', 'gender', "ward_info"]
         
     # def get_fields(self):
     #     fields = super().get_fields()
@@ -346,16 +357,8 @@ class HospitalStaffInfoSerilizer(serializers.ModelSerializer):
     
     class Meta:
         model = HospitalStaffProfile
-        fields = ["firstname", "lastname", "phone_no", "role", "staff_id", "email", "ward", "gender", "ward_info"]
+        fields = ["firstname", "lastname", "phone_num", "role", "staff_id", "email", "ward", "gender", "ward_info"]
         
-    # def get_fields(self):
-    #     fields = super().get_fields()
-        
-    #     from hospital.serializers.services import WardNameSerializer 
-    #     fields["ward_info"] = WardNameSerializer(source="ward", read_only=True)
-        
-    #     return fields
-
 class TeamMemberCreateSerializer(BaseUserCreateSerializer):
     profile = CreateStaffProfileSerializer(required=True, source="hospital_staff_profile")
     invitation_message = serializers.CharField(write_only=True, required=True)

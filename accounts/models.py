@@ -264,7 +264,7 @@ class HospitalStaffProfile(BaseModel):
     
     firstname = models.CharField(max_length=100)
     lastname = models.CharField(max_length=100)
-    phone_no = models.CharField(max_length=20)
+    phone_num = models.CharField(max_length=20)
     gender = models.CharField(choices=Gender.choices)
     
     role = models.CharField(max_length=20, choices=StaffRole.choices)
