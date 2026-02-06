@@ -83,9 +83,9 @@ DATABASES = {
         'HOST': 'aws-1-us-east-2.pooler.supabase.com',
         'PORT': '6543',
         'OPTIONS': {
-            'sslmode': 'require',
+            'sslmode': 'verify-full',
             'connect_timeout': 5,
-            # 'sslrootcert': os.path.join(BASE_DIR, 'root.crt'),
+            'sslrootcert': os.path.join(BASE_DIR, 'root.crt'),
         },
         "CONN_MAX_AGE": 600
     }
