@@ -12,6 +12,8 @@ from .models import EmailChange, User, OTP, UserProfileImage, PatientProfile, Su
 from facility.models import HospitalWard
 from facility.serializers import WardNameSerializer
 
+from organizations.models import HospitalProfile   
+
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     
@@ -126,6 +128,12 @@ class UpdateProfileSerializer(serializers.Serializer):
             setattr(instance, field, value)
         instance.save()
         return instance
+    
+class UpdateHospitalAdminProfileSerializer(serializers.ModelSerializer):
+
+        class Meta:
+            model = HospitalProfile
+            fields = ['name']
     
 class PatientFullInfoSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)

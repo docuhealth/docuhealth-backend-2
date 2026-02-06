@@ -14,7 +14,7 @@ from drf_spectacular.utils import extend_schema
 
 from .models import User, OTP, UserProfileImage, NINVerificationAttempt, PatientProfile, SubaccountProfile, HospitalStaffProfile, EmailChange
 
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer
 
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff
 from .requests import verify_nin_request
@@ -362,6 +362,19 @@ class UpdateProfileView(generics.UpdateAPIView):
             return user.hospital_staff_profile
         elif hasattr(user, 'patient_profile'):
             return user.patient_profile
+        else:
+            raise NotFound("Profile not found for the user.")
+        
+@extend_schema(tags=["Auth"], summary="Update hospital admin profile information")
+class UpdateHospitalAdminProfileView(generics.UpdateAPIView):
+    serializer_class = UpdateHospitalAdminProfileSerializer
+    permission_classes = [IsAuthenticatedHospitalAdmin]
+    http_method_names = ['patch']
+    
+    def get_object(self):
+        user = self.request.user
+        if hasattr(user, 'hospital_profile'):
+            return user.hospital_profile
         else:
             raise NotFound("Profile not found for the user.")
         
