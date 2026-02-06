@@ -1,8 +1,9 @@
 from pathlib import Path
 from datetime import timedelta
 import os
-# import dj_database_url
 from dotenv import load_dotenv
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 load_dotenv()
 
@@ -189,3 +190,15 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3.S3Storage'
 SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_BUCKET_NAME = os.environ.get('SUPABASE_BUCKET_NAME', 'development')
+
+SENTRY_DSN = os.environ.get('SENTRY_DSN')
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=1.0, 
+        profiles_sample_rate=1.0, 
+        send_default_pii=True, 
+        environment=os.environ.get("ENVIRONMENT", "production"),
+    )

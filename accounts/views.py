@@ -30,6 +30,7 @@ from records.models import MedicalRecord
 from facility.serializers import WardBasicInfoSerializer
 from hospital_ops.models import HospitalPatientActivity
 from accounts.serializers import PatientFullInfoSerializer
+from organizations.models import Subscription
 
 mailer = BrevoEmailService()
 
@@ -109,6 +110,10 @@ class LoginView(TokenObtainPairView, PublicGenericAPIView):
                 
                 response.data["data"]["hospital"] = hospital_data
                 response.data["data"]["staff_role"] = staff_role
+                
+            if role in [User.Role.PATIENT, User.Role.HOSPITAL]:
+                is_subscribed = Subscription.objects.filter(user=user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
+                response.data["data"]["is_subscribed"] = is_subscribed
                 
             mailer.send(
                 subject="New Login Alert",
