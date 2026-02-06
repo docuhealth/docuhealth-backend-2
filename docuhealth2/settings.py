@@ -84,6 +84,7 @@ DATABASES = {
         'PORT': '6543',
         'OPTIONS': {
             'sslmode': 'require',
+            'connect_timeout': 5,
             # 'sslrootcert': os.path.join(BASE_DIR, 'root.crt'),
         },
         "CONN_MAX_AGE": 600
