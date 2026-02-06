@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from docuhealth2.mixins import StrictFieldsMixin
 
-from .models import User, OTP, UserProfileImage, PatientProfile, SubaccountProfile, HospitalStaffProfile
+from .models import EmailChange, User, OTP, UserProfileImage, PatientProfile, SubaccountProfile, HospitalStaffProfile
 
 from facility.models import HospitalWard
 from facility.serializers import WardNameSerializer
@@ -89,6 +89,30 @@ class UpdatePasswordSerializer(serializers.Serializer):
         
         if not user.check_password(old_password):
             raise serializers.ValidationError({"old_password": "Old password is incorrect."})
+        
+        return validated_data
+    
+class UpdateEmailSerializer(serializers.Serializer):
+    new_email = serializers.EmailField(write_only=True, required=True)
+    
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        
+        new_email = validated_data['new_email']
+        if User.objects.filter(email=new_email).exclude(pk=self.context['request'].user.pk).exists():
+            raise serializers.ValidationError({"new_email": "A user with this email already exists."})
+        
+        return validated_data
+    
+class VerifyEmailOTPSerializer(serializers.Serializer):
+    otp = serializers.CharField(required=True, write_only=True, min_length=6, max_length=6)
+    
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        user = self.context['request'].user
+        
+        if not EmailChange.objects.filter(user=user, is_verified=False).exists():
+            raise serializers.ValidationError({"new_email": "No email change request found for this account."})
         
         return validated_data
     

@@ -123,6 +123,18 @@ class OTP(models.Model):
     def __str__(self):
         return self.otp
     
+class EmailChange(BaseModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="email_change")
+    new_email = models.EmailField()
+    is_verified = models.BooleanField(default=False)
+    
+    @classmethod
+    def change_email(cls, user, new_email):
+        email_change, _ = cls.objects.update_or_create(
+            user=user,
+            defaults={"new_email": new_email, "is_verified": False}
+        )
+        
 class UserProfileImage(models.Model):
     user = models.OneToOneField(User, related_name="profile_img", on_delete=models.SET_NULL, null=True, blank=True)
     image = CloudinaryField("profile_images/") 

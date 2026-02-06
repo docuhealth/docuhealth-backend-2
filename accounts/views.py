@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.template.loader import render_to_string
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -11,8 +12,10 @@ from rest_framework.exceptions import NotFound
 
 from drf_spectacular.utils import extend_schema
 
-from .models import User, OTP, UserProfileImage, NINVerificationAttempt, PatientProfile, SubaccountProfile, HospitalStaffProfile
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer
+from .models import User, OTP, UserProfileImage, NINVerificationAttempt, PatientProfile, SubaccountProfile, HospitalStaffProfile, EmailChange
+
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer
+
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff
 from .requests import verify_nin_request
 from .utils import *
@@ -201,10 +204,10 @@ class UploadUserProfileImageView(generics.CreateAPIView):
         UserProfileImage.objects.filter(user=user).delete()
         serializer.save(user=user) 
         
-@extend_schema(tags=['Auth'], summary="Update hospital staff account password")
+@extend_schema(tags=['Auth'], summary="Update hospital staff or admin account password")
 class UpdatePasswordView(generics.GenericAPIView):
     serializer_class = UpdatePasswordSerializer
-    permission_classes = [IsAuthenticatedHospitalStaff]
+    permission_classes = [IsAuthenticatedHospitalStaff | IsAuthenticatedHospitalAdmin]
     
     def patch(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -214,11 +217,11 @@ class UpdatePasswordView(generics.GenericAPIView):
         new_password = serializer.validated_data["new_password"]
 
         user.set_password(new_password)
-        user.save()
+        user.save(update_fields=['password'])
 
         return Response({"detail": "Password reset successfully. Please log in with your new credentials.", "status": "success"}, status=200)
    
-@extend_schema(tags=["Auth"])   
+@extend_schema(tags=["Auth"], summary="Verify user's NIN")   
 class VerifyUserNINView(PublicGenericAPIView, generics.GenericAPIView):
     serializer_class = VerifyUserNINSerializer
     
@@ -280,7 +283,74 @@ class VerifyUserNINView(PublicGenericAPIView, generics.GenericAPIView):
 
         return response
     
-@extend_schema(tags=["Patient"])
+@extend_schema(tags=["Auth"], summary="Send OTP to new user email")
+class SendEmailOTPView(generics.GenericAPIView):
+    serializer_class = UpdateEmailSerializer
+    permission_classes = [IsAuthenticatedHospitalStaff | IsAuthenticatedHospitalAdmin | IsAuthenticatedPatient]
+    
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        new_email = serializer.validated_data['new_email']
+        
+        if User.objects.filter(email=new_email).exists():
+            return Response({"detail": "This email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        EmailChange.change_email(user, new_email)
+        
+        if hasattr(user, 'hospital_staff_profile'):
+            user_name = user.hospital_staff_profile.full_name
+        elif hasattr(user, 'hospital_profile'):
+            user_name = user.hospital_profile.name
+        elif hasattr(user, 'patient_profile'):
+            user_name = user.patient_profile.full_name
+            
+        otp = OTP.generate_otp(user)
+        context = {"user_name": user_name, "otp": otp}
+        html_content = render_to_string('emails/otp.html', context)
+        
+        mailer.send(
+            subject="Verify your new email address",
+            body=html_content,
+            recipient=new_email,
+            is_html=True
+        )
+        
+        return Response({"detail": "OTP sent successfully"}, status=status.HTTP_200_OK)
+    
+@extend_schema(tags=["Auth"], summary="Verify OTP sent to new email")
+class VerifyEmailOTPView(generics.GenericAPIView):
+    serializer_class = VerifyEmailOTPSerializer
+    permission_classes = [IsAuthenticatedHospitalStaff | IsAuthenticatedHospitalAdmin | IsAuthenticatedPatient]
+    
+    @transaction.atomic()
+    def patch(self, request, *args, **kwargs):
+        user = request.user
+        otp_instance = user.otp
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        email_change = user.email_change
+        new_email = email_change.new_email
+        otp = serializer.validated_data['otp']
+        
+        valid, message = otp_instance.verify(otp)
+        if not valid:
+            return Response({"detail": message, "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        email_change.is_verified = True
+        email_change.save(update_fields=['is_verified'])
+        
+        user.email = new_email
+        user.save(update_fields=['email'])
+        
+        return Response({"detail": "Email updated successfully"}, status=status.HTTP_200_OK)
+
+@extend_schema(tags=["Patient"], summary="Patient sign up")
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
     serializer_class = CreatePatientSerializer
     
