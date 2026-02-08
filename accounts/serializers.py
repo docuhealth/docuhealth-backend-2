@@ -118,7 +118,7 @@ class VerifyEmailOTPSerializer(serializers.Serializer):
         
         return validated_data
     
-class UpdateProfileSerializer(serializers.Serializer):
+class UpdateProfileSerializer(StrictFieldsMixin, serializers.Serializer):
     firstname = serializers.CharField(required=False, allow_blank=True)
     lastname = serializers.CharField(required=False, allow_blank=True)
     phone_num = serializers.CharField(required=False, allow_blank=True)
@@ -129,7 +129,7 @@ class UpdateProfileSerializer(serializers.Serializer):
         instance.save()
         return instance
     
-class UpdateHospitalAdminProfileSerializer(serializers.ModelSerializer):
+class UpdateHospitalAdminProfileSerializer(StrictFieldsMixin, serializers.ModelSerializer):
 
         class Meta:
             model = HospitalProfile

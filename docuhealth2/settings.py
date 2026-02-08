@@ -13,7 +13,7 @@ ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
 
 SECRET_KEY = 'django-insecure-x^n#(fmeqrw8&0bs12f&lriaqleu!9rt+)01-6325i2zanwtoq'
 
-DEBUG = ENVIRONMENT != "production"
+DEBUG = ENVIRONMENT == "development"
 
 ALLOWED_HOSTS = ["*"]
 
@@ -134,7 +134,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=10),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,            
     "BLACKLIST_AFTER_ROTATION": True,        

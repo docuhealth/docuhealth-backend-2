@@ -305,7 +305,6 @@ class SoapNoteSerializer(MultipartJsonMixin, serializers.ModelSerializer):
     
     drug_history_allergies = serializers.ListField(child=serializers.CharField(), required=False)
     investigations = serializers.ListField(child=serializers.CharField(), required=False)
-    # investigation_docs = serializers.ListField(child=serializers.DictField(), required=False)
     problems_list = serializers.ListField(child=serializers.CharField(), required=False)
     care_instructions = serializers.ListField(child=serializers.CharField(), required=True)
     general_exam = serializers.ListField(child=serializers.CharField(), required=False)
@@ -347,6 +346,13 @@ class SoapNoteSerializer(MultipartJsonMixin, serializers.ModelSerializer):
             print(appointment)
             
         return soap_note
+    
+# class MedicalSummarySerializer(serializers.ModelSerializer):
+    
+#     class Meta:
+#         model = SoapNote
+#         fields = ['patient_info', 'staff_info', 'vital_signs_info', 'chief_complaint', 'history_of_complain', 'past_med_history', 'family_history', 'social_history', 'other_history']
+#         read_only_fields = ['id', 'created_at', 'hospital', 'investigation_docs']
     
 class DischargeFormSerializer(MultipartJsonMixin, serializers.ModelSerializer):
     admission = serializers.PrimaryKeyRelatedField(queryset=Admission.objects.all(), write_only=True, required=True)
