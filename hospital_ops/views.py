@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import OuterRef, Subquery
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -22,6 +23,7 @@ class ListAllAppointmentsView(generics.ListAPIView):
     serializer_class = HospitalAppointmentSerializer
     permission_classes = [IsAuthenticatedHospitalAdmin | IsAuthenticatedHospitalStaff]
     
+    
     def get_queryset(self):
         user = self.request.user
         
@@ -30,16 +32,30 @@ class ListAllAppointmentsView(generics.ListAPIView):
         else:
             hospital = user.hospital_staff_profile.hospital
             
-        return Appointment.objects.filter(hospital=hospital).order_by('scheduled_time')
-    
+        last_appointment_subquery = Appointment.objects.filter(
+            patient=OuterRef('patient'),
+            status=Appointment.Status.COMPLETED,    
+            scheduled_time__lt=OuterRef('scheduled_time')
+        ).order_by('-scheduled_time').values('scheduled_time')[:1]
+            
+        return Appointment.objects.filter(hospital=hospital).select_related('staff', 'patient', 'patient__user', 'hospital').annotate(last_visited=Subquery(last_appointment_subquery)).order_by('scheduled_time')
+        
 @extend_schema(tags=["Nurse", "Doctor"], summary="List appointments assigned to this staff")
 class ListStaffAppointmentsView(generics.ListAPIView):
     serializer_class = HospitalAppointmentSerializer
     permission_classes = [IsAuthenticatedNurse | IsAuthenticatedDoctor]
     
+    # @transaction.atomic
     def get_queryset(self):
         staff = self.request.user.hospital_staff_profile
-        return Appointment.objects.filter(staff=staff, status=Appointment.Status.PENDING).order_by('scheduled_time')
+        
+        last_appointment_subquery = Appointment.objects.filter(
+            patient=OuterRef('patient'),
+            status=Appointment.Status.COMPLETED,
+            scheduled_time__lt=OuterRef('scheduled_time')
+        ).order_by('-scheduled_time').values('scheduled_time')[:1]
+        
+        return Appointment.objects.filter(staff=staff, status=Appointment.Status.PENDING).select_related('staff', 'patient', 'patient__user', 'hospital').annotate(last_visited=Subquery(last_appointment_subquery)).order_by('scheduled_time')
     
 @extend_schema(tags=["Nurse"], summary="Assign appointment to a doctor")
 class AssignAppointmentToDoctorView(generics.UpdateAPIView):
@@ -61,7 +77,13 @@ class ListPatientAppointmentsView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         
-        return Appointment.objects.filter(patient=user.patient_profile).select_related("hospital").order_by('-scheduled_time')
+        last_appointment_subquery = Appointment.objects.filter(
+            patient=OuterRef('patient'),
+            status=Appointment.Status.COMPLETED,
+            scheduled_time__lt=OuterRef('scheduled_time')
+        ).order_by('-scheduled_time').values('scheduled_time')[:1]
+        
+        return Appointment.objects.filter(patient=user.patient_profile).select_related('staff', 'patient', 'patient__user', 'hospital').annotate(last_visited=Subquery(last_appointment_subquery)).order_by('-scheduled_time')
     
 @extend_schema(tags=["Receptionist"], summary="List recent patient activity on receptionist dashboard")
 class ListRecentPatientsView(generics.ListAPIView):
@@ -83,7 +105,13 @@ class ListUpcomingAppointmentsView(generics.ListAPIView):
         staff = self.request.user.hospital_staff_profile
         hospital = staff.hospital
         
-        return Appointment.objects.filter(hospital=hospital, status="pending").select_related("patient").order_by("scheduled_time")
+        last_appointment_subquery = Appointment.objects.filter(
+            patient=OuterRef('patient'),
+            status=Appointment.Status.COMPLETED,
+            scheduled_time__lt=OuterRef('scheduled_time')
+        ).order_by('-scheduled_time').values('scheduled_time')[:1]
+        
+        return Appointment.objects.filter(hospital=hospital, status="pending").select_related('staff', 'patient', 'patient__user', 'hospital').annotate(last_visited=Subquery(last_appointment_subquery)).order_by("scheduled_time")
     
 @extend_schema(tags=["Receptionist"], summary="Book an appointment for a patient")
 class BookAppointmentView(generics.CreateAPIView):
