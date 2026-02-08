@@ -643,8 +643,13 @@ class DoctorDashboardView(generics.GenericAPIView):
     serializer_class = HospitalStaffInfoSerilizer
 
     def get(self, request, *args, **kwargs):
-        staff = request.user.hospital_staff_profile
+        user = request.user
+        staff = user.hospital_staff_profile
         doctor_info = self.get_serializer(staff).data
+        
+        is_subscribed = Subscription.objects.filter(user=user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
+        
+        doctor_info["is_subscribed"] = is_subscribed
         
         return Response({
             "doctor": doctor_info,
@@ -655,13 +660,16 @@ class NurseDashboardView(generics.GenericAPIView):
     permission_classes = [IsAuthenticatedNurse]
 
     def get(self, request, *args, **kwargs):
-        staff = request.user.hospital_staff_profile
-        hospital = staff.hospital
+        user = request.user
+        staff = user.hospital_staff_profile
         ward = staff.ward
 
         response = {}
+        is_subscribed = Subscription.objects.filter(user=user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
         
         nurse_info = HospitalStaffInfoSerilizer(staff).data
+        nurse_info["is_subscribed"] = is_subscribed
+        
         response['nurse'] = nurse_info
         
         if ward:
@@ -675,8 +683,13 @@ class ReceptionistDashboardView(generics.GenericAPIView):
     permission_classes = [IsAuthenticatedReceptionist]
 
     def get(self, request, *args, **kwargs):
-        staff = request.user.hospital_staff_profile
+        user = request.user
+        staff = user.hospital_staff_profile
+        
+        is_subscribed = Subscription.objects.filter(user=user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
+        
         receptionist_info = HospitalStaffInfoSerilizer(staff).data
+        receptionist_info["is_subscribed"] = is_subscribed
         
         return Response({
             "receptionist": receptionist_info,
