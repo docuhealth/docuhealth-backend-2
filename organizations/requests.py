@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-paystack_key = os.getenv('PAYSTACK_TEST_SECRET_KEY')
+paystack_key = os.getenv('PAYSTACK_LIVE_SECRET_KEY')
 
 headers = {
                 "Authorization": f"Bearer {paystack_key}",
