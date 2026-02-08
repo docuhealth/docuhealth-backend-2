@@ -435,6 +435,8 @@ class PatientDashboardView(generics.GenericAPIView):
         records_serializer = self.get_serializer(page, many=True)
         
         paginated_data = self.get_paginated_response(records_serializer.data).data
+        
+        is_subscribed = Subscription.objects.filter(user=user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
 
         return Response({
             "patient_info": {
@@ -446,7 +448,8 @@ class PatientDashboardView(generics.GenericAPIView):
                 "id_card_generated": profile.id_card_generated,
                 "email": user.email,
                 "phone_num": profile.phone_num,
-                "emergency": profile.emergency
+                "emergency": profile.emergency,
+                "is_subscribed": is_subscribed
             },
             **paginated_data
         })
