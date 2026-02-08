@@ -7,13 +7,12 @@ from django.template.loader import render_to_string
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.views import APIView
 
 from docuhealth2.views import PublicGenericAPIView, BaseUserCreateView
 from docuhealth2.utils.supabase import delete_from_supabase, upload_files
 from docuhealth2.utils.email_service import BrevoEmailService
 from docuhealth2.authentications import ClientHeaderAuthentication
-from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedPharmacy, IsAuthenticatedPharmacyPartner, IsAuthenticatedDHAdmin
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedPharmacyPartner
 
 from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, HospitalFullInfoSerializer, HospitalBasicInfoSerializer, SubscriptionPlanSerializer, SubscriptionSerializer, PharmacyRotateKeySerializer, CreatePharmacyPartnerSerializer, PharmacyOnboardingRequestSerializer, ListPharmacyOnboardingRequestSerializer, ApprovePharmacyOnboardingRequestSerializer, RotatePharmacyCodeSerializer
 
@@ -26,6 +25,8 @@ from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParamete
 from drf_spectacular.types import OpenApiTypes
 
 import secrets
+
+from organizations.models import Subscription
 
 
 mailer = BrevoEmailService()
@@ -176,6 +177,10 @@ class GetHospitalInfo(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         user = request.user  
         serializer = self.get_serializer(user)
+        
+        is_subscribed = Subscription.objects.filter(user=user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
+        serializer.data["is_subscribed"] = is_subscribed
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 @extend_schema(tags=['Hospital', 'Doctor'], summary="Get all hospitals")
