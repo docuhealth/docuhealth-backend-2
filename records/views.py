@@ -17,7 +17,7 @@ from docuhealth2.authentications import ClientHeaderAuthentication
 from docuhealth2.utils.supabase import upload_files, delete_from_supabase
 
 from .models import CaseNote, MedicalRecord, MedicalRecordAttachment, VitalSignsRequest, Admission, DrugRecord, VitalSigns, SoapNote, DischargeForm
-from .serializers import CaseNoteSerializer, MedicalRecordSerializer, MedicalRecordAttachmentSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer, DrugRecordSerializer, SoapNoteSerializer, DischargeFormSerializer, SoapNoteAdditionalNotesSerializer
+from .serializers import CaseNoteSerializer, MedicalRecordAttachmentSerializer, VitalSignsRequestSerializer, VitalSignsViaRequestSerializer, VitalSignsSerializer, AdmissionSerializer, ConfirmAdmissionSerializer, ClientDrugRecordSerializer, DrugRecordSerializer, SoapNoteSerializer, DischargeFormSerializer, SoapNoteAdditionalNotesSerializer, MedicalSummarySerializer
 from .schema import CREATE_SOAP_NOTE_SCHEMA, CREATE_DISCHARGE_FORM_SCHEMA
 
 from facility.models import WardBed
@@ -31,68 +31,68 @@ from organizations.models import Subscription
 
 @extend_schema(tags=["Medical records"])  
 class MedicalRecordListView(generics.ListAPIView):
-    queryset = MedicalRecord.objects.all().order_by('-created_at')
-    serializer_class = MedicalRecordSerializer
+    queryset = SoapNote.objects.all().select_related("patient", "hospital", "staff").prefetch_related("drug_records", "attachments").order_by('-created_at')
+    serializer_class = MedicalSummarySerializer
     permission_classes = [IsAuthenticatedHospitalStaff | IsAuthenticatedHospitalAdmin]
 
-@extend_schema(tags=["Medical records"])  
-class CreateMedicalRecordView(generics.CreateAPIView):
-    queryset = MedicalRecord.objects.all()
-    serializer_class = MedicalRecordSerializer
-    # permission_classes = [IsAuthenticatedHospital]  
+# @extend_schema(tags=["Medical records"])  
+# class CreateMedicalRecordView(generics.CreateAPIView):
+#     queryset = MedicalRecord.objects.all()
+#     serializer_class = MedicalRecordSerializer
+#     # permission_classes = [IsAuthenticatedHospital]  
     
-    def perform_create(self, serializer):
-        user = self.request.user
-        role = user.role
-        if role == User.Role.HOSPITAL:
-            serializer.save(hospital=self.request.user.hospital_profile)
+#     def perform_create(self, serializer):
+#         user = self.request.user
+#         role = user.role
+#         if role == User.Role.HOSPITAL:
+#             serializer.save(hospital=self.request.user.hospital_profile)
             
-        elif role == User.Role.HOSPITAL_STAFF:
-            serializer.save(hospital=self.request.user.hospital_staff_profile.hospital)
+#         elif role == User.Role.HOSPITAL_STAFF:
+#             serializer.save(hospital=self.request.user.hospital_staff_profile.hospital)
 
-@extend_schema(tags=["Medical records"])    
+@extend_schema(tags=["Medical records"], summary="List medical records for a patient")    
 class ListUserMedicalrecordsView(generics.ListAPIView):
-    serializer_class = MedicalRecordSerializer
+    serializer_class = MedicalSummarySerializer
     
     def get_queryset(self):
         user = self.request.user
         role = user.role
         
         if role == 'patient':
-            return MedicalRecord.objects.filter(patient=user.patient_profile).select_related("patient", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
+            return SoapNote.objects.filter(patient=user.patient_profile).select_related("patient", "hospital", "staff").prefetch_related("drug_records", "appointment").order_by('-created_at')
         
         if role == 'hospital':
-            return MedicalRecord.objects.filter(hospital=user.hospital_profile).select_related("patient", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
+            return SoapNote.objects.filter(hospital=user.hospital_profile).select_related("patient", "hospital", "staff").prefetch_related("drug_records", "appointment").order_by('-created_at')
         
-        return MedicalRecord.objects.none()
+        return SoapNote.objects.none()
 
-@extend_schema(tags=["Medical records"])      
-class UploadMedicalRecordsAttachments(generics.CreateAPIView):
-    queryset = MedicalRecordAttachment.objects.all()
-    serializer_class = MedicalRecordAttachmentSerializer
-    parser_classes = [MultiPartParser, FormParser]
-    # permission_classes = [IsAuthenticatedHospital]  
+# @extend_schema(tags=["Medical records"])      
+# class UploadMedicalRecordsAttachments(generics.CreateAPIView):
+#     queryset = MedicalRecordAttachment.objects.all()
+#     serializer_class = MedicalRecordAttachmentSerializer
+#     parser_classes = [MultiPartParser, FormParser]
+#     # permission_classes = [IsAuthenticatedHospital]  
     
-    def create(self, request, *args, **kwargs):
-        files = request.FILES.getlist("files")  
-        attachments = []
+#     def create(self, request, *args, **kwargs):
+#         files = request.FILES.getlist("files")  
+#         attachments = []
 
-        for file in files:
-            # get file size in mb and pass to the serializer
-            file_size = file.size / (1024 * 1024)
-            print(file_size)
+#         for file in files:
+#             # get file size in mb and pass to the serializer
+#             file_size = file.size / (1024 * 1024)
+#             print(file_size)
             
-            serializer = self.get_serializer(data={"file": file, "filename": file.name, "file_size": file_size})
-            serializer.is_valid(raise_exception=True)
-            attachment = serializer.save()
-            attachments.append(serializer.data)
+#             serializer = self.get_serializer(data={"file": file, "filename": file.name, "file_size": file_size})
+#             serializer.is_valid(raise_exception=True)
+#             attachment = serializer.save()
+#             attachments.append(serializer.data)
             
-        attachment_ids = [attachment['id'] for attachment in attachments]
-        return Response(attachment_ids, status=status.HTTP_201_CREATED)
+#         attachment_ids = [attachment['id'] for attachment in attachments]
+#         return Response(attachment_ids, status=status.HTTP_201_CREATED)
     
 @extend_schema(tags=["Doctor"], summary="Get patients medical records")
 class ListPatientMedicalRecordsView(generics.ListAPIView):
-    serializer_class = MedicalRecordSerializer
+    serializer_class = MedicalSummarySerializer
     permission_classes = [IsAuthenticatedDoctor]
 
     def get_queryset(self):
@@ -103,7 +103,8 @@ class ListPatientMedicalRecordsView(generics.ListAPIView):
         except PatientProfile.DoesNotExist:
             raise NotFound({"detail": "Patient not found"})
 
-        return MedicalRecord.objects.filter(patient=patient).order_by('-created_at')
+        return SoapNote.objects.filter(patient=patient).select_related("patient", "hospital", "staff").prefetch_related("drug_records", "appointment").order_by('-created_at')
+    
 @extend_schema(tags=["Nurse"], summary="List all vital signs request to nurse")
 class ListVitalSignsRequest(generics.ListAPIView):
     serializer_class = VitalSignsRequestSerializer
@@ -340,7 +341,7 @@ class ListCaseNotesView(generics.ListAPIView):
     
 @extend_schema(tags=["Medical records"])  
 class ListSubaccountMedicalRecordsView(generics.ListAPIView):
-    serializer_class = MedicalRecordSerializer
+    serializer_class = MedicalSummarySerializer
     permission_classes = [IsAuthenticatedPatient]
     
     def get_queryset(self):
@@ -354,7 +355,7 @@ class ListSubaccountMedicalRecordsView(generics.ListAPIView):
             print("Not found")
             raise NotFound("A subaccount with this HIN does not exist.")
         
-        return MedicalRecord.objects.filter(subaccount__hin = hin).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
+        return SoapNote.objects.filter(subaccount__hin = hin).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by('-created_at')
 
 @extend_schema(
     tags=["Pharmacy"],

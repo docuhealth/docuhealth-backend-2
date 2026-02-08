@@ -347,12 +347,19 @@ class SoapNoteSerializer(MultipartJsonMixin, serializers.ModelSerializer):
             
         return soap_note
     
-# class MedicalSummarySerializer(serializers.ModelSerializer):
+class MedicalSummarySerializer(serializers.ModelSerializer):
     
-#     class Meta:
-#         model = SoapNote
-#         fields = ['patient_info', 'staff_info', 'vital_signs_info', 'chief_complaint', 'history_of_complain', 'past_med_history', 'family_history', 'social_history', 'other_history']
-#         read_only_fields = ['id', 'created_at', 'hospital', 'investigation_docs']
+    patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
+    staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
+    vital_signs_info = MedRecordsVitalSignsSerializer(read_only=True, source="vital_signs")
+    
+    appointment = RecordAppointmentSerializer(required=False, allow_null=True)
+    drug_records = DrugRecordSerializer(many=True, required=True)
+    
+    class Meta:
+        model = SoapNote
+        fields = ['patient_info', 'staff_info', 'vital_signs_info', 'chief_complaint', 'primary_diagnosis', 'treatment_plan', 'care_instructions', 'drug_records', 'investigation_docs', 'referred_docuhealth_hosp_info', 'appointment']
+        read_only_fields = ['id', 'created_at', 'hospital', 'investigation_docs']
     
 class DischargeFormSerializer(MultipartJsonMixin, serializers.ModelSerializer):
     admission = serializers.PrimaryKeyRelatedField(queryset=Admission.objects.all(), write_only=True, required=True)

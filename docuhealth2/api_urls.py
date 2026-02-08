@@ -2,7 +2,7 @@ from django.urls import path
 
 from accounts.views import LoginView, CustomTokenRefreshView, ForgotPassword, VerifyForgotPasswordOTPView, ResetPasswordView, ListUserView, VerifySignupOTPView, UpdatePasswordView, VerifyUserNINView, DoctorDashboardView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, PatientDashboardView, CreatePatientView, UpdatePatientView, DeletePatientAccountView, ListCreateSubaccountView, UpgradeSubaccountView, ToggleEmergencyView, GeneratePatientIdCard, GenerateSubaccountIdCard, NurseDashboardView, ReceptionistDashboardView, GetPatientDetailsView, GetStaffByRoleView, ReceptionistCreatePatientView, SendEmailOTPView, VerifyEmailOTPView, UpdateProfileView, UpdateHospitalAdminProfileView
 
-from records.views import CreateMedicalRecordView, MedicalRecordListView, UploadMedicalRecordsAttachments, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView, ListPatientDrugRecordsView, CreateSoapNoteView, ListPatientSoapNotesView, DischargePatientView, ListPatientDischargeFormsView, CreateSoapNoteAdditionalNotesView
+from records.views import MedicalRecordListView, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView, ListPatientDrugRecordsView, CreateSoapNoteView, ListPatientSoapNotesView, DischargePatientView, ListPatientDischargeFormsView, CreateSoapNoteAdditionalNotesView
 
 from hospital_ops.views import ListAllAppointmentsView, ListStaffAppointmentsView, AssignAppointmentToDoctorView, HandOverNurseShiftView, ListPatientAppointmentsView, BookAppointmentView, ListUpcomingAppointmentsView, ListRecentPatientsView, TransferPatientToWardView
 
@@ -32,8 +32,8 @@ auth_urls = [
 ]
 
 medical_records_urls = [
-    path('', CreateMedicalRecordView.as_view(), name='create-medical-records'),
-    path('/upload-attachments', UploadMedicalRecordsAttachments.as_view(), name='medical-records-attachments'),
+    # path('', CreateMedicalRecordView.as_view(), name='create-medical-records'),
+    # path('/upload-attachments', UploadMedicalRecordsAttachments.as_view(), name='medical-records-attachments'),
     path('/user-records', ListUserMedicalrecordsView.as_view(), name='patient-medical-records'),
     path('/all', MedicalRecordListView.as_view(), name='get-medical-records'),
     
