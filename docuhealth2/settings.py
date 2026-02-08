@@ -80,12 +80,13 @@ DATABASES = {
         'NAME': 'postgres',
         'USER': os.environ['DATABASE_USER'],
         'PASSWORD': os.environ['DATABASE_PASSWORD'],
-        'HOST': 'aws-1-us-east-2.pooler.supabase.com',
+        'HOST': os.environ['DATABASE_IP'],
         'PORT': '6543',
         'OPTIONS': {
             'sslmode': 'verify-full',
             'connect_timeout': 10,
             'sslrootcert': os.path.join(BASE_DIR, 'root.crt'),
+            'options': '-c tcp_user_timeout=5000',
         },
         "CONN_MAX_AGE": 600
     }
