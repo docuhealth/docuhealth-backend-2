@@ -26,6 +26,8 @@ from hospital_ops.models import HospitalPatientActivity
 from accounts.models import User, HospitalStaffProfile, PatientProfile, SubaccountProfile
 from accounts.serializers import PatientBasicInfoSerializer, PatientFullInfoSerializer
 
+from organizations.models import Subscription
+
 
 @extend_schema(tags=["Medical records"])  
 class MedicalRecordListView(generics.ListAPIView):
@@ -294,15 +296,18 @@ class RetrievePatientInfoView(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         patient = self.get_object()
+        patient_user = patient.user
 
         latest_vitals = (VitalSigns.objects.filter(patient=patient).order_by('-created_at').first())
 
         ongoing_drugs = DrugRecord.objects.filter(patient=patient, status=DrugRecord.Status.ONGOING) # TODO: Add status
+        is_subscribed = Subscription.objects.filter(user=patient_user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
 
         data = {
             "patient_info": PatientFullInfoSerializer(patient).data,
             "latest_vitals": VitalSignsSerializer(latest_vitals).data if latest_vitals else None,
             "ongoing_drugs": DrugRecordSerializer(ongoing_drugs, many=True).data,
+            "is_subscribed": is_subscribed
         }
 
         return Response(data)
