@@ -80,15 +80,15 @@ DATABASES = {
         'NAME': 'postgres',
         'USER': os.environ['DATABASE_USER'],
         'PASSWORD': os.environ['DATABASE_PASSWORD'],
-        'HOST': os.environ['DATABASE_IP'],
-        'PORT': '5432',
+        'HOST': os.environ['DATABASE_HOST'],
+        'PORT': os.environ['DATABASE_PORT'],
         'OPTIONS': {
-            'sslmode': 'verify-ca',
+            'sslmode': 'require',
             'connect_timeout': 5,
             'sslrootcert': os.path.join(BASE_DIR, 'root.crt'),
-            'options': '-c tcp_user_timeout=5000',
+            # 'options': '-c tcp_user_timeout=5000',
         },
-        "CONN_MAX_AGE": 600
+        "CONN_MAX_AGE": 0
     }
 }
 
