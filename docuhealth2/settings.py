@@ -81,7 +81,7 @@ DATABASES = {
         'USER': os.environ['DATABASE_USER'],
         'PASSWORD': os.environ['DATABASE_PASSWORD'],
         'HOST': os.environ['DATABASE_IP'],
-        'PORT': '6543',
+        'PORT': '5432',
         'OPTIONS': {
             'sslmode': 'verify-ca',
             'connect_timeout': 5,
