@@ -84,7 +84,7 @@ DATABASES = {
         'PORT': '6543',
         'OPTIONS': {
             'sslmode': 'verify-ca',
-            'connect_timeout': 10,
+            'connect_timeout': 5,
             'sslrootcert': os.path.join(BASE_DIR, 'root.crt'),
             'options': '-c tcp_user_timeout=5000',
         },
