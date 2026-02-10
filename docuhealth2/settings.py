@@ -85,12 +85,13 @@ DATABASES = {
         'OPTIONS': {
             'sslmode': 'require',
             'connect_timeout': 5,
-            'sslrootcert': os.path.join(BASE_DIR, 'root.crt'),
-            # 'options': '-c tcp_user_timeout=5000',
         },
         "CONN_MAX_AGE": 0
     }
 }
+
+if ENVIRONMENT == "development":
+    DATABASES['default']['OPTIONS']['sslrootcert'] = os.path.join(BASE_DIR, 'root.crt')
 
 AUTH_PASSWORD_VALIDATORS = [
     {
