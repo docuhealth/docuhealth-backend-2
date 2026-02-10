@@ -84,9 +84,10 @@ DATABASES = {
         'PORT': os.environ['DATABASE_PORT'],
         'OPTIONS': {
             'sslmode': 'require',
-            'connect_timeout': 5,
+            'connect_timeout': 2,
         },
-        "CONN_MAX_AGE": 60
+        "CONN_HEALTH_CHECKS": True,
+        "CONN_MAX_AGE": 600,
     }
 }
 
