@@ -142,7 +142,7 @@ class SubscriptionPlan(BaseModel):
     interval = models.CharField(max_length=20, choices=Intervals.choices)
     paystack_plan_code = models.CharField(max_length=100, blank=True, null=True) 
     features = models.JSONField(default=list)
-    role = models.CharField(max_length=20, choices=[(User.Role.PATIENT, "Patient"), (User.Role.HOSPITAL, "Hospital")], default=User.Role.PATIENT)
+    role = models.CharField(max_length=20, choices=[(User.Role.PATIENT, "Patient"), (User.Role.HOSPITAL, "Hospital"), ("test", "Test")], default=User.Role.PATIENT)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

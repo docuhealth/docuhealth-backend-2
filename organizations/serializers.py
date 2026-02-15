@@ -100,6 +100,7 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
         model = SubscriptionPlan
         exclude = ["deleted_at", "is_deleted", ]
         read_only_fields = ["paystack_plan_code", "created_at", "updated_at", ]
+    
         
     def create(self, validated_data):
         payload = {
@@ -130,8 +131,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         user = self.context.get("user")
         print(user)
         
-        if plan.role != user.role:
-            raise serializers.ValidationError("This plan is not available for your role.")
+        if plan.role != user.role and plan.role != "test":
+            raise serializers.ValidationError("This plan is not available for you.")
         
         # if not plan.is_active:
         #     raise serializers.ValidationError("Current plan is not active")

@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
+from urllib.parse import urlparse, parse_qsl
 
 load_dotenv()
 
@@ -74,25 +75,39 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'docuhealth2.wsgi.application'
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'postgres',
+#         'USER': os.environ['DATABASE_USER'],
+#         'PASSWORD': os.environ['DATABASE_PASSWORD'],
+#         'HOST': os.environ['DATABASE_HOST'],
+#         'PORT': os.environ['DATABASE_PORT'],
+#         'OPTIONS': {
+#             'sslmode': 'require',
+#             'connect_timeout': 5,
+#         },
+#         "CONN_HEALTH_CHECKS": True,
+#         "CONN_MAX_AGE": 600,
+#     }
+# }
+
+tmpPostgres = urlparse(os.getenv("DATABASE_URL"))
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': os.environ['DATABASE_USER'],
-        'PASSWORD': os.environ['DATABASE_PASSWORD'],
-        'HOST': os.environ['DATABASE_HOST'],
-        'PORT': os.environ['DATABASE_PORT'],
-        'OPTIONS': {
-            'sslmode': 'require',
-            'connect_timeout': 2,
-        },
-        "CONN_HEALTH_CHECKS": True,
-        "CONN_MAX_AGE": 600,
+        'NAME': tmpPostgres.path.replace('/', ''),
+        'USER': tmpPostgres.username,
+        'PASSWORD': tmpPostgres.password,
+        'HOST': tmpPostgres.hostname,
+        'PORT': 5432,
+        'OPTIONS': dict(parse_qsl(tmpPostgres.query)),
     }
 }
 
-if ENVIRONMENT == "development":
-    DATABASES['default']['OPTIONS']['sslrootcert'] = os.path.join(BASE_DIR, 'root.crt')
+# if ENVIRONMENT == "development":
+#     DATABASES['default']['OPTIONS']['sslrootcert'] = os.path.join(BASE_DIR, 'root.crt')
 
 AUTH_PASSWORD_VALIDATORS = [
     {
