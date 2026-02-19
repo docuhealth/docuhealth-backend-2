@@ -4,7 +4,6 @@ import uuid
 
 from concurrent.futures import ThreadPoolExecutor
 
-
 supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 bucket_name  = settings.SUPABASE_BUCKET_NAME 
 

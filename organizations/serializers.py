@@ -6,10 +6,13 @@ from accounts.serializers import BaseUserCreateSerializer
 
 from .models import HospitalProfile, HospitalInquiry, HospitalVerificationRequest, VerificationToken, SubscriptionPlan, Subscription, PharmacyPartner, PharmacyProfile
 
+from docuhealth2.mixins import StrictFieldsMixin
+
 from .requests import create_plan
 
 class HospitalProfileSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
+
     class Meta:
         model= HospitalProfile
         fields = ['name', 'hin', 'street', 'city', 'state', 'country', 'house_no']
@@ -213,3 +216,10 @@ class RotatePharmacyCodeSerializer(serializers.Serializer):
             })
             
         return validated_data
+    
+class UpdateHospitalThemeSerializer(StrictFieldsMixin, serializers.ModelSerializer):
+    bg_image = serializers.DictField(required=False, allow_null=True)
+    
+    class Meta:
+        model = HospitalProfile
+        fields = ['bg_image', "theme_color"]
