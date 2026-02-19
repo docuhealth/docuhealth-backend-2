@@ -645,9 +645,14 @@ class DoctorDashboardView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         staff = user.hospital_staff_profile
-        hospital_user = staff.hospital.user
+        hospital = staff.hospital
+        hospital_user = hospital.user
         
         doctor_info = self.get_serializer(staff).data
+        hospital_theme = {
+            "bg_image": hospital.bg_image.url,
+            "theme_color": hospital.theme_color
+        }
         
         is_subscribed = Subscription.objects.filter(user=hospital_user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
         
@@ -655,6 +660,7 @@ class DoctorDashboardView(generics.GenericAPIView):
         
         return Response({
             "doctor": doctor_info,
+            "theme": hospital_theme
         }, status=status.HTTP_200_OK)
         
 @extend_schema(tags=["Nurse"], summary='Nurse Dashboard')
@@ -664,8 +670,14 @@ class NurseDashboardView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         staff = user.hospital_staff_profile
-        hospital_user = staff.hospital.user
+        hospital = staff.hospital
+        hospital_user = hospital.user
         ward = staff.ward
+        
+        hospital_theme = {
+            "bg_image": hospital.bg_image.url,
+            "theme_color": hospital.theme_color
+        }
 
         response = {}
         is_subscribed = Subscription.objects.filter(user=hospital_user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
@@ -673,6 +685,7 @@ class NurseDashboardView(generics.GenericAPIView):
         nurse_info = HospitalStaffInfoSerilizer(staff).data
         nurse_info["is_subscribed"] = is_subscribed
         
+        response['theme'] = hospital_theme
         response['nurse'] = nurse_info
         
         if ward:
@@ -688,15 +701,21 @@ class ReceptionistDashboardView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         staff = user.hospital_staff_profile
-        hospital_user = staff.hospital.user
+        hospital = staff.hospital
+        hospital_user = hospital.user
         
         is_subscribed = Subscription.objects.filter(user=hospital_user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
+        hospital_theme = {
+            "bg_image": hospital.bg_image.url,
+            "theme_color": hospital.theme_color
+        }
         
         receptionist_info = HospitalStaffInfoSerilizer(staff).data
         receptionist_info["is_subscribed"] = is_subscribed
         
         return Response({
             "receptionist": receptionist_info,
+            "theme": hospital_theme
         }, status=status.HTTP_200_OK)
         
 @extend_schema(tags=["Receptionist"], summary="Create a new patient account")
