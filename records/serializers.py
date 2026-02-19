@@ -358,7 +358,7 @@ class MedicalSummarySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = SoapNote
-        fields = ['patient_info', 'staff_info', 'vital_signs_info', 'chief_complaint', 'primary_diagnosis', 'treatment_plan', 'care_instructions', 'drug_records', 'investigation_docs', 'referred_docuhealth_hosp_info', 'appointment']
+        fields = ['patient_info', 'staff_info', 'vital_signs_info', 'chief_complaint', 'primary_diagnosis', 'treatment_plan', 'care_instructions', 'drug_records', 'investigation_docs', 'appointment']
         read_only_fields = ['id', 'created_at', 'hospital', 'investigation_docs']
     
 class DischargeFormSerializer(MultipartJsonMixin, serializers.ModelSerializer):
