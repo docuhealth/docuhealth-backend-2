@@ -12,7 +12,7 @@ from .models import EmailChange, User, OTP, UserProfileImage, PatientProfile, Su
 from facility.models import HospitalWard
 from facility.serializers import WardNameSerializer
 
-from organizations.models import HospitalProfile   
+from organizations.models import HospitalProfile, Subscription
 
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
@@ -412,3 +412,19 @@ class HospitalStaffBasicInfoSerializer(serializers.ModelSerializer):
         model = HospitalStaffProfile
         fields = ['staff_id', 'firstname', 'lastname', 'role', 'specialization']
         
+class PatientDashboardInfoSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email')
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PatientProfile
+        fields = [
+            "firstname", "lastname", "middlename", "hin", "dob", 
+            "id_card_generated", "email", "phone_num", "emergency", "is_subscribed"
+        ]
+
+    def get_is_subscribed(self, obj):
+        return Subscription.objects.filter(
+            user=obj.user, 
+            status=Subscription.SubscriptionStatus.ACTIVE
+        ).exists()

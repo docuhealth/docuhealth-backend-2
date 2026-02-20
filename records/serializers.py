@@ -141,7 +141,7 @@ class MedRecordAppointmentSerializer(serializers.ModelSerializer):
 
 class MedicalRecordSerializer(serializers.ModelSerializer):
     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False, write_only=True)
-    patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
+    # patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
     
     subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=SubaccountProfile.objects.all(), required=False)
     

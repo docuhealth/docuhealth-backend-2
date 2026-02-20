@@ -14,7 +14,7 @@ from drf_spectacular.utils import extend_schema
 
 from .models import User, OTP, UserProfileImage, NINVerificationAttempt, PatientProfile, SubaccountProfile, HospitalStaffProfile, EmailChange
 
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer, PatientDashboardInfoSerializer
 
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff
 from .requests import verify_nin_request
@@ -26,7 +26,7 @@ from docuhealth2.utils.email_service import BrevoEmailService
 from docuhealth2.utils.supabase import upload_file_to_supabase, delete_from_supabase
 
 from records.serializers import MedicalRecordSerializer
-from records.models import MedicalRecord
+from records.models import SoapNote
 
 from facility.serializers import WardBasicInfoSerializer
 from hospital_ops.models import HospitalPatientActivity
@@ -478,29 +478,20 @@ class PatientDashboardView(generics.GenericAPIView):
         user = request.user
         profile = user.patient_profile 
 
-        queryset = MedicalRecord.objects.filter(patient=profile).select_related("patient", "subaccount", "hospital").prefetch_related("drug_records", "attachments").order_by("-created_at")
+        queryset = SoapNote.objects.filter(patient=profile).select_related(
+            "patient", "hospital", "vital_signs"
+        ).prefetch_related("drug_records").order_by("-created_at")
+        
         page = self.paginate_queryset(queryset)
         records_serializer = self.get_serializer(page, many=True)
         
-        paginated_data = self.get_paginated_response(records_serializer.data).data
-        
-        is_subscribed = Subscription.objects.filter(user=user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
+        paginated_response = self.get_paginated_response(records_serializer.data)
+        patient_serializer = PatientDashboardInfoSerializer(profile)
 
-        return Response({
-            "patient_info": {
-                "firstname": profile.firstname,
-                "lastname": profile.lastname,
-                "middlename": profile.middlename,
-                "hin": profile.hin,
-                "dob": profile.dob,
-                "id_card_generated": profile.id_card_generated,
-                "email": user.email,
-                "phone_num": profile.phone_num,
-                "emergency": profile.emergency,
-                "is_subscribed": is_subscribed
-            },
-            **paginated_data
-        })
+        response_data["medical_records"] = paginated_response.data
+        response_data["patient_info"] = patient_serializer.data
+
+        return Response(response_data, status=status.HTTP_200_OK)
     
 @extend_schema(tags=["Patient"])   
 class ListCreateSubaccountView(generics.ListCreateAPIView):

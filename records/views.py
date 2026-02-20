@@ -35,21 +35,6 @@ class MedicalRecordListView(generics.ListAPIView):
     serializer_class = MedicalSummarySerializer
     permission_classes = [IsAuthenticatedHospitalStaff | IsAuthenticatedHospitalAdmin]
 
-# @extend_schema(tags=["Medical records"])  
-# class CreateMedicalRecordView(generics.CreateAPIView):
-#     queryset = MedicalRecord.objects.all()
-#     serializer_class = MedicalRecordSerializer
-#     # permission_classes = [IsAuthenticatedHospital]  
-    
-#     def perform_create(self, serializer):
-#         user = self.request.user
-#         role = user.role
-#         if role == User.Role.HOSPITAL:
-#             serializer.save(hospital=self.request.user.hospital_profile)
-            
-#         elif role == User.Role.HOSPITAL_STAFF:
-#             serializer.save(hospital=self.request.user.hospital_staff_profile.hospital)
-
 @extend_schema(tags=["Medical records"], summary="List medical records for a patient")    
 class ListUserMedicalrecordsView(generics.ListAPIView):
     serializer_class = MedicalSummarySerializer
