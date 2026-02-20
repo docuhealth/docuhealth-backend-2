@@ -6,10 +6,13 @@ import hmac
 import hashlib
 import os
 import json
+import logging
 
 from drf_spectacular.utils import extend_schema
 
 from .webhookshandlers import handle_subscription_create, handle_charge_success, handle_invoice_create, handle_payment_failed, handle_invoice_update, handle_not_renew, handle_disable
+
+logger = logging.getLogger(__name__)
 
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_LIVE_SECRET_KEY")
 
@@ -35,8 +38,7 @@ class PaystackWebhookView(APIView):
         event_type = event.get("event")
         data = event.get("data", {})
         
-        print("Received event:", event_type)
-        print("Data:", data)
+        logger.info(f"Received event: {event_type}", extra={"data": data})
         
         if event_type == "subscription.create":
             handle_subscription_create(data)
