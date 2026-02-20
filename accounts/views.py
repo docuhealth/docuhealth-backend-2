@@ -25,7 +25,7 @@ from docuhealth2.permissions import IsAuthenticatedHospitalStaff, IsAuthenticate
 from docuhealth2.utils.email_service import BrevoEmailService
 from docuhealth2.utils.supabase import upload_file_to_supabase, delete_from_supabase
 
-from records.serializers import MedicalRecordSerializer
+from records.serializers import MedicalSummarySerializer
 from records.models import SoapNote
 
 from facility.serializers import WardBasicInfoSerializer
@@ -471,7 +471,7 @@ class UpdatePatientView(generics.UpdateAPIView):
 
 @extend_schema(tags=["Patient"])
 class PatientDashboardView(generics.GenericAPIView):
-    serializer_class = MedicalRecordSerializer
+    serializer_class = MedicalSummarySerializer
     permission_classes = [IsAuthenticatedPatient]
 
     def get(self, request, *args, **kwargs):
@@ -479,8 +479,7 @@ class PatientDashboardView(generics.GenericAPIView):
         profile = user.patient_profile 
 
         queryset = SoapNote.objects.filter(patient=profile).select_related(
-            "patient", "hospital", "vital_signs"
-        ).prefetch_related("drug_records").order_by("-created_at")
+            "patient", "hospital", "vital_signs", "staff", "appointment").prefetch_related("drug_records",).order_by("-created_at")
         
         page = self.paginate_queryset(queryset)
         records_serializer = self.get_serializer(page, many=True)
@@ -488,6 +487,7 @@ class PatientDashboardView(generics.GenericAPIView):
         paginated_response = self.get_paginated_response(records_serializer.data)
         patient_serializer = PatientDashboardInfoSerializer(profile)
 
+        response_data = {}
         response_data["medical_records"] = paginated_response.data
         response_data["patient_info"] = patient_serializer.data
 
@@ -689,7 +689,7 @@ class DoctorDashboardView(generics.GenericAPIView):
         
         doctor_info = self.get_serializer(staff).data
         hospital_theme = {
-            "bg_image": hospital.get("bg_image", {}).get("url"),
+            "bg_image": hospital.bg_image.get("url") if hospital.bg_image else None,
             "theme_color": hospital.theme_color
         }
         
@@ -714,7 +714,7 @@ class NurseDashboardView(generics.GenericAPIView):
         ward = staff.ward
         
         hospital_theme = {
-            "bg_image": hospital.get("bg_image", {}).get("url"),
+            "bg_image": hospital.bg_image.get("url") if hospital.bg_image else None,
             "theme_color": hospital.theme_color
         }
 
@@ -745,7 +745,7 @@ class ReceptionistDashboardView(generics.GenericAPIView):
         
         is_subscribed = Subscription.objects.filter(user=hospital_user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
         hospital_theme = {
-            "bg_image": hospital.get("bg_image", {}).get("url"),
+            "bg_image": hospital.bg_image.get("url") if hospital.bg_image else None,
             "theme_color": hospital.theme_color
         }
         
