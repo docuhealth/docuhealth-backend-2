@@ -175,12 +175,7 @@ class GetHospitalInfo(generics.GenericAPIView):
     permission_classes = [IsAuthenticatedHospitalAdmin]
 
     def get(self, request, *args, **kwargs):
-        user = request.user  
-        serializer = self.get_serializer(user)
-        
-        is_subscribed = Subscription.objects.filter(user=user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
-        serializer.data["is_subscribed"] = is_subscribed
-        
+        serializer = self.get_serializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 @extend_schema(tags=['Hospital', 'Doctor'], summary="Get all hospitals")
@@ -193,7 +188,7 @@ class ListHospitalsView(generics.ListAPIView):
 class ListCreateSubscriptionPlanView(generics.ListCreateAPIView):
     serializer_class = SubscriptionPlanSerializer
     pagination_class = None
-    permission_classes = [IsAuthenticatedPatient | IsAuthenticatedHospitalAdmin] #TODO: Cahnge to docuhealth admin only
+    permission_classes = [IsAuthenticatedPatient | IsAuthenticatedHospitalAdmin] #TODO: Change to docuhealth admin only
     
     def get_queryset(self):
         user_role = self.request.user.role

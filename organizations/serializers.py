@@ -12,11 +12,23 @@ from .requests import create_plan
 
 class HospitalProfileSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)
+    is_subscribed = serializers.SerializerMethodField(read_only=True)
+    theme = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model= HospitalProfile
-        fields = ['name', 'hin', 'street', 'city', 'state', 'country', 'house_no']
+        fields = ['name', 'hin', 'street', 'city', 'state', 'country', 'house_no', 'is_subscribed', 'theme']
         read_only_fields = ['hin']
+        
+    def get_is_subscribed(self, obj):
+        return Subscription.objects.filter(user=obj.user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
+    
+    def get_theme(self, obj):
+        return {
+            "profile_image": obj.profile_image.get("url") if obj.profile_image else None,
+            "bg_image": obj.bg_image.get("url") if obj.bg_image else None,
+            "theme_color": obj.theme_color
+        }
         
 class CreateHospitalSerializer(BaseUserCreateSerializer):
     profile = HospitalProfileSerializer(required=True, source="hospital_profile")
