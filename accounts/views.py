@@ -689,6 +689,7 @@ class DoctorDashboardView(generics.GenericAPIView):
         
         doctor_info = self.get_serializer(staff).data
         hospital_theme = {
+            "name": hospital.name,
             "bg_image": hospital.bg_image.get("url") if hospital.bg_image else None,
             "theme_color": hospital.theme_color
         }
@@ -714,6 +715,7 @@ class NurseDashboardView(generics.GenericAPIView):
         ward = staff.ward
         
         hospital_theme = {
+            "name": hospital.name,
             "bg_image": hospital.bg_image.get("url") if hospital.bg_image else None,
             "theme_color": hospital.theme_color
         }
@@ -745,6 +747,7 @@ class ReceptionistDashboardView(generics.GenericAPIView):
         
         is_subscribed = Subscription.objects.filter(user=hospital_user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
         hospital_theme = {
+            "name": hospital.name,
             "bg_image": hospital.bg_image.get("url") if hospital.bg_image else None,
             "theme_color": hospital.theme_color
         }
