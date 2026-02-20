@@ -5,10 +5,10 @@ import logging
 from .models import Subscription
 from accounts.models import User
 
-logger = logging.getLogger(__name__)
+from sentry_sdk import logger as sentry_logger
 
 def handle_subscription_create(data):
-    logger.info("Creating subscription", extra={"data": data})
+    sentry_logger.info("Creating subscription", extra={"data": data})
     try:
         paystack_cus_code = data.get("customer", {}).get("customer_code")
         user = User.objects.get(paystack_cus_code=paystack_cus_code)
@@ -21,15 +21,15 @@ def handle_subscription_create(data):
         
         subscription.save(update_fields=['status', 'paystack_subscription_code', 'next_payment_date', 'authorization_code'])
         
-        logger.info(f"Subscription activated for user {user.id}", extra={
+        sentry_logger.info(f"Subscription activated for user {user.id}", extra={
             "subscription_id": subscription.id,
             "paystack_code": paystack_cus_code
         })
         
     except (User.DoesNotExist, Subscription.DoesNotExist) as e:
-        logger.error(f"Subscription creation failed: User/Sub not found for code {paystack_cus_code}", exc_info=True)
+        sentry_logger.error(f"Subscription creation failed: User/Sub not found for code {paystack_cus_code}", exc_info=True)
     except Exception as e:
-        logger.error(f"Subscription creation failed: {e}", exc_info=True)
+        sentry_logger.error(f"Subscription creation failed: {e}", exc_info=True)
     
 def handle_charge_success(data):
     try:
@@ -43,9 +43,9 @@ def handle_charge_success(data):
         
         print(subscription)
     except (User.DoesNotExist, Subscription.DoesNotExist) as e:
-        logger.error(f"Charge success failed: User/Sub not found for code {paystack_cus_code}", exc_info=True)
+        sentry_logger.error(f"Charge success failed: User/Sub not found for code {paystack_cus_code}", exc_info=True)
     except Exception as e:
-        logger.error(f"Charge success failed: {e}", exc_info=True)
+        sentry_logger.error(f"Charge success failed: {e}", exc_info=True)
     
 def handle_invoice_create(data):
     # TODO: Send notifications
@@ -62,15 +62,15 @@ def handle_invoice_update(data):
         
         subscription.save(update_fields=['next_payment_date'])
         
-        logger.info(f"Invoice updated for user {user.id}", extra={
+        sentry_logger.info(f"Invoice updated for user {user.id}", extra={
             "subscription_id": subscription.id,
             "paystack_code": paystack_cus_code
         })
         
     except (User.DoesNotExist, Subscription.DoesNotExist) as e:
-        logger.error(f"Invoice update failed: User/Sub not found for code {paystack_cus_code}", exc_info=True)
+        sentry_logger.error(f"Invoice update failed: User/Sub not found for code {paystack_cus_code}", exc_info=True)
     except Exception as e:
-        logger.error(f"Invoice update failed: {e}", exc_info=True)
+        sentry_logger.error(f"Invoice update failed: {e}", exc_info=True)
     
 def handle_payment_failed(data):
     try:
@@ -81,15 +81,15 @@ def handle_payment_failed(data):
         subscription.status = Subscription.SubscriptionStatus.PAST_DUE
         subscription.save(update_fields=['status'])
         
-        logger.info(f"Payment failed for user {user.id}", extra={
+        sentry_logger.info(f"Payment failed for user {user.id}", extra={
             "subscription_id": subscription.id,
             "paystack_code": paystack_cus_code
         })
     
     except (User.DoesNotExist, Subscription.DoesNotExist) as e:
-        logger.error(f"Payment failed handler error: User/Sub not found for code {paystack_cus_code}", exc_info=True)
+        sentry_logger.error(f"Payment failed handler error: User/Sub not found for code {paystack_cus_code}", exc_info=True)
     except Exception as e:
-        logger.error(f"Payment failed handler error : {e}", exc_info=True)
+        sentry_logger.error(f"Payment failed handler error : {e}", exc_info=True)
     
 def handle_not_renew(data):
     try:
@@ -100,15 +100,15 @@ def handle_not_renew(data):
         subscription.will_renew = False
         subscription.save(update_fields=['will_renew'])
         
-        logger.info(f"Sub not renew for user {user.id}", extra={
+        sentry_logger.info(f"Sub not renew for user {user.id}", extra={
             "subscription_id": subscription.id,
             "paystack_code": paystack_cus_code
         })
     
     except (User.DoesNotExist, Subscription.DoesNotExist) as e:
-        logger.error(f"Sub Not renew handler error: User/Sub not found for code {paystack_cus_code}", exc_info=True)
+        sentry_logger.error(f"Sub Not renew handler error: User/Sub not found for code {paystack_cus_code}", exc_info=True)
     except Exception as e:
-        logger.error(f"Sub Not renew handler error : {e}", exc_info=True)
+        sentry_logger.error(f"Sub Not renew handler error : {e}", exc_info=True)
     
 def handle_disable(data):
     try:
@@ -119,15 +119,15 @@ def handle_disable(data):
         subscription.status = Subscription.SubscriptionStatus.INACTIVE
         subscription.save(update_fields=['status'])
         
-        logger.info(f"Payment failed for user {user.id}", extra={
+        sentry_logger.info(f"Payment failed for user {user.id}", extra={
             "subscription_id": subscription.id,
             "paystack_code": paystack_cus_code
         })
         
     except (User.DoesNotExist, Subscription.DoesNotExist) as e:
-        logger.error(f"Sub disable handler error: User/Sub not found for code {paystack_cus_code}", exc_info=True)
+        sentry_logger.error(f"Sub disable handler error: User/Sub not found for code {paystack_cus_code}", exc_info=True)
     except Exception as e:
-        logger.error(f"Sub disable handler error : {e}", exc_info=True)
+        sentry_logger.error(f"Sub disable handler error : {e}", exc_info=True)
     
     
     

@@ -216,8 +216,8 @@ SUPABASE_BUCKET_NAME = os.environ.get('SUPABASE_BUCKET_NAME', 'development')
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
 
 sentry_logging = LoggingIntegration(
-    level=logging.INFO,       
-    event_level=logging.ERROR 
+    sentry_logs_level=logging.INFO,
+    # event_level=logging.ERROR 
 )
 
 if SENTRY_DSN:
@@ -230,3 +230,4 @@ if SENTRY_DSN:
         enable_logs=True,
         environment=os.environ.get("ENVIRONMENT", "production"),
     )
+    

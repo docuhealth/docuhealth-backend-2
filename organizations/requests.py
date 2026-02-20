@@ -1,10 +1,7 @@
 import os
 import requests
 from dotenv import load_dotenv
-
-import logging
-
-logger = logging.getLogger(__name__)
+from sentry_sdk import logger as sentry_logger
 
 load_dotenv()
 
@@ -48,8 +45,7 @@ def initialize_transaction(payload):
     response = send_paystack_request("POST", "transaction/initialize", payload)
     response_data = response.json()
     
-    # print(response_data)
-    logger.info(f"Transaction initialized with response: {response_data}")
+    sentry_logger.info(f"Transaction initialized with response: {response_data["message"]}")
     
     if response.ok and response_data.get("status"):
         return response_data["data"]["authorization_url"]
