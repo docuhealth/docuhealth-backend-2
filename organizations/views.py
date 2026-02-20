@@ -14,7 +14,7 @@ from docuhealth2.utils.email_service import BrevoEmailService
 from docuhealth2.authentications import ClientHeaderAuthentication
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedPharmacyPartner
 
-from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, HospitalFullInfoSerializer, HospitalBasicInfoSerializer, SubscriptionPlanSerializer, SubscriptionSerializer, PharmacyRotateKeySerializer, CreatePharmacyPartnerSerializer, PharmacyOnboardingRequestSerializer, ListPharmacyOnboardingRequestSerializer, ApprovePharmacyOnboardingRequestSerializer, RotatePharmacyCodeSerializer, UpdateHospitalThemeSerializer
+from .serializers import CreateHospitalSerializer, HospitalInquirySerializer, HospitalVerificationRequestSerializer, ApproveVerificationRequestSerializer, HospitalFullInfoSerializer, HospitalBasicInfoSerializer, SubscriptionPlanSerializer, SubscriptionSerializer, PharmacyRotateKeySerializer, CreatePharmacyPartnerSerializer, PharmacyOnboardingRequestSerializer, ListPharmacyOnboardingRequestSerializer, ApprovePharmacyOnboardingRequestSerializer, RotatePharmacyCodeSerializer
 
 from .models import HospitalInquiry, HospitalVerificationRequest, VerificationToken, HospitalProfile, SubscriptionPlan, PharmacyProfile, Client
 
@@ -645,58 +645,7 @@ class GetPharmacyPartnerClientInfo(generics.GenericAPIView):
         partner_name = partner.name
         return Response({"client_id": client_id, "partner_name": partner_name}, status=status.HTTP_200_OK)
 
-@extend_schema(tags=["Hospital Admin"], summary="Update Hospital Theme")
-class UpdateHospitalThemeView(generics.UpdateAPIView):
-    serializer_class = UpdateHospitalThemeSerializer
-    permission_classes = [IsAuthenticatedHospitalAdmin]
-    parser_classes = [MultiPartParser, FormParser]
-    http_method_names = ['patch']
-    
-    def get_object(self):
-        return self.request.user.hospital_profile
-    
-    def patch(self, request, *args, **kwargs):
-            instance = self.get_object()  
-            
-            serializer = self.get_serializer(instance, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            
-            old_image_path = None
-            if instance.bg_image and isinstance(instance.bg_image, dict):
-                old_image_path = instance.bg_image.get("path")
-            
-            extra_data = {}
-            uploaded_image_data = None
-            bg_image_file = request.FILES.get("bg_image")
-            
-            if bg_image_file:
-                try:
-                    uploaded_image_data = upload_file_to_supabase(
-                        bg_image_file.read(), 
-                        bg_image_file.name, 
-                        bg_image_file.content_type, 
-                        "background_images"
-                    )
-                    extra_data["bg_image"] = uploaded_image_data
-                except Exception as e:
-                    return Response({"error": f"Upload failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-            try:
-                updated_instance = serializer.save(**extra_data)
-                
-                if uploaded_image_data and old_image_path:
-                    try:
-                        delete_from_supabase(old_image_path)
-                    except Exception as e:
-                        print(f"Cleanup Error: Could not delete old file {old_image_path}. Error: {e}")
-                        
-                return Response(self.get_serializer(updated_instance).data, status=status.HTTP_200_OK)
-            
-            except Exception as e:
-                if uploaded_image_data:
-                    delete_from_supabase(uploaded_image_data["path"])
-                
-                return Response({"error": f"Database update failed - {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         
         
     

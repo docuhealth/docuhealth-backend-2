@@ -217,9 +217,9 @@ class RotatePharmacyCodeSerializer(serializers.Serializer):
             
         return validated_data
     
-class UpdateHospitalThemeSerializer(StrictFieldsMixin, serializers.ModelSerializer):
-    bg_image = serializers.DictField(required=False, allow_null=True)
+# class UpdateHospitalThemeSerializer(StrictFieldsMixin, serializers.ModelSerializer):
     
-    class Meta:
-        model = HospitalProfile
-        fields = ['bg_image', "theme_color"]
+    
+#     class Meta:
+#         model = HospitalProfile
+#         fields = []

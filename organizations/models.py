@@ -24,7 +24,8 @@ class HospitalProfile(BaseModel):
     state = models.CharField(max_length=20, blank=True, null=True)
     country = models.CharField(max_length=20, blank=True, null=True)
     
-    bg_image = models.JSONField(default=dict, blank=True, null=True)
+    profile_image = models.JSONField(default=None, blank=True, null=True)
+    bg_image = models.JSONField(default=None, blank=True, null=True)
     theme_color = models.CharField(max_length=7, blank=True, null=True)
     
     notification_settings = models.JSONField(default=default_notification_settings)

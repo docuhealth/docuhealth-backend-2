@@ -130,10 +130,12 @@ class UpdateProfileSerializer(StrictFieldsMixin, serializers.Serializer):
         return instance
     
 class UpdateHospitalAdminProfileSerializer(StrictFieldsMixin, serializers.ModelSerializer):
-
+        profile_image = serializers.DictField(required=False, allow_null=True, read_only=True)
+        bg_image = serializers.DictField(required=False, allow_null=True, read_only=True)
+        
         class Meta:
             model = HospitalProfile
-            fields = ['name']
+            fields = ['name', 'bg_image', "theme_color", "profile_image"]
     
 class PatientFullInfoSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)

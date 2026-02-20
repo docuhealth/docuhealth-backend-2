@@ -23,6 +23,7 @@ from .utils import *
 from docuhealth2.views import PublicGenericAPIView
 from docuhealth2.permissions import IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedDoctor, IsAuthenticatedNurse, IsAuthenticatedReceptionist
 from docuhealth2.utils.email_service import BrevoEmailService
+from docuhealth2.utils.supabase import upload_file_to_supabase, delete_from_supabase
 
 from records.serializers import MedicalRecordSerializer
 from records.models import MedicalRecord
@@ -375,13 +376,60 @@ class UpdateHospitalAdminProfileView(generics.UpdateAPIView):
     serializer_class = UpdateHospitalAdminProfileSerializer
     permission_classes = [IsAuthenticatedHospitalAdmin]
     http_method_names = ['patch']
+    parser_classes = [MultiPartParser, FormParser]
     
     def get_object(self):
-        user = self.request.user
-        if hasattr(user, 'hospital_profile'):
-            return user.hospital_profile
-        else:
-            raise NotFound("Profile not found for the user.")
+        return self.request.user.hospital_profile
+    
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()  
+        
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        
+        image_fields = {
+            "bg_image": "background_images",
+            "profile_image": "profile_images"
+        }
+        
+        extra_data = {}
+        successful_uploads = [] 
+        old_images_to_delete = []
+        
+        try:
+            for field_name, folder in image_fields.items():
+                image_file = request.FILES.get(field_name)
+                
+                if image_file:
+                    old_data = getattr(instance, field_name)
+                    if old_data and isinstance(old_data, dict):
+                        old_images_to_delete.append(old_data.get("path"))
+
+                    uploaded_data = upload_file_to_supabase(
+                        image_file.read(), 
+                        image_file.name, 
+                        image_file.content_type, 
+                        folder
+                    )
+                    
+                    extra_data[field_name] = uploaded_data
+                    successful_uploads.append(uploaded_data["path"])
+            
+            updated_instance = serializer.save(**extra_data)
+
+            for path in old_images_to_delete:
+                try:
+                    if path: delete_from_supabase(path)
+                except Exception as e:
+                    print(f"Cleanup Error for {path}: {e}")
+
+            return Response(self.get_serializer(updated_instance).data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            for path in successful_uploads:
+                delete_from_supabase(path)
+            
+            return Response({"error": f"Update failed - {str(e)}"}, status=500)
         
 @extend_schema(tags=["Patient"], summary="Patient sign up")
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):

@@ -6,7 +6,7 @@ from records.views import MedicalRecordListView, ListUserMedicalrecordsView, Req
 
 from hospital_ops.views import ListAllAppointmentsView, ListStaffAppointmentsView, AssignAppointmentToDoctorView, HandOverNurseShiftView, ListPatientAppointmentsView, BookAppointmentView, ListUpcomingAppointmentsView, ListRecentPatientsView, TransferPatientToWardView
 
-from organizations.views import CreateHospitalView, ListHospitalsView, ListCreateHospitalInquiryView, ListCreateHospitalVerificationRequestView, ApproveVerificationRequestView,  GetHospitalInfo, ListCreateSubscriptionPlanView, CreateSubscriptionView, ListSubscriptionPlansByRoleView, UpdateHospitalThemeView
+from organizations.views import CreateHospitalView, ListHospitalsView, ListCreateHospitalInquiryView, ListCreateHospitalVerificationRequestView, ApproveVerificationRequestView,  GetHospitalInfo, ListCreateSubscriptionPlanView, CreateSubscriptionView, ListSubscriptionPlansByRoleView
 
 from organizations.webhooks import PaystackWebhookView
 
@@ -83,7 +83,6 @@ hospital_urls = [
     path('/admissions/<str:status>', ListAdmittedPatientsByStatusView.as_view(), name='list-admitted-patients-by-status'),
     path('/admissions/<str:admission_id>/confirm', ConfirmAdmissionView.as_view(), name='confirm-admission-requests'),
     
-    path('/theme', UpdateHospitalThemeView.as_view(), name='update-hospital-theme'),
 ]
 
 nurse_urls = [
