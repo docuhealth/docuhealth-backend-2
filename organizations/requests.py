@@ -2,6 +2,10 @@ import os
 import requests
 from dotenv import load_dotenv
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 paystack_key = os.getenv('PAYSTACK_LIVE_SECRET_KEY')
@@ -44,7 +48,8 @@ def initialize_transaction(payload):
     response = send_paystack_request("POST", "transaction/initialize", payload)
     response_data = response.json()
     
-    print(response_data)
+    # print(response_data)
+    logger.info(f"Transaction initialized with response: {response_data}")
     
     if response.ok and response_data.get("status"):
         return response_data["data"]["authorization_url"]

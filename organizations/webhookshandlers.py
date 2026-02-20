@@ -8,6 +8,7 @@ from accounts.models import User
 logger = logging.getLogger(__name__)
 
 def handle_subscription_create(data):
+    logger.info("Creating subscription", extra={"data": data})
     try:
         paystack_cus_code = data.get("customer", {}).get("customer_code")
         user = User.objects.get(paystack_cus_code=paystack_cus_code)

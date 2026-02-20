@@ -217,6 +217,7 @@ class CreateSubscriptionView(generics.CreateAPIView):
         context["user"] = self.request.user
         return context
     
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         user = request.user
         
