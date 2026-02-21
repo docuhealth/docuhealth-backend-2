@@ -192,7 +192,7 @@ class ListCreateSubscriptionPlanView(generics.ListCreateAPIView):
     
     def get_queryset(self):
         user_role = self.request.user.role
-        return SubscriptionPlan.objects.filter(role__in=[user_role, "test"])
+        return SubscriptionPlan.objects.filter(role=user_role)
     
 @extend_schema(tags=["Subscriptions"], summary="List subscription plans by role")
 class ListSubscriptionPlansByRoleView(generics.ListAPIView):
@@ -205,7 +205,7 @@ class ListSubscriptionPlansByRoleView(generics.ListAPIView):
         if role_param not in [User.Role.PATIENT, User.Role.HOSPITAL]:
             return SubscriptionPlan.objects.none()
         
-        return SubscriptionPlan.objects.filter(role__in=[role_param, "test"])
+        return SubscriptionPlan.objects.filter(role=role_param)
     
 @extend_schema(tags=["Subscriptions"])
 class CreateSubscriptionView(generics.CreateAPIView):
