@@ -49,5 +49,5 @@ def initialize_transaction(payload):
     
     if response.ok and response_data.get("status"):
         return response_data["data"]["authorization_url"]
-    
     raise Exception(f"Paystack error: {response_data.get('message', 'Failed to initialize Paystack transaction')}")
+    

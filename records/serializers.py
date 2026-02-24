@@ -352,6 +352,7 @@ class MedicalSummarySerializer(serializers.ModelSerializer):
     patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
     staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
     vital_signs_info = MedRecordsVitalSignsSerializer(read_only=True, source="vital_signs")
+    hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
     
     appointment = RecordAppointmentSerializer(required=False, allow_null=True)
     drug_records = DrugRecordSerializer(many=True, required=True)
