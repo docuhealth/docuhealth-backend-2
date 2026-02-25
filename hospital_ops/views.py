@@ -55,7 +55,7 @@ class ListStaffAppointmentsView(generics.ListAPIView):
             scheduled_time__lt=OuterRef('scheduled_time')
         ).order_by('-scheduled_time').values('scheduled_time')[:1]
         
-        return Appointment.objects.filter(staff=staff, status=Appointment.Status.PENDING).select_related('staff', 'patient', 'patient__user', 'hospital').annotate(last_visited=Subquery(last_appointment_subquery)).order_by('scheduled_time')
+        return Appointment.objects.filter(staff=staff, status=Appointment.Status.PENDING).select_related('staff', 'patient', 'patient__user', 'hospital').annotate(last_visited=Subquery(last_appointment_subquery)).order_by('-scheduled_time')
     
 @extend_schema(tags=["Nurse"], summary="Assign appointment to a doctor")
 class AssignAppointmentToDoctorView(generics.UpdateAPIView):
