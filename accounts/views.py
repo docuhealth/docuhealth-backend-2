@@ -14,7 +14,7 @@ from drf_spectacular.utils import extend_schema
 
 from .models import User, OTP, UserProfileImage, NINVerificationAttempt, PatientProfile, SubaccountProfile, HospitalStaffProfile, EmailChange
 
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, RemoveTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer, PatientDashboardInfoSerializer
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, DeactivateTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer, PatientDashboardInfoSerializer
 
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff
 from .requests import verify_nin_request
@@ -622,8 +622,8 @@ class TeamMemberListView(generics.ListAPIView):
         return HospitalStaffProfile.objects.filter(hospital=hospital).select_related("hospital").order_by('-created_at')
         
 @extend_schema(tags=["Hospital Admin"])
-class RemoveTeamMembersView(generics.GenericAPIView):
-    serializer_class = RemoveTeamMembersSerializer
+class DeactivateTeamMembersView(generics.GenericAPIView):
+    serializer_class = DeactivateTeamMembersSerializer
     permission_classes = [IsAuthenticatedHospitalAdmin]
     
     @transaction.atomic
@@ -658,6 +658,46 @@ class RemoveTeamMembersView(generics.GenericAPIView):
 
         return Response(
             {"message": f"{updated_count} team member(s) deactivated successfully."},
+            status=status.HTTP_200_OK
+        )
+        
+@extend_schema(tags=["Hospital Admin"])
+class RemoveTeamMembersView(generics.GenericAPIView):
+    serializer_class = DeactivateTeamMembersSerializer
+    permission_classes = [IsAuthenticatedHospitalAdmin]
+    
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        staff_ids = serializer.validated_data.get("staff_ids")
+        hospital = request.user.hospital_profile
+
+        users = HospitalStaffProfile.objects.filter(
+            hospital=hospital,
+            staff_id__in=staff_ids
+        )
+        
+        found_ids = set(users.values_list("staff_id", flat=True))
+        missing = set(staff_ids) - found_ids
+        
+        if missing:
+            return Response({
+                "staff_ids": [f"Invalid or unauthorized staff IDs: {', '.join(map(str, missing))}"]
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        user_ids = set(users.values_list("user_id", flat=True))
+
+        updated_count = User.objects.filter(id__in=user_ids, is_active=True).update(is_active=False, is_deleted=True, deleted_at=timezone.now())
+        if updated_count == 0:
+            return Response(
+                {"message": "No changes detected. No team members removed."},
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            {"message": f"{updated_count} team member(s) removed successfully."},
             status=status.HTTP_200_OK
         )
         

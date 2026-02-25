@@ -96,7 +96,6 @@ class ApproveVerificationRequestSerializer(serializers.Serializer):
     
 class HospitalFullInfoSerializer(serializers.ModelSerializer):
     hospital_profile = HospitalProfileSerializer(read_only=True)
-
     class Meta:
         model = User
         fields = ["id", "email", "hospital_profile"]

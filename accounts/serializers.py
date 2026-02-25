@@ -388,7 +388,7 @@ class TeamMemberCreateSerializer(BaseUserCreateSerializer):
         
         return user
     
-class RemoveTeamMembersSerializer(serializers.Serializer):
+class DeactivateTeamMembersSerializer(serializers.Serializer):
     staff_ids = serializers.ListField(child=serializers.CharField(), allow_empty=False, required=True)
     
 class TeamMemberUpdateRoleSerializer(serializers.ModelSerializer):

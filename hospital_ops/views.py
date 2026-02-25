@@ -14,7 +14,7 @@ from drf_spectacular.utils import extend_schema
 
 from accounts.models import User
 from records.models import Admission
-from facility.models import HospitalWard, WardBed
+from facility.models import WardBed
 
 mailer = BrevoEmailService()
 
