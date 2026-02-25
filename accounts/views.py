@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.template.loader import render_to_string
+from django.utils import timezone
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -13,13 +14,12 @@ from rest_framework.exceptions import NotFound
 from drf_spectacular.utils import extend_schema
 
 from .models import User, OTP, UserProfileImage, NINVerificationAttempt, PatientProfile, SubaccountProfile, HospitalStaffProfile, EmailChange
-
 from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, DeactivateTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer, PatientDashboardInfoSerializer
 
-from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff
 from .requests import verify_nin_request
 from .utils import *
 
+from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff
 from docuhealth2.views import PublicGenericAPIView
 from docuhealth2.permissions import IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedDoctor, IsAuthenticatedNurse, IsAuthenticatedReceptionist
 from docuhealth2.utils.email_service import BrevoEmailService
@@ -27,7 +27,6 @@ from docuhealth2.utils.supabase import upload_file_to_supabase, delete_from_supa
 
 from records.serializers import MedicalSummarySerializer
 from records.models import SoapNote
-
 from facility.serializers import WardBasicInfoSerializer
 from hospital_ops.models import HospitalPatientActivity
 from accounts.serializers import PatientFullInfoSerializer
@@ -674,12 +673,12 @@ class RemoveTeamMembersView(generics.GenericAPIView):
         staff_ids = serializer.validated_data.get("staff_ids")
         hospital = request.user.hospital_profile
 
-        users = HospitalStaffProfile.objects.filter(
+        staff = HospitalStaffProfile.objects.filter(
             hospital=hospital,
             staff_id__in=staff_ids
         )
         
-        found_ids = set(users.values_list("staff_id", flat=True))
+        found_ids = set(staff.values_list("staff_id", flat=True))
         missing = set(staff_ids) - found_ids
         
         if missing:
@@ -687,10 +686,10 @@ class RemoveTeamMembersView(generics.GenericAPIView):
                 "staff_ids": [f"Invalid or unauthorized staff IDs: {', '.join(map(str, missing))}"]
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        user_ids = set(users.values_list("user_id", flat=True))
-
-        updated_count = User.objects.filter(id__in=user_ids, is_active=True).update(is_active=False, is_deleted=True, deleted_at=timezone.now())
-        if updated_count == 0:
+        user_ids = set(staff.values_list("user_id", flat=True))
+        staff_updated_count = staff.update(is_deleted=True, deleted_at=timezone.now())
+        updated_count = User.objects.filter(id__in=user_ids, is_active=True).update(is_active=False)
+        if staff_updated_count == 0:
             return Response(
                 {"message": "No changes detected. No team members removed."},
                 status=status.HTTP_200_OK
