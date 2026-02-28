@@ -139,68 +139,68 @@ class MedRecordAppointmentSerializer(serializers.ModelSerializer):
         fields = ['staff', 'staff_id', 'scheduled_time']
         read_only_fields = ['id']
 
-class MedicalRecordSerializer(serializers.ModelSerializer):
-    patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False, write_only=True)
-    # patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
+# class MedicalRecordSerializer(serializers.ModelSerializer):
+#     patient = serializers.SlugRelatedField(slug_field="hin", queryset=PatientProfile.objects.all(), required=False, write_only=True)
+#     # patient_info = PatientBasicInfoSerializer(read_only=True, source="patient")
     
-    subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=SubaccountProfile.objects.all(), required=False)
+#     subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=SubaccountProfile.objects.all(), required=False)
     
-    doctor = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.StaffRole.DOCTOR), required=False, allow_null=True, write_only=True)
-    doctor_info = HospitalStaffBasicInfoSerializer(read_only=True, source="doctor")
+#     doctor = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.StaffRole.DOCTOR), required=False, allow_null=True, write_only=True)
+#     doctor_info = HospitalStaffBasicInfoSerializer(read_only=True, source="doctor")
     
-    referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True) 
-    referred_docuhealth_hosp_info = HospitalBasicInfoSerializer(read_only=True, source="referred_docuhealth_hosp")
+#     referred_docuhealth_hosp = serializers.SlugRelatedField(slug_field="hin", queryset=HospitalProfile.objects.all(), required=False, allow_null=True) 
+#     referred_docuhealth_hosp_info = HospitalBasicInfoSerializer(read_only=True, source="referred_docuhealth_hosp")
     
-    attachments = serializers.PrimaryKeyRelatedField(many=True, queryset=MedicalRecordAttachment.objects.all(), required=False, write_only=True)
-    attachments_info = MedicalRecordAttachmentSerializer(many=True, read_only=True, source="attachments")
+#     attachments = serializers.PrimaryKeyRelatedField(many=True, queryset=MedicalRecordAttachment.objects.all(), required=False, write_only=True)
+#     attachments_info = MedicalRecordAttachmentSerializer(many=True, read_only=True, source="attachments")
     
-    drug_records = DrugRecordSerializer(many=True, required=False, allow_null=True)
-    vital_signs = MedRecordsVitalSignsSerializer(required=False, allow_null=True)
-    appointment = MedRecordAppointmentSerializer(required=False, allow_null=True) 
+#     drug_records = DrugRecordSerializer(many=True, required=False, allow_null=True)
+#     vital_signs = MedRecordsVitalSignsSerializer(required=False, allow_null=True)
+#     appointment = MedRecordAppointmentSerializer(required=False, allow_null=True) 
     
-    hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
+#     hospital_info = HospitalBasicInfoSerializer(read_only=True, source="hospital")
     
-    history = serializers.ListField(child=serializers.CharField(), required=False)
-    physical_exam = serializers.ListField(child=serializers.CharField(), required=False)
-    diagnosis = serializers.ListField(child=serializers.CharField(), required=False)
-    treatment_plan = serializers.ListField(child=serializers.CharField(), required=False)
-    care_instructions = serializers.ListField(child=serializers.CharField(), required=False)
+#     history = serializers.ListField(child=serializers.CharField(), required=False)
+#     physical_exam = serializers.ListField(child=serializers.CharField(), required=False)
+#     diagnosis = serializers.ListField(child=serializers.CharField(), required=False)
+#     treatment_plan = serializers.ListField(child=serializers.CharField(), required=False)
+#     care_instructions = serializers.ListField(child=serializers.CharField(), required=False)
     
-    class Meta:
-        model = MedicalRecord
-        fields = '__all__'
-        read_only_fields = ('id', 'created_at', 'updated_at', 'hospital')
+#     class Meta:
+#         model = MedicalRecord
+#         fields = '__all__'
+#         read_only_fields = ('id', 'created_at', 'updated_at', 'hospital')
         
-    @transaction.atomic()
-    def create(self, validated_data):
-        user = self.context['request'].user
-        staff = user.hospital_staff_profile
+#     @transaction.atomic()
+#     def create(self, validated_data):
+#         user = self.context['request'].user
+#         staff = user.hospital_staff_profile
         
-        drug_records_data = validated_data.pop('drug_records', [])
-        attachments_data = validated_data.pop('attachments', [])
-        appointment_data = validated_data.pop('appointment', None)
-        vital_signs_data = validated_data.pop('vital_signs', None)
+#         drug_records_data = validated_data.pop('drug_records', [])
+#         attachments_data = validated_data.pop('attachments', [])
+#         appointment_data = validated_data.pop('appointment', None)
+#         vital_signs_data = validated_data.pop('vital_signs', None)
         
-        hospital = validated_data.get("hospital")
-        patient = validated_data.get('patient')
+#         hospital = validated_data.get("hospital")
+#         patient = validated_data.get('patient')
         
-        if vital_signs_data:
-            vital_signs = VitalSigns.objects.create(patient=patient, hospital=hospital, staff=staff, **vital_signs_data)
-            validated_data['vital_signs'] = vital_signs
+#         if vital_signs_data:
+#             vital_signs = VitalSigns.objects.create(patient=patient, hospital=hospital, staff=staff, **vital_signs_data)
+#             validated_data['vital_signs'] = vital_signs
         
-        medical_record = MedicalRecord.objects.create(**validated_data)
+#         medical_record = MedicalRecord.objects.create(**validated_data)
         
-        for drug_data in drug_records_data:
-            DrugRecord.objects.create(medical_record=medical_record, patient=patient, hospital=hospital, **drug_data)
+#         for drug_data in drug_records_data:
+#             DrugRecord.objects.create(medical_record=medical_record, patient=patient, hospital=hospital, **drug_data)
             
-        for attachment in attachments_data:
-            attachment.medical_record = medical_record
-            attachment.save()
+#         for attachment in attachments_data:
+#             attachment.medical_record = medical_record
+#             attachment.save()
             
-        if appointment_data:
-            Appointment.objects.create(patient=patient, medical_record=medical_record, hospital=hospital, **appointment_data) 
+#         if appointment_data:
+#             Appointment.objects.create(patient=patient, medical_record=medical_record, hospital=hospital, **appointment_data) 
             
-        return medical_record
+#         return medical_record
     
 class AdmissionSerializer(serializers.ModelSerializer):
     patient_hin = serializers.SlugRelatedField(slug_field="hin", source="patient", queryset=PatientProfile.objects.all(), write_only=True)
@@ -286,7 +286,7 @@ class SoapNoteAdditionalNotesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SoapNoteAdditionalNotes
-        fields = ['soap_note', 'note']
+        fields = ['soap_note', 'note', 'id', 'created_at']
         read_only_fields = ['id', 'created_at']
         
 
@@ -357,9 +357,11 @@ class MedicalSummarySerializer(serializers.ModelSerializer):
     appointment = RecordAppointmentSerializer(required=False, allow_null=True)
     drug_records = DrugRecordSerializer(many=True, required=True)
     
+    additional_notes = SoapNoteAdditionalNotesSerializer(many=True, required=False, read_only=True)
+    
     class Meta:
         model = SoapNote
-        fields = ['patient_info', 'staff_info', 'vital_signs_info', 'chief_complaint', 'primary_diagnosis', 'treatment_plan', 'care_instructions', 'drug_records', 'investigation_docs', 'appointment', 'hospital_info', 'created_at', 'id']
+        fields = ['patient_info', 'staff_info', 'vital_signs_info', 'chief_complaint', 'primary_diagnosis', 'treatment_plan', 'care_instructions', 'drug_records', 'investigation_docs', 'appointment', 'hospital_info', 'created_at', 'id', 'additional_notes']
         read_only_fields = ['id', 'created_at', 'hospital', 'investigation_docs']
     
 class DischargeFormSerializer(MultipartJsonMixin, serializers.ModelSerializer):

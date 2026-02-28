@@ -32,17 +32,15 @@ auth_urls = [
 ]
 
 medical_records_urls = [
-    # path('', CreateMedicalRecordView.as_view(), name='create-medical-records'),
-    # path('/upload-attachments', UploadMedicalRecordsAttachments.as_view(), name='medical-records-attachments'),
     path('/user-records', ListUserMedicalrecordsView.as_view(), name='patient-medical-records'),
     path('/all', MedicalRecordListView.as_view(), name='get-medical-records'),
-    
-    path('/soap-note', CreateSoapNoteView.as_view(), name='create-soap-note'),
-    path('/soap-note/<str:hin>', ListPatientSoapNotesView.as_view(), name='list-patient-soap-notes'),
     
     path('/discharge', DischargePatientView.as_view(), name='discharge-patient'),
     path('/discharge-form/<str:hin>', ListPatientDischargeFormsView.as_view(), name='list-patient-discharge-forms'),
     path('/soap-note/additional-notes', CreateSoapNoteAdditionalNotesView.as_view(), name='create-soap-note-additional-notes'),
+    
+    path('/soap-note/<str:hin>', ListPatientSoapNotesView.as_view(), name='list-patient-soap-notes'),
+    path('/soap-note', CreateSoapNoteView.as_view(), name='create-soap-note'),
 ]
 
 doctor_urls = [
