@@ -2,7 +2,7 @@ from django.utils.dateparse import parse_datetime
 
 import logging
 
-from .models import Subscription
+from .models import Subscription, Transaction
 from accounts.models import User
 
 from sentry_sdk import logger as sentry_logger
@@ -40,6 +40,14 @@ def handle_charge_success(data):
         subscription.status = Subscription.SubscriptionStatus.ACTIVE
         subscription.last_payment_date = parse_datetime(data.get("paid_at"))
         subscription.save(update_fields=['status', 'last_payment_date'])
+        
+        Transaction.objects.create(
+            user=user,
+            amount=data.get("amount") / 100, 
+            reference=data.get("reference"),
+            status=Transaction.Status.SUCCESS,
+            created_at=parse_datetime(data.get("paid_at"))
+        )
         
         print(subscription)
     except (User.DoesNotExist, Subscription.DoesNotExist) as e:

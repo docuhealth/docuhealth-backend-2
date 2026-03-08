@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import make_password
 from django.template.loader import render_to_string
 
 from rest_framework import generics, status, permissions
@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from docuhealth2.views import PublicGenericAPIView, BaseUserCreateView
-from docuhealth2.utils.supabase import delete_from_supabase, upload_files, upload_file_to_supabase
+from docuhealth2.utils.supabase import delete_from_supabase, upload_files
 from docuhealth2.utils.email_service import BrevoEmailService
 from docuhealth2.authentications import ClientHeaderAuthentication
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff, IsAuthenticatedPatient, IsAuthenticatedPharmacyPartner
@@ -40,7 +40,7 @@ class CreateHospitalView(PublicGenericAPIView, BaseUserCreateView):
         user = serializer.save(is_active=True)
         
         mailer.send(
-            subject="Verify your email",
+            subject="Welcome to Docuhealth Services!",
             body=(
                 f"Welcome to Docuhealth! \n\n"
                 f"You have successfully created your Docuhealth account. \n\n"
@@ -85,9 +85,9 @@ class ListCreateHospitalInquiryView(PublicGenericAPIView, generics.ListCreateAPI
         
         return Response({"detail": "Verification link sent successfully"}, status=status.HTTP_200_OK)
     
-@extend_schema(tags=["Hospital Onboarding"])
+@extend_schema(tags=["Hospital Onboarding"]) #TODO: Add permission class to only allow DH admin and hospital staff to view the list
 class ListCreateHospitalVerificationRequestView(PublicGenericAPIView, generics.ListCreateAPIView):
-    queryset = HospitalVerificationRequest.objects.all()
+    queryset = HospitalVerificationRequest.objects.all().order_by('-created_at')
     serializer_class = HospitalVerificationRequestSerializer
     parser_classes = [MultiPartParser, FormParser]
     
@@ -128,7 +128,7 @@ class ListCreateHospitalVerificationRequestView(PublicGenericAPIView, generics.L
         
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-@extend_schema(tags=["Hospital Onboarding"])
+@extend_schema(tags=["Hospital Onboarding"]) #TODO: Add permission class to only allow DH admin and hospital staff to view the list
 class ApproveVerificationRequestView(PublicGenericAPIView, generics.GenericAPIView):
     serializer_class = ApproveVerificationRequestSerializer
     
@@ -139,8 +139,8 @@ class ApproveVerificationRequestView(PublicGenericAPIView, generics.GenericAPIVi
         
         verification_request = serializer.validated_data.get("verification_request")
         redirect_url = serializer.validated_data.get("redirect_url")
-        print(redirect_url)
         
+        print(f"Verification Request: {verification_request}, Redirect URL: {redirect_url}")
         if verification_request.status != HospitalVerificationRequest.Status.PENDING:
             return Response({"detail": "This verification request has already been processed"}, status=status.HTTP_400_BAD_REQUEST)
         

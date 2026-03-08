@@ -52,10 +52,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         PHARMACY = 'pharmacy', 'Pharmacy'
         PHARMACY_PARTNER = 'pharmacy_partner', 'Pharmacy Partner'
     
-    email = models.EmailField(unique=True, blank=True, null=True)
-    role = models.CharField(max_length=20, choices=Role.choices)
+    email = models.EmailField(unique=True, blank=True, null=True, db_index=True)
+    role = models.CharField(max_length=20, choices=Role.choices, db_index=True)
     
-    created_at = models.DateTimeField(auto_now_add=True)  
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)  
     updated_at = models.DateTimeField(auto_now=True)
     
     is_active = models.BooleanField(default=False)

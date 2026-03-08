@@ -34,13 +34,12 @@ INSTALLED_APPS = [
     'drf_spectacular',
     "corsheaders",
     
-    "management",
-    
     'accounts',
     'records',
     'organizations',
     'hospital_ops',
     'facility',
+    'admin'
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -133,7 +132,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")

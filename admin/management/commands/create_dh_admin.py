@@ -21,7 +21,7 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                user = User.objects.create_user(
+                user = User.objects.create(
                     email=email,
                     password=password,
                     role=User.Role.DHADMIN,  # Your specific role string

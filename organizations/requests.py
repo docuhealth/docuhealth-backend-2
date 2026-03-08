@@ -15,7 +15,6 @@ headers = {
 base_url = "https://api.paystack.co/"
 
 def send_paystack_request(method, url, payload=None):
-        # print(f'{base_url}{url}')
         response = requests.request(method, f'{base_url}{url}', json=payload, headers=headers)
         return response
     

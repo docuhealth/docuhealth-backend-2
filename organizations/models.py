@@ -186,6 +186,19 @@ class Subscription(BaseModel):
     def __str__(self):
         return f"{self.user.email} - {self.plan.name}"
     
+class Transaction(BaseModel):
+    class Status(models.TextChoices):
+        SUCCESS = 'success', 'Success'
+        FAILED = 'failed', 'Failed'
+        ABANDONED = 'abandoned', 'Abandoned'
+        REVERSED = 'reversed', 'Reversed'
+        PENDING = 'pending', 'Pending'
+        
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="transactions")
+    amount = models.FloatField()
+    reference = models.CharField(max_length=255, unique=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    
 class PaystackCustomer(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="paystack_customer")
     customer_code = models.CharField(max_length=200, blank=True, null=True)
