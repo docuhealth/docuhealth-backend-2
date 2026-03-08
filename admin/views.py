@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Count, Sum, Q,  Value, F
 from django.db.models.functions import TruncMonth, Coalesce
 from django.utils import timezone
@@ -5,13 +6,14 @@ from django.utils.dateparse import parse_date
 
 from datetime import timedelta
 
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from organizations.models import Transaction, Subscription
-from accounts.models import User
-from .serializers import AdminDashboardSerializer
+from organizations.models import Transaction, Subscription, HospitalProfile
+from accounts.models import User, PatientProfile, HospitalStaffProfile, SubaccountProfile
+
+from .serializers import AdminDashboardSerializer, PatientInfoSerializer, HospitalInfoSerializer, DeactivateUsersSerializer
 
 from docuhealth2.permissions import IsAuthenticatedDHAdmin
 
@@ -138,3 +140,213 @@ class AdminDashboard(APIView): # TODO: Cache results for efficiency
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["DH Admin"], summary="Get users by role (patient, hospital)")
+class ListUsersView(generics.ListAPIView):
+    permission_classes = [IsAuthenticatedDHAdmin]
+    
+    def get_serializer(self, *args, **kwargs):
+        role = self.kwargs.get("role")
+        
+        if role == User.Role.PATIENT:
+            return PatientInfoSerializer(*args, **kwargs)
+        
+        elif role == User.Role.HOSPITAL:
+            return HospitalInfoSerializer(*args, **kwargs)
+        
+    def get_queryset(self):
+        role = self.kwargs.get("role")
+        
+        if role == User.Role.PATIENT:
+            return PatientProfile.objects.all().select_related('user').order_by("-created_at")
+        
+        elif role == User.Role.HOSPITAL:
+            return HospitalProfile.objects.all().select_related('user').annotate(
+                doctor_count=Count('staff', filter=Q(staff__role=HospitalStaffProfile.StaffRole.DOCTOR)),
+                staff_count=Count('staff', filter=~Q(staff__role=HospitalStaffProfile.StaffRole.DOCTOR))
+            ).order_by("-created_at")
+                 
+        else:
+            return User.objects.none()
+
+@extend_schema(tags=["DH Admin"])
+class DeactivateHospitalView(generics.GenericAPIView):
+    serializer_class = DeactivateUsersSerializer
+    permission_classes = [IsAuthenticatedDHAdmin]
+    
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        hins = serializer.validated_data.get("hins")
+
+        hospitals = HospitalProfile.objects.filter(hin__in=hins)
+        
+        found_hins = set(hospitals.values_list("hin", flat=True))
+        missing = set(hins) - found_hins
+        
+        if missing:
+            return Response({
+                "hins": [f"Invalid or unauthorized HINs: {', '.join(map(str, missing))}"]
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        hospital_user_ids = list(hospitals.values_list("user_id", flat=True))
+        staff_user_ids = list(HospitalStaffProfile.objects.filter(
+            hospital__in=hospitals
+        ).values_list("user_id", flat=True))
+        
+        all_ids_to_deactivate = set(hospital_user_ids + staff_user_ids)
+
+        updated_count = User.objects.filter(
+            id__in=all_ids_to_deactivate, 
+            is_active=True
+        ).update(is_active=False)
+
+        if updated_count == 0:
+            return Response(
+                {"message": "No changes detected. All associated accounts were already inactive."},
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            {
+                "message": f"Successfully deactivated {len(hospital_user_ids)} hospital(s) and their associated staff.",
+                "total_accounts_affected": updated_count
+            },
+            status=status.HTTP_200_OK
+        ) 
+        
+@extend_schema(tags=["DH Admin"])
+class DeactivatePatientsView(generics.GenericAPIView):
+    serializer_class = DeactivateUsersSerializer
+    permission_classes = [IsAuthenticatedDHAdmin]
+    
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        hins = serializer.validated_data.get("hins")
+
+        patients = PatientProfile.objects.filter(hin__in=hins)
+        
+        found_hins = set(patients.values_list("hin", flat=True))
+        missing = set(hins) - found_hins
+        
+        if missing:
+            return Response({
+                "hins": [f"Invalid HINs: {', '.join(map(str, missing))}"]
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        patient_user_ids = list(patients.values_list("user_id", flat=True))
+        
+        subaccount_user_ids = list(SubaccountProfile.objects.filter(
+            parent__in=patients
+        ).values_list("user_id", flat=True))
+        
+        all_ids_to_deactivate = set(patient_user_ids + subaccount_user_ids)
+
+        updated_count = User.objects.filter(
+            id__in=all_ids_to_deactivate, 
+            is_active=True
+        ).update(is_active=False)
+
+        if updated_count == 0:
+            return Response(
+                {"message": "No changes detected. Accounts were already inactive."},
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            {
+                "message": f"Successfully deactivated {len(patient_user_ids)} primary account(s) and their linked sub-accounts.",
+                "total_affected": updated_count
+            }, 
+            status=status.HTTP_200_OK
+        )
+
+@extend_schema(tags=["DH Admin"], summary="Reactivate hospitals and their associated staff")
+class ReactivateHospitalView(generics.GenericAPIView):
+    serializer_class = DeactivateUsersSerializer
+    permission_classes = [IsAuthenticatedDHAdmin]
+    
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        hins = serializer.validated_data.get("hins")
+
+        hospitals = HospitalProfile.objects.filter(hin__in=hins)
+        
+        found_hins = set(hospitals.values_list("hin", flat=True))
+        missing = set(hins) - found_hins
+        
+        if missing:
+            return Response({
+                "hins": [f"Invalid HINs: {', '.join(map(str, missing))}"]
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        hospital_user_ids = list(hospitals.values_list("user_id", flat=True))
+        staff_user_ids = list(HospitalStaffProfile.objects.filter(
+            hospital__in=hospitals
+        ).values_list("user_id", flat=True))
+        
+        all_ids_to_reactivate = set(hospital_user_ids + staff_user_ids)
+
+        updated_count = User.objects.filter(
+            id__in=all_ids_to_reactivate, 
+            is_active=False
+        ).update(is_active=True)
+
+        return Response(
+            {
+                "message": f"Successfully reactivated {len(hospital_user_ids)} hospital(s) and associated staff.",
+                "total_accounts_affected": updated_count
+            },
+            status=status.HTTP_200_OK
+        )
+        
+@extend_schema(tags=["DH Admin"], summary="Reactivate patients and their linked sub-accounts")
+class ReactivatePatientsView(generics.GenericAPIView):
+    serializer_class = DeactivateUsersSerializer
+    permission_classes = [IsAuthenticatedDHAdmin]
+    
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        hins = serializer.validated_data.get("hins")
+
+        patients = PatientProfile.objects.filter(hin__in=hins)
+        
+        found_hins = set(patients.values_list("hin", flat=True))
+        missing = set(hins) - found_hins
+        
+        if missing:
+            return Response({
+                "hins": [f"Invalid HINs: {', '.join(map(str, missing))}"]
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        patient_user_ids = list(patients.values_list("user_id", flat=True))
+        subaccount_user_ids = list(SubaccountProfile.objects.filter(
+            parent__in=patients
+        ).values_list("user_id", flat=True))
+        
+        all_ids_to_reactivate = set(patient_user_ids + subaccount_user_ids)
+
+        updated_count = User.objects.filter(
+            id__in=all_ids_to_reactivate, 
+            is_active=False
+        ).update(is_active=True)
+
+        return Response(
+            {
+                "message": f"Successfully reactivated {len(patient_user_ids)} primary account(s) and linked sub-accounts.",
+                "total_affected": updated_count
+            }, 
+            status=status.HTTP_200_OK
+        )

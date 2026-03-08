@@ -146,7 +146,7 @@ class UserProfileImage(models.Model):
 
 class PatientProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="patient_profile")
-    hin = models.CharField(max_length=20, unique=True)
+    hin = models.CharField(max_length=20, unique=True, db_index=True)
     
     dob = models.DateField()
     gender = models.CharField(choices=Gender.choices)
@@ -214,7 +214,7 @@ class NINVerificationAttempt(models.Model):
 class SubaccountProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subaccount_profile")
     parent = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="subaccounts", null=True, blank=True)
-    hin = models.CharField(max_length=20, unique=True)
+    hin = models.CharField(max_length=20, unique=True, db_index=True)
     
     firstname = models.CharField(max_length=100)
     lastname = models.CharField(max_length=100)

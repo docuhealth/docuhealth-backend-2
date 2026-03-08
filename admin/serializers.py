@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from accounts.models import PatientProfile, HospitalStaffProfile
+from organizations.models import HospitalProfile
 
 class SummarySerializer(serializers.Serializer):
     total_users = serializers.IntegerField(help_text="Total active hospitals and patients.")
@@ -29,3 +31,31 @@ class ChartsSerializer(serializers.Serializer):
 class AdminDashboardSerializer(serializers.Serializer):
     summary = SummarySerializer()
     charts = ChartsSerializer()
+    
+class PatientInfoSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source="full_name", read_only=True)
+    email = serializers.EmailField(source="user.email", read_only=True)
+    is_active = serializers.BooleanField(source="user.is_active", read_only=True)
+    
+    class Meta:
+        model= PatientProfile
+        fields= ["full_name", "email", "phone_num", "dob", "gender", "hin", 'is_active']
+        
+class HospitalInfoSerializer(serializers.ModelSerializer):
+    address = serializers.SerializerMethodField()
+    email = serializers.EmailField(source="user.email", read_only=True)
+    is_active = serializers.BooleanField(source="user.is_active", read_only=True)
+    
+    doctors = serializers.IntegerField(source="doctor_count", read_only=True)
+    other_personnel = serializers.IntegerField(source="staff_count", read_only=True)
+    
+    def get_address(self, obj):
+        return f"{obj.street}, {obj.city}, {obj.state}, {obj.country}"
+    
+    
+    class Meta:
+        model= HospitalProfile
+        fields= ["name", "profile_image", "address", "email", "doctors", "other_personnel", "is_active", "hin"]
+        
+class DeactivateUsersSerializer(serializers.Serializer):
+    hins = serializers.ListField(child=serializers.CharField(), allow_empty=False, required=True)
