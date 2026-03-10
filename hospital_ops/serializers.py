@@ -9,13 +9,12 @@ from organizations.serializers import HospitalBasicInfoSerializer
 from organizations.models import HospitalProfile
 
 from facility.models import HospitalWard, WardBed
-from facility.serializers import WardBedSerializer, WardNameSerializer
 
 from records.models import Admission
 # from records.serializers import AdmissionSerializer
 
 class HospitalAppointmentSerializer(serializers.ModelSerializer):
-    last_visited = serializers.SerializerMethodField(read_only=True)
+    last_visited = serializers.DateTimeField(read_only=True)
     staff = HospitalStaffBasicInfoSerializer(read_only=True)
     patient = PatientFullInfoSerializer(read_only=True)
     
@@ -26,9 +25,6 @@ class HospitalAppointmentSerializer(serializers.ModelSerializer):
         fields = ['id', 'status', 'scheduled_time', 'staff', 'patient', 'last_visited', 'note', 'type', 'hospital_info']
         read_only_fields = fields
         
-    def get_last_visited(self, obj):
-        return getattr(obj, 'last_visited', None)
-    
 class HospitalActivitySerializer(serializers.ModelSerializer):
     staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.all(), write_only=True)
     staff = HospitalStaffBasicInfoSerializer(read_only=True)

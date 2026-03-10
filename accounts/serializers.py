@@ -324,12 +324,11 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer): # TODO: Work on 
         
         return subaccount_user
     
-class GeneratePatientIDCardSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source="patient.full_name", read_only=True)
+class PatientIDCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = IdCard
-        fields = ["first_emergencey_number", "second_emergencey_number", "emergence_address", "full_name"]
-        read_only_fields = ['hin']
+        fields = ["first_emergencey_number", "second_emergencey_number", "emergence_address"]
+        read_only_fields = ['created_at']
         
 class GenerateSubaccountIDCardSerializer(serializers.ModelSerializer):
     class Meta:
@@ -416,12 +415,13 @@ class HospitalStaffBasicInfoSerializer(serializers.ModelSerializer):
 class PatientDashboardInfoSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
     is_subscribed = serializers.SerializerMethodField()
+    id_card = PatientIDCardSerializer(read_only=True)
 
     class Meta:
         model = PatientProfile
         fields = [
             "firstname", "lastname", "middlename", "hin", "dob", 
-            "id_card_generated", "email", "phone_num", "emergency", "is_subscribed"
+            "id_card_generated", "id_card", "email", "phone_num", "emergency", "is_subscribed"
         ]
 
     def get_is_subscribed(self, obj):

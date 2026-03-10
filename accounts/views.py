@@ -14,7 +14,7 @@ from rest_framework.exceptions import NotFound
 from drf_spectacular.utils import extend_schema
 
 from .models import User, OTP, UserProfileImage, NINVerificationAttempt, PatientProfile, SubaccountProfile, HospitalStaffProfile, EmailChange
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, GeneratePatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, DeactivateTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer, PatientDashboardInfoSerializer
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, DeactivateTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer, PatientDashboardInfoSerializer
 
 from .requests import verify_nin_request
 from .utils import *
@@ -478,7 +478,7 @@ class PatientDashboardView(generics.GenericAPIView):
         profile = user.patient_profile 
 
         queryset = SoapNote.objects.filter(patient=profile).select_related(
-            "patient", "hospital", "vital_signs", "staff", "appointment").prefetch_related("drug_records",).order_by("-created_at")
+            "patient", "hospital", "vital_signs", "staff", "appointment").prefetch_related("drug_records", "additional_notes").order_by("-created_at")
         
         page = self.paginate_queryset(queryset)
         records_serializer = self.get_serializer(page, many=True)
@@ -543,7 +543,7 @@ class DeletePatientAccountView(generics.DestroyAPIView):
         
 @extend_schema(tags=['Patient'])
 class GeneratePatientIdCard(generics.CreateAPIView):
-    serializer_class = GeneratePatientIDCardSerializer
+    serializer_class = PatientIDCardSerializer
     permission_classes = [IsAuthenticatedPatient]
     
     @transaction.atomic

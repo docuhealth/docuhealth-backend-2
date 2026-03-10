@@ -4,7 +4,7 @@ from accounts.views import DeactivateTeamMembersView, LoginView, CustomTokenRefr
 
 from records.views import MedicalRecordListView, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView, ListPatientDrugRecordsView, CreateSoapNoteView, ListPatientSoapNotesView, DischargePatientView, ListPatientDischargeFormsView, CreateSoapNoteAdditionalNotesView, ListPatientVitalSignsView
 
-from hospital_ops.views import ListAllAppointmentsView, ListStaffAppointmentsView, AssignAppointmentToDoctorView, HandOverNurseShiftView, ListPatientAppointmentsView, BookAppointmentView, ListUpcomingAppointmentsView, ListRecentPatientsView, TransferPatientToWardView
+from hospital_ops.views import ListAllAppointmentsView, ListStaffAppointmentsView, AssignAppointmentToDoctorView, HandOverNurseShiftView, ListPatientAppointmentsView, BookAppointmentView, ListUpcomingAppointmentsView, ListRecentPatientsView, TransferPatientToWardView, ListStaffUpcomingAppointmentsView, ListStaffAppointmentHistoryView
 
 from organizations.views import CreateHospitalView, ListHospitalsView, ListCreateHospitalInquiryView, ListCreateHospitalVerificationRequestView, ApproveVerificationRequestView,  GetHospitalInfo, ListCreateSubscriptionPlanView, CreateSubscriptionView, ListSubscriptionPlansByRoleView
 
@@ -47,7 +47,9 @@ doctor_urls = [
     path('/dashboard', DoctorDashboardView.as_view(), name='doctor-dashboard'),
     
     path('/vital-signs/request', RequestVitalSignsView.as_view(), name='request-vital-signs'),
-    path('/appointments', ListStaffAppointmentsView.as_view(), name='appointments'),
+    
+    path('/appointments/upcoming', ListStaffUpcomingAppointmentsView.as_view(), name='appointments'),
+    path('/appointments/history', ListStaffAppointmentHistoryView.as_view(), name='appointments'),
     
     path('/patient/info/<str:hin>', RetrievePatientInfoView.as_view(), name='retrieve-patient-info'),
     path('/patient/records/<str:hin>', ListPatientMedicalRecordsView.as_view(), name='list-patient-medical-records'),
@@ -95,7 +97,8 @@ nurse_urls = [
     path('/vital-signs/process', ProcessVitalSignsRequestView.as_view(), name='process-vital-signs-requests'),
     path('/vital-signs/update', UpdatePatientVitalSignsView.as_view(), name='update-patient-vital-signs'),
     
-    path('/appointments', ListStaffAppointmentsView.as_view(), name='get-appointments'),
+    path('/appointments/upcoming', ListStaffUpcomingAppointmentsView.as_view(), name='get-appointments'),
+    path('/appointments/history', ListStaffAppointmentHistoryView.as_view(), name='get-appointments'),
     path('/appointments/<int:pk>/assign', AssignAppointmentToDoctorView.as_view(), name='assign-appointment'),
     
     path('/handover', HandOverNurseShiftView.as_view(), name='handover-nurse-shift'),

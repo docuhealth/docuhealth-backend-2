@@ -1,5 +1,6 @@
 from django.db import transaction
-from django.db.models import OuterRef, Subquery
+from django.db.models import OuterRef, Subquery, Q
+from django.utils import timezone
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -23,7 +24,6 @@ class ListAllAppointmentsView(generics.ListAPIView):
     serializer_class = HospitalAppointmentSerializer
     permission_classes = [IsAuthenticatedHospitalAdmin | IsAuthenticatedHospitalStaff]
     
-    
     def get_queryset(self):
         user = self.request.user
         
@@ -45,9 +45,12 @@ class ListStaffAppointmentsView(generics.ListAPIView):
     serializer_class = HospitalAppointmentSerializer
     permission_classes = [IsAuthenticatedNurse | IsAuthenticatedDoctor]
     
-    # @transaction.atomic
     def get_queryset(self):
-        staff = self.request.user.hospital_staff_profile
+        user = self.request.user
+        if not hasattr(user, 'hospital_staff_profile'):
+            return Appointment.objects.none()
+        
+        staff = user.hospital_staff_profile
         
         last_appointment_subquery = Appointment.objects.filter(
             patient=OuterRef('patient'),
@@ -56,6 +59,65 @@ class ListStaffAppointmentsView(generics.ListAPIView):
         ).order_by('-scheduled_time').values('scheduled_time')[:1]
         
         return Appointment.objects.filter(staff=staff, status=Appointment.Status.PENDING).select_related('staff', 'patient', 'patient__user', 'hospital').annotate(last_visited=Subquery(last_appointment_subquery)).order_by('-scheduled_time')
+
+@extend_schema(tags=["Nurse", "Doctor"], summary="List upcoming appointments assigned to this staff")
+class ListStaffUpcomingAppointmentsView(generics.ListAPIView):
+    serializer_class = HospitalAppointmentSerializer
+    permission_classes = [IsAuthenticatedNurse | IsAuthenticatedDoctor]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not hasattr(user, 'hospital_staff_profile'):
+            return Appointment.objects.none()
+            
+        staff = user.hospital_staff_profile
+        now = timezone.now()
+        
+        last_appointment_subquery = Appointment.objects.filter(
+            patient=OuterRef('patient'),
+            status=Appointment.Status.COMPLETED,
+            scheduled_time__lt=OuterRef('scheduled_time')
+        ).order_by('-scheduled_time').values('scheduled_time')[:1]
+
+        return Appointment.objects.filter(
+            staff=staff,
+            scheduled_time__gte=now,
+            status=Appointment.Status.PENDING
+        ).select_related(
+            'staff', 'patient', 'patient__user', 'hospital'
+        ).annotate(
+            last_visited=Subquery(last_appointment_subquery) 
+        ).order_by('scheduled_time')
+    
+@extend_schema(tags=["Nurse", "Doctor"], summary="List past appointments assigned to this staff")
+class ListStaffAppointmentHistoryView(generics.ListAPIView):
+    serializer_class = HospitalAppointmentSerializer
+    permission_classes = [IsAuthenticatedNurse | IsAuthenticatedDoctor]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not hasattr(user, 'hospital_staff_profile'):
+            return Appointment.objects.none()
+            
+        staff = user.hospital_staff_profile
+        now = timezone.now()
+
+        last_appointment_subquery = Appointment.objects.filter(
+            patient=OuterRef('patient'),
+            status=Appointment.Status.COMPLETED,
+            scheduled_time__lt=OuterRef('scheduled_time')
+        ).order_by('-scheduled_time').values('scheduled_time')[:1]
+        
+        return Appointment.objects.filter(
+            staff=staff
+        ).filter(
+            Q(scheduled_time__lt=now) | 
+            Q(status__in=[Appointment.Status.COMPLETED, Appointment.Status.CANCELLED])
+        ).select_related(
+            'staff', 'patient', 'patient__user', 'hospital'
+        ).annotate(
+            last_visited=Subquery(last_appointment_subquery)
+        ).order_by('-scheduled_time')
     
 @extend_schema(tags=["Nurse"], summary="Assign appointment to a doctor")
 class AssignAppointmentToDoctorView(generics.UpdateAPIView):
