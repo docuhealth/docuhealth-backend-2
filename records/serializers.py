@@ -28,7 +28,7 @@ class VitalSignsRequestSerializer(serializers.ModelSerializer):
     patient = PatientFullInfoSerializer(read_only=True)
     
     staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.StaffRole.NURSE), write_only=True)
-    staff = HospitalStaffInfoSerilizer(read_only=True)
+    # staff = HospitalStaffInfoSerilizer(read_only=True)
     
     class Meta:
         model = VitalSignsRequest
@@ -68,16 +68,12 @@ class VitalSignsSerializer(serializers.ModelSerializer):
     staff = serializers.SlugRelatedField(slug_field="staff_id", queryset=HospitalStaffProfile.objects.all(), write_only=True)
     staff_info = HospitalStaffBasicInfoSerializer(read_only=True, source="staff")
     
-    last_updated = serializers.SerializerMethodField(read_only=True)
+    last_updated = serializers.DateTimeField(read_only=True)
     
     class Meta:
         model = VitalSigns
         exclude = ['is_deleted', 'deleted_at']
         read_only_fields = ['hospital', 'created_at']
-        
-    def get_last_updated(self, obj):
-        last_vital_signs = VitalSigns.objects.filter(patient=obj.patient, created_at__lt=obj.created_at).order_by('-created_at').first()
-        return last_vital_signs.created_at if last_vital_signs else None
         
 class MedRecordsVitalSignsSerializer(serializers.ModelSerializer):
     class Meta:

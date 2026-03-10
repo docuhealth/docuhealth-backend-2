@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Window, F
+from django.db.models.functions import Lag
 from django.shortcuts import get_object_or_404
 
 from rest_framework import generics
@@ -122,12 +123,28 @@ class UpdatePatientVitalSignsView(generics.CreateAPIView):
     serializer_class = VitalSignsSerializer
     permission_classes = [IsAuthenticatedNurse]
     
-    @transaction.atomic()
     def perform_create(self, serializer):
         staff = self.request.user.hospital_staff_profile
         hospital = staff.hospital
         
         serializer.save(staff=staff, hospital=hospital)
+        
+@extend_schema(tags=["Nurse"], summary="List patient vital signs")
+class ListPatientVitalSignsView(generics.ListAPIView):
+    serializer_class = VitalSignsSerializer
+    permission_classes = [IsAuthenticatedNurse]
+    
+    def get_queryset(self):
+        hin = self.kwargs.get("patient_hin")
+        patient = get_object_or_404(PatientProfile, hin=hin)
+        
+        return VitalSigns.objects.filter(patient=patient).annotate(
+            last_updated=Window(
+                expression=Lag('created_at'),
+                partition_by=[F('patient')],
+                order_by=F('created_at').asc()
+            )
+        ).select_related("staff", "patient").order_by("-created_at")
         
 @extend_schema(tags=["Doctor"])
 class RequestVitalSignsView(generics.CreateAPIView):
