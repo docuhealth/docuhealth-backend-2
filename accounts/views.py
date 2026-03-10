@@ -14,10 +14,11 @@ from rest_framework.exceptions import NotFound
 from drf_spectacular.utils import extend_schema
 
 from .models import User, OTP, UserProfileImage, NINVerificationAttempt, PatientProfile, SubaccountProfile, HospitalStaffProfile, EmailChange
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, DeactivateTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer, PatientDashboardInfoSerializer
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, DeactivateTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer, PatientDashboardInfoSerializer, RemoveBrandingSerializer
 
 from .requests import verify_nin_request
 from .utils import *
+from sentry_sdk import logger as sentry_logger
 
 from docuhealth2.permissions import IsAuthenticatedHospitalAdmin, IsAuthenticatedHospitalStaff
 from docuhealth2.views import PublicGenericAPIView
@@ -420,7 +421,7 @@ class UpdateHospitalAdminProfileView(generics.UpdateAPIView):
                 try:
                     if path: delete_from_supabase(path)
                 except Exception as e:
-                    print(f"Cleanup Error for {path}: {e}")
+                    sentry_logger.error(f"Cleanup Error for {path}: {e}")
 
             return Response(self.get_serializer(updated_instance).data, status=status.HTTP_200_OK)
 
@@ -429,6 +430,44 @@ class UpdateHospitalAdminProfileView(generics.UpdateAPIView):
                 delete_from_supabase(path)
             
             return Response({"error": f"Update failed - {str(e)}"}, status=500)
+        
+@extend_schema(tags=["Auth"], summary="Remove hospital branding elements")
+class RemoveHospitalBrandingView(generics.GenericAPIView):
+    serializer_class = RemoveBrandingSerializer
+    permission_classes = [IsAuthenticatedHospitalAdmin]
+
+    def get_object(self):
+        return self.request.user.hospital_profile
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        fields_to_remove = serializer.validated_data['fields']
+        removed_items = []
+
+        for field in fields_to_remove:
+            if field in ["bg_image", "profile_image"]:
+                image_data = getattr(instance, field)
+                if image_data and isinstance(image_data, dict):
+                    path = image_data.get("path")
+                    if path:
+                        try:
+                            delete_from_supabase(path)
+                        except Exception as e:
+                            sentry_logger.error(f"Cleanup Error: {e}") 
+
+            setattr(instance, field, None)
+            removed_items.append(field)
+
+        instance.save(update_fields=removed_items)
+        
+        return Response({
+            "message": f"Successfully removed: {', '.join(removed_items)}",
+            "profile": UpdateHospitalAdminProfileSerializer(instance).data
+        }, status=status.HTTP_200_OK)
         
 @extend_schema(tags=["Patient"], summary="Patient sign up")
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):

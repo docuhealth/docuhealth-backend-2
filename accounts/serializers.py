@@ -136,6 +136,13 @@ class UpdateHospitalAdminProfileSerializer(StrictFieldsMixin, serializers.ModelS
         class Meta:
             model = HospitalProfile
             fields = ['name', 'bg_image', "theme_color", "profile_image"]
+            
+class RemoveBrandingSerializer(serializers.Serializer):
+    fields = serializers.ListField(
+        child=serializers.ChoiceField(choices=['bg_image', 'profile_image', 'theme_color']),
+        allow_empty=False,
+        help_text="List of fields to remove/reset to null."
+    )
     
 class PatientFullInfoSerializer(serializers.ModelSerializer):
     house_no = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=10)

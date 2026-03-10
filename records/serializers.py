@@ -28,7 +28,7 @@ class VitalSignsRequestSerializer(serializers.ModelSerializer):
     patient = PatientFullInfoSerializer(read_only=True)
     
     staff_id = serializers.SlugRelatedField(slug_field="staff_id", source="staff", queryset=HospitalStaffProfile.objects.filter(role=HospitalStaffProfile.StaffRole.NURSE), write_only=True)
-    # staff = HospitalStaffInfoSerilizer(read_only=True)
+    staff = HospitalStaffBasicInfoSerializer(read_only=True)
     
     class Meta:
         model = VitalSignsRequest

@@ -228,9 +228,3 @@ class RotatePharmacyCodeSerializer(serializers.Serializer):
             
         return validated_data
     
-# class UpdateHospitalThemeSerializer(StrictFieldsMixin, serializers.ModelSerializer):
-    
-    
-#     class Meta:
-#         model = HospitalProfile
-#         fields = []

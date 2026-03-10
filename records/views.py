@@ -52,30 +52,6 @@ class ListUserMedicalrecordsView(generics.ListAPIView):
         
         return SoapNote.objects.none()
 
-# @extend_schema(tags=["Medical records"])      
-# class UploadMedicalRecordsAttachments(generics.CreateAPIView):
-#     queryset = MedicalRecordAttachment.objects.all()
-#     serializer_class = MedicalRecordAttachmentSerializer
-#     parser_classes = [MultiPartParser, FormParser]
-#     # permission_classes = [IsAuthenticatedHospital]  
-    
-#     def create(self, request, *args, **kwargs):
-#         files = request.FILES.getlist("files")  
-#         attachments = []
-
-#         for file in files:
-#             # get file size in mb and pass to the serializer
-#             file_size = file.size / (1024 * 1024)
-#             print(file_size)
-            
-#             serializer = self.get_serializer(data={"file": file, "filename": file.name, "file_size": file_size})
-#             serializer.is_valid(raise_exception=True)
-#             attachment = serializer.save()
-#             attachments.append(serializer.data)
-            
-#         attachment_ids = [attachment['id'] for attachment in attachments]
-#         return Response(attachment_ids, status=status.HTTP_201_CREATED)
-    
 @extend_schema(tags=["Doctor"], summary="Get patients medical records")
 class ListPatientMedicalRecordsView(generics.ListAPIView):
     serializer_class = MedicalSummarySerializer
@@ -136,6 +112,7 @@ class ListPatientVitalSignsView(generics.ListAPIView):
     
     def get_queryset(self):
         hin = self.kwargs.get("patient_hin")
+        print(hin)
         patient = get_object_or_404(PatientProfile, hin=hin)
         
         return VitalSigns.objects.filter(patient=patient).annotate(

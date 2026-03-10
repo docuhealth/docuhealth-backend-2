@@ -1,6 +1,6 @@
 from django.urls import path
 
-from accounts.views import DeactivateTeamMembersView, LoginView, CustomTokenRefreshView, ForgotPassword, VerifyForgotPasswordOTPView, ResetPasswordView, ListUserView, VerifySignupOTPView, UpdatePasswordView, VerifyUserNINView, DoctorDashboardView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, PatientDashboardView, CreatePatientView, UpdatePatientView, DeletePatientAccountView, ListCreateSubaccountView, UpgradeSubaccountView, ToggleEmergencyView, GeneratePatientIdCard, GenerateSubaccountIdCard, NurseDashboardView, ReceptionistDashboardView, GetPatientDetailsView, GetStaffByRoleView, ReceptionistCreatePatientView, SendEmailOTPView, VerifyEmailOTPView, UpdateProfileView, UpdateHospitalAdminProfileView
+from accounts.views import DeactivateTeamMembersView, LoginView, CustomTokenRefreshView, ForgotPassword, VerifyForgotPasswordOTPView, ResetPasswordView, ListUserView, VerifySignupOTPView, UpdatePasswordView, VerifyUserNINView, DoctorDashboardView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, PatientDashboardView, CreatePatientView, UpdatePatientView, DeletePatientAccountView, ListCreateSubaccountView, UpgradeSubaccountView, ToggleEmergencyView, GeneratePatientIdCard, GenerateSubaccountIdCard, NurseDashboardView, ReceptionistDashboardView, GetPatientDetailsView, GetStaffByRoleView, ReceptionistCreatePatientView, SendEmailOTPView, VerifyEmailOTPView, UpdateProfileView, UpdateHospitalAdminProfileView, RemoveHospitalBrandingView
 
 from records.views import MedicalRecordListView, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView, ListPatientDrugRecordsView, CreateSoapNoteView, ListPatientSoapNotesView, DischargePatientView, ListPatientDischargeFormsView, CreateSoapNoteAdditionalNotesView, ListPatientVitalSignsView
 
@@ -68,6 +68,8 @@ hospital_urls = [
     path('/verification-request', ListCreateHospitalVerificationRequestView.as_view(), name='list-create-verification-request'),
     path('/approve-verification', ApproveVerificationRequestView.as_view(), name='approve-verification-request'),
     
+    path('/remove-branding', RemoveHospitalBrandingView.as_view(), name='remove-branding'),
+    
     path('/team-member', TeamMemberCreateView.as_view(), name='create-team-member'),
     path('/team-members', TeamMemberListView.as_view(), name='list-team-member'),
     path('/team-members/remove', RemoveTeamMembersView.as_view(), name='remove-team-member'),
@@ -83,6 +85,7 @@ hospital_urls = [
     
     path('/admissions/<str:status>', ListAdmittedPatientsByStatusView.as_view(), name='list-admitted-patients-by-status'),
     path('/admissions/<str:admission_id>/confirm', ConfirmAdmissionView.as_view(), name='confirm-admission-requests'),
+    
     
 ]
 
