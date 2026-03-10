@@ -170,7 +170,7 @@ class ListUsersView(generics.ListAPIView):
         else:
             return User.objects.none()
 
-@extend_schema(tags=["DH Admin"])
+@extend_schema(tags=["DH Admin"]) # TODO: Send emails to affected hospitals and patients
 class DeactivateHospitalView(generics.GenericAPIView):
     serializer_class = DeactivateUsersSerializer
     permission_classes = [IsAuthenticatedDHAdmin]

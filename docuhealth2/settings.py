@@ -221,8 +221,8 @@ if SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration(), sentry_logging],
-        traces_sample_rate=0.5, 
-        profiles_sample_rate=0.5, 
+        traces_sample_rate=0.1, 
+        profiles_sample_rate=0.1, 
         send_default_pii=True, 
         enable_logs=True,
         environment=os.environ.get("ENVIRONMENT", "production"),

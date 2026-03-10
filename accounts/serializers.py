@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from docuhealth2.mixins import StrictFieldsMixin
 
-from .models import EmailChange, User, OTP, UserProfileImage, PatientProfile, SubaccountProfile, HospitalStaffProfile
+from .models import EmailChange, User, OTP, UserProfileImage, PatientProfile, SubaccountProfile, HospitalStaffProfile, IdCard
 
 from facility.models import HospitalWard
 from facility.serializers import WardNameSerializer
@@ -261,7 +261,7 @@ class CreateSubaccountSerializer(serializers.ModelSerializer):
             
         return super().create(validated_data)
         
-class UpgradeSubaccountSerializer(serializers.ModelSerializer):
+class UpgradeSubaccountSerializer(serializers.ModelSerializer): # TODO: Work on this
     subaccount = serializers.SlugRelatedField(slug_field="hin", queryset=SubaccountProfile.objects.all(), write_only=True)
     
     phone_num = serializers.CharField(required=True, write_only=True)
@@ -325,9 +325,10 @@ class UpgradeSubaccountSerializer(serializers.ModelSerializer):
         return subaccount_user
     
 class GeneratePatientIDCardSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source="patient.full_name", read_only=True)
     class Meta:
-        model = PatientProfile
-        fields = ['hin', 'id_card_generated']
+        model = IdCard
+        fields = ["first_emergencey_number", "second_emergencey_number", "emergence_address", "full_name"]
         read_only_fields = ['hin']
         
 class GenerateSubaccountIDCardSerializer(serializers.ModelSerializer):

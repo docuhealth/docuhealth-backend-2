@@ -542,16 +542,14 @@ class DeletePatientAccountView(generics.DestroyAPIView):
         profile.soft_delete()
         
 @extend_schema(tags=['Patient'])
-class GeneratePatientIdCard(generics.UpdateAPIView):
+class GeneratePatientIdCard(generics.CreateAPIView):
     serializer_class = GeneratePatientIDCardSerializer
     permission_classes = [IsAuthenticatedPatient]
-    http_method_names = ['patch']
     
-    def get_object(self):
-        return self.request.user.patient_profile
-
-    def perform_update(self, serializer):
-        patient = self.get_object()
+    @transaction.atomic
+    def perform_create(self, serializer):
+        patient = self.request.user.patient_profile
+        serializer.save(patient=patient)
         patient.generate_id_card()
         
 @extend_schema(tags=['Patient'])

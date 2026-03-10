@@ -199,6 +199,15 @@ class PatientProfile(BaseModel):
     def full_name(self):
         return f"{self.firstname} {self.lastname}"
     
+class IdCard(BaseModel):
+    patient = models.OneToOneField(PatientProfile, on_delete=models.CASCADE, related_name="id_card")
+    first_emergencey_number = models.CharField()
+    second_emergencey_number = models.CharField(blank=True)
+    emergence_address = models.CharField()
+    
+    class Meta:
+        db_table = "patients_idcard"
+        
 class NINVerificationAttempt(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="nin_verification_attempts")
     nin_hash = models.CharField(max_length=128, blank=True, null=True)  # hashed NIN
