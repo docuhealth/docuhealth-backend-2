@@ -431,7 +431,7 @@ class UpdateHospitalAdminProfileView(generics.UpdateAPIView):
             
             return Response({"error": f"Update failed - {str(e)}"}, status=500)
         
-@extend_schema(tags=["Auth"], summary="Remove hospital branding elements")
+@extend_schema(tags=["Hospital Admin"], summary="Remove hospital branding elements")
 class RemoveHospitalBrandingView(generics.GenericAPIView):
     serializer_class = RemoveBrandingSerializer
     permission_classes = [IsAuthenticatedHospitalAdmin]
