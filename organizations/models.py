@@ -163,9 +163,9 @@ class Subscription(BaseModel):
         INACTIVE = "inactive", "Inactive"
         PAST_DUE = "past_due", "Past_Due"
     
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subscription")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="subscription", db_index=True)
     plan = models.ForeignKey(SubscriptionPlan, on_delete=models.CASCADE, related_name="subscriptions")
-    paystack_subscription_code = models.CharField(max_length=200, blank=True, null=True)
+    paystack_subscription_code = models.CharField(max_length=200, blank=True, null=True, db_index=True)
     
     status = models.CharField(max_length=20, choices=SubscriptionStatus.choices, default=SubscriptionStatus.INACTIVE)
     will_renew = models.BooleanField(default=True)
@@ -195,7 +195,7 @@ class Transaction(BaseModel):
         PENDING = 'pending', 'Pending'
         
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="transactions")
-    amount = models.FloatField()
+    amount = models.DecimalField(decimal_places=2, max_digits=20)
     reference = models.CharField(max_length=255, unique=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     

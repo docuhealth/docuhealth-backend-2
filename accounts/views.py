@@ -113,7 +113,15 @@ class LoginView(TokenObtainPairView, PublicGenericAPIView):
                 response.data["data"]["staff_role"] = staff_role
                 
             if role in [User.Role.PATIENT, User.Role.HOSPITAL]:
-                is_subscribed = Subscription.objects.filter(user=user, status=Subscription.SubscriptionStatus.ACTIVE).exists()
+                is_subscribed = Subscription.objects.filter(
+                    user=user,
+                    status__in=[
+                        Subscription.SubscriptionStatus.ACTIVE, 
+                        Subscription.SubscriptionStatus.PAST_DUE
+                    ],
+                    next_payment_date__isnull=False,
+                    next_payment_date__gte=timezone.now()
+                ).exists()
                 response.data["data"]["is_subscribed"] = is_subscribed
                 
             mailer.send(

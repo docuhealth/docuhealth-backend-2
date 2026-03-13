@@ -1,4 +1,5 @@
 from django.utils.dateparse import parse_datetime
+from django.db import transaction
 
 import logging
 
@@ -33,23 +34,26 @@ def handle_subscription_create(data):
     
 def handle_charge_success(data):
     try:
-        paystack_cus_code = data.get("customer", {}).get("customer_code")
-        user = User.objects.get(paystack_cus_code=paystack_cus_code)
-        subscription = Subscription.objects.get(user=user)
-        
-        subscription.status = Subscription.SubscriptionStatus.ACTIVE
-        subscription.last_payment_date = parse_datetime(data.get("paid_at"))
-        subscription.save(update_fields=['status', 'last_payment_date'])
-        
-        Transaction.objects.create(
-            user=user,
-            amount=data.get("amount") / 100, 
-            reference=data.get("reference"),
-            status=Transaction.Status.SUCCESS,
-            created_at=parse_datetime(data.get("paid_at"))
-        )
-        
-        print(subscription)
+        with transaction.atomic():
+            paystack_cus_code = data.get("customer", {}).get("customer_code")
+            user = User.objects.get(paystack_cus_code=paystack_cus_code)
+            subscription = Subscription.objects.select_for_update().get(user=user)
+            
+            subscription.status = Subscription.SubscriptionStatus.ACTIVE
+            subscription.last_payment_date = parse_datetime(data.get("paid_at"))
+            subscription.save(update_fields=['status', 'last_payment_date'])
+            
+            Transaction.objects.update_or_create(
+                reference=data.get("reference"),
+                user=user,
+                defaults={
+                "amount": data.get("amount") / 100, 
+                "status": Transaction.Status.SUCCESS,
+                "created_at": parse_datetime(data.get("paid_at"))}
+            )
+            
+            print(subscription)
+            
     except (User.DoesNotExist, Subscription.DoesNotExist) as e:
         sentry_logger.error(f"Charge success failed: User/Sub not found for code {paystack_cus_code}", exc_info=True)
     except Exception as e:
@@ -127,7 +131,7 @@ def handle_disable(data):
         subscription.status = Subscription.SubscriptionStatus.INACTIVE
         subscription.save(update_fields=['status'])
         
-        sentry_logger.info(f"Payment failed for user {user.id}", extra={
+        sentry_logger.info(f"Sub disabled for user {user.id}", extra={
             "subscription_id": subscription.id,
             "paystack_code": paystack_cus_code
         })
