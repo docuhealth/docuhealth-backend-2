@@ -17,3 +17,6 @@ staticfiles/
 # VSCode / IDE
 .vscode/
 .idea/
+
+.postman
+postman/

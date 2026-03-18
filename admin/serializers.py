@@ -33,7 +33,7 @@ class AdminDashboardSerializer(serializers.Serializer):
     charts = ChartsSerializer()
     
 class PatientInfoSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source="full_name", read_only=True)
+    full_name = serializers.CharField(read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     is_active = serializers.BooleanField(source="user.is_active", read_only=True)
     
