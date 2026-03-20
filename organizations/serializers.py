@@ -143,13 +143,25 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         
         plan = validated_data.get("plan")
         user = self.context.get("user")
-        print(user)
         
         if plan.role != user.role and plan.role != "test":
             raise serializers.ValidationError("This plan is not available for you.")
         
-        # if not plan.is_active:
-        #     raise serializers.ValidationError("Current plan is not active")
+        try:
+            current_sub = Subscription.objects.get(user=user)
+            
+            if current_sub.status == Subscription.SubscriptionStatus.ACTIVE:
+                current_plan = current_sub.plan
+                
+                if current_plan.price > plan.price:
+                    raise serializers.ValidationError(
+                        f"You are currently on the {current_plan.name} plan. To downgrade your plan, please cancel your current subscription and wait for it to expire.")
+                    
+                if current_plan == plan:
+                    raise serializers.ValidationError("You are already subscribed to this plan.")
+                    
+        except Subscription.DoesNotExist:
+            pass
         
         return validated_data
         
@@ -157,7 +169,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
        user = self.context.get("user")
        plan = validated_data.get("plan")
        
-       subscription, _ = Subscription.objects.update_or_create(user=user, defaults={"plan":plan})
+       subscription, _ = Subscription.objects.get_or_create(user=user, defaults={"plan":plan})
 
        return subscription
    

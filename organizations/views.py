@@ -217,22 +217,24 @@ class CreateSubscriptionView(generics.CreateAPIView):
         context["user"] = self.request.user
         return context
     
-    @transaction.atomic
     def create(self, request, *args, **kwargs):
         user = request.user
         
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        subscription = serializer.save()
-        
-        plan = subscription.plan
+        plan = serializer.validated_data.get('plan')
         paystack_cus_code = user.paystack_cus_code
         email = user.email
         
         if not paystack_cus_code:
             paystack_cus_code = create_customer({"email": email})
-            user.paystack_cus_code = paystack_cus_code
-            user.save(update_fields=['paystack_cus_code'])
+        
+        with transaction.atomic():
+            subscription = serializer.save()
+        
+            if not paystack_cus_code:
+                user.paystack_cus_code = paystack_cus_code
+                user.save(update_fields=['paystack_cus_code'])
             
         transaction_payload = {
             "email": email,

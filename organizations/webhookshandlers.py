@@ -1,9 +1,8 @@
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
 
-import logging
-
-from .models import Subscription, Transaction
+from .models import Subscription, Transaction, SubscriptionPlan
+from .requests import deactivate_paystack_subscription
 from accounts.models import User
 
 from sentry_sdk import logger as sentry_logger
@@ -11,26 +10,34 @@ from sentry_sdk import logger as sentry_logger
 def handle_subscription_create(data):
     sentry_logger.info("Creating subscription", extra={"data": data})
     try:
-        paystack_cus_code = data.get("customer", {}).get("customer_code")
-        user = User.objects.get(paystack_cus_code=paystack_cus_code)
-        subscription = Subscription.objects.get(user=user)
-        
-        subscription.status = Subscription.SubscriptionStatus.ACTIVE
-        subscription.paystack_subscription_code = data.get("subscription_code")
-        subscription.next_payment_date = parse_datetime(data.get("next_payment_date"))
-        subscription.authorization_code = data.get("authorization", {}).get("authorization_code")
-        
-        subscription.save(update_fields=['status', 'paystack_subscription_code', 'next_payment_date', 'authorization_code'])
-        
-        sentry_logger.info(f"Subscription activated for user {user.id}", extra={
-            "subscription_id": subscription.id,
-            "paystack_code": paystack_cus_code
-        })
+        with transaction.atomic():
+            paystack_cus_code = data.get("customer", {}).get("customer_code")
+            user = User.objects.get(paystack_cus_code=paystack_cus_code)
+            subscription = Subscription.objects.get(user=user)
+            
+            old_sub_code = subscription.paystack_subscription_code
+            new_plan_code = data.get("plan", {}).get("plan_code")
+            
+            subscription.plan = SubscriptionPlan.objects.get(paystack_plan_code=new_plan_code)
+            subscription.status = Subscription.SubscriptionStatus.ACTIVE
+            subscription.paystack_subscription_code = data.get("subscription_code")
+            subscription.next_payment_date = parse_datetime(data.get("next_payment_date"))
+            subscription.authorization_code = data.get("authorization", {}).get("authorization_code")
+            
+            subscription.save(update_fields=['status', 'paystack_subscription_code', 'next_payment_date', 'authorization_code', 'plan'])
+            
+            sentry_logger.info(f"Subscription activated for user {user.id}", extra={
+                "subscription_id": subscription.id,
+                "paystack_code": paystack_cus_code
+            })
+            
+        if old_sub_code and old_sub_code != subscription.paystack_subscription_code:
+            deactivate_paystack_subscription(old_sub_code)
         
     except (User.DoesNotExist, Subscription.DoesNotExist) as e:
         sentry_logger.error(f"Subscription creation failed: User/Sub not found for code {paystack_cus_code}", exc_info=True)
     except Exception as e:
-        sentry_logger.error(f"Subscription creation failed: {e}", exc_info=True)
+        sentry_logger.error(f"Subscription creation failed: {e}", exc_info=True)                                                            
     
 def handle_charge_success(data):
     try:
@@ -51,8 +58,6 @@ def handle_charge_success(data):
                 "status": Transaction.Status.SUCCESS,
                 "created_at": parse_datetime(data.get("paid_at"))}
             )
-            
-            print(subscription)
             
     except (User.DoesNotExist, Subscription.DoesNotExist) as e:
         sentry_logger.error(f"Charge success failed: User/Sub not found for code {paystack_cus_code}", exc_info=True)

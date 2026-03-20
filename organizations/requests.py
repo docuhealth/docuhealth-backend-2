@@ -49,4 +49,22 @@ def initialize_transaction(payload):
     if response.ok and response_data.get("status"):
         return response_data["data"]["authorization_url"]
     raise Exception(f"Paystack error: {response_data.get('message', 'Failed to initialize Paystack transaction')}")
+
+def deactivate_paystack_subscription(sub_code):
+    payload = {
+        "code": sub_code,
+        "token": ""
+    }
+    
+    response = send_paystack_request("POST", "subscription/disable", payload)
+    response_data = response.json()
+    
+    sentry_logger.info(f"Sub deactivated with response: {response_data["message"]}")
+    
+    if response.ok and response_data.get("status"):
+        return True
+    
+    sentry_logger.error(f"Failed to disable subscription", extra={"sub_code": sub_code}, exc_info=True)
+    # raise Exception(f"Paystack error: {response_data.get('message', 'Failed to disable subscription')}")
+
     
