@@ -60,6 +60,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
     
     paystack_cus_code = models.CharField(max_length=200, blank=True, null=True)
     
@@ -70,15 +71,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = 'core_user'
         
-    # def get_profile
-    
     def __str__(self):
         return f"{self.email} ({self.role})"
 
 def default_expiry():
     return timezone.now() + timedelta(minutes=10)
 
-class OTP(models.Model):
+class OTP(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="otp")
     otp = models.CharField(max_length=6)  
     expiry = models.DateTimeField(default=default_expiry)
@@ -86,16 +85,17 @@ class OTP(models.Model):
     
     @classmethod
     def generate_otp(cls, user, expiry_minutes=10):
-        """Create or replace OTP for a user"""
         otp = generate_otp()
         expiry_time = timezone.now() + timedelta(minutes=expiry_minutes)
+        created_at = timezone.now()
 
         otp, _ = cls.objects.update_or_create(
             user=user,
             defaults={
                 "otp": otp,
                 "expiry": expiry_time,
-                "verified": False
+                "verified": False,
+                "created_at": created_at
             }
         )
         return otp
@@ -136,7 +136,7 @@ class EmailChange(BaseModel):
         )
         
 class UserProfileImage(models.Model):
-    user = models.OneToOneField(User, related_name="profile_img", on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.OneToOneField(User, related_name="profile_img", on_delete=models.CASCADE, null=True, blank=True)
     image = CloudinaryField("profile_images/") 
     uploaded_at = models.DateTimeField(auto_now_add=True)
     

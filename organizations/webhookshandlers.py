@@ -46,7 +46,7 @@ def handle_charge_success(data):
             user = User.objects.get(paystack_cus_code=paystack_cus_code)
             subscription = Subscription.objects.select_for_update().get(user=user)
             
-            subscription.status = Subscription.SubscriptionStatus.ACTIVE
+            subscription.status = Subscription.SubscriptionStatus.ACTIVEz
             subscription.last_payment_date = parse_datetime(data.get("paid_at"))
             subscription.save(update_fields=['status', 'last_payment_date'])
             

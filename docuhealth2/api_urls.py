@@ -1,6 +1,6 @@
 from django.urls import path
 
-from accounts.views import DeactivateTeamMembersView, LoginView, CustomTokenRefreshView, ForgotPassword, VerifyForgotPasswordOTPView, ResetPasswordView, ListUserView, VerifySignupOTPView, UpdatePasswordView, VerifyUserNINView, DoctorDashboardView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, PatientDashboardView, CreatePatientView, UpdatePatientView, DeletePatientAccountView, ListCreateSubaccountView, UpgradeSubaccountView, ToggleEmergencyView, GeneratePatientIdCard, GenerateSubaccountIdCard, NurseDashboardView, ReceptionistDashboardView, GetPatientDetailsView, GetStaffByRoleView, ReceptionistCreatePatientView, SendEmailOTPView, VerifyEmailOTPView, UpdateProfileView, UpdateHospitalAdminProfileView, RemoveHospitalBrandingView
+from accounts.views import DeactivateTeamMembersView, LoginView, CustomTokenRefreshView, ForgotPassword, VerifyForgotPasswordOTPView, ResetPasswordView, ListUserView, VerifySignupOTPView, UpdatePasswordView, VerifyUserNINView, DoctorDashboardView, TeamMemberCreateView, TeamMemberListView, RemoveTeamMembersView, TeamMemberUpdateRoleView, PatientDashboardView, CreatePatientView, UpdatePatientView, DeletePatientAccountView, ListCreateSubaccountView, UpgradeSubaccountView, ToggleEmergencyView, GeneratePatientIdCard, GenerateSubaccountIdCard, NurseDashboardView, ReceptionistDashboardView, GetPatientDetailsView, GetStaffByRoleView, ReceptionistCreatePatientView, SendEmailOTPView, VerifyEmailOTPView, UpdateProfileView, UpdateHospitalAdminProfileView, RemoveHospitalBrandingView, ResendOTPView
 
 from records.views import MedicalRecordListView, ListUserMedicalrecordsView, RequestVitalSignsView, RetrievePatientInfoView, ListPatientMedicalRecordsView, RequestAdmissionView, ConfirmAdmissionView, ListAdmittedPatientsByStatusView, ListSubaccountMedicalRecordsView, ListAdmissionsView, ListAdmissionRequestsView, ListVitalSignsRequest, ProcessVitalSignsRequestView, UpdatePatientVitalSignsView, CreateCaseNotesView, ListCaseNotesView, ListPatientDrugRecordsView, CreateSoapNoteView, ListPatientSoapNotesView, DischargePatientView, ListPatientDischargeFormsView, CreateSoapNoteAdditionalNotesView, ListPatientVitalSignsView
 
@@ -26,6 +26,8 @@ auth_urls = [
     
     path('email/send-otp', SendEmailOTPView.as_view(), name='send-email-otp'),
     path('email/verify-otp', VerifyEmailOTPView.as_view(), name='verify-email-otp'),
+    
+    path('resend-otp', ResendOTPView.as_view(), name='resend-otp'),
     
     path('profile', UpdateProfileView.as_view(), name='update-profile'),
     path('hospital-admin-profile', UpdateHospitalAdminProfileView.as_view(), name='update-hospital-admin-profile'),

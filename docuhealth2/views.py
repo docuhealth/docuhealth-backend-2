@@ -1,4 +1,7 @@
-from rest_framework import generics
+from django.db import transaction
+
+from rest_framework import generics, status
+from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.pagination import PageNumberPagination
 
@@ -19,12 +22,16 @@ class PaginatedView():
     
 class BaseUserCreateView(generics.CreateAPIView):
     
+    @transaction.atomic()
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
-        
-        existing_inactive_user = User.objects.filter(email=email, is_active=False).first()
-        if existing_inactive_user:
-            print("Deleting existing inactive user")
-            existing_inactive_user.delete()  
+        user = User.objects.filter(email=email).first()
 
+        if user:
+            if not user.is_verified:
+                user.delete()
+                
+            else:
+                return Response({"email": "User with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+                
         return super().post(request, *args, **kwargs)

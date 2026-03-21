@@ -1,6 +1,8 @@
 from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.db.models.functions import TruncMonth
+from django.db.models import Count, Sum, Q,  Value, F
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -14,7 +16,7 @@ from rest_framework.exceptions import NotFound
 from drf_spectacular.utils import extend_schema
 
 from .models import User, OTP, UserProfileImage, NINVerificationAttempt, PatientProfile, SubaccountProfile, HospitalStaffProfile, EmailChange
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, DeactivateTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer, PatientDashboardInfoSerializer, RemoveBrandingSerializer
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, ResetPasswordSerializer, UserProfileImageSerializer, UpdatePasswordSerializer, CreateSubaccountSerializer, UpgradeSubaccountSerializer, CreatePatientSerializer, UpdatePatientSerializer, PatientIDCardSerializer, GenerateSubaccountIDCardSerializer, VerifyUserNINSerializer, PatientBasicInfoSerializer, PatientEmergencySerializer, HospitalStaffInfoSerilizer, TeamMemberCreateSerializer, DeactivateTeamMembersSerializer, TeamMemberUpdateRoleSerializer, ReceptionistCreatePatientSerializer, UpdateEmailSerializer, VerifyEmailOTPSerializer, UpdateProfileSerializer, UpdateHospitalAdminProfileSerializer, PatientDashboardInfoSerializer, RemoveBrandingSerializer, CustomTokenObtainPairSerializer, ResendOTPSerializer
 
 from .requests import verify_nin_request
 from .utils import *
@@ -27,7 +29,7 @@ from docuhealth2.utils.email_service import BrevoEmailService
 from docuhealth2.utils.supabase import upload_file_to_supabase, delete_from_supabase
 
 from records.serializers import MedicalSummarySerializer
-from records.models import SoapNote
+from records.models import SoapNote, Appointment
 from facility.serializers import WardBasicInfoSerializer
 from hospital_ops.models import HospitalPatientActivity
 from accounts.serializers import PatientFullInfoSerializer
@@ -71,7 +73,8 @@ class VerifySignupOTPView(PublicGenericAPIView):
             return Response({"detail": message, "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
         
         serializer.user.is_active = True
-        serializer.user.save(update_fields=['is_active'])
+        serializer.user.is_verified = True
+        serializer.user.save(update_fields=['is_active', 'is_verified'])
         
         response = {"detail": f"Email verified successfully, proceed to login"}
         
@@ -82,6 +85,8 @@ class VerifySignupOTPView(PublicGenericAPIView):
 
 @extend_schema(tags=["Auth"])  
 class LoginView(TokenObtainPairView, PublicGenericAPIView):
+    serializer_class = CustomTokenObtainPairSerializer
+    
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         email = request.data.get("email")
@@ -481,13 +486,18 @@ class RemoveHospitalBrandingView(generics.GenericAPIView):
 class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
     serializer_class = CreatePatientSerializer
     
+    @transaction.atomic()
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
-        
-        existing_inactive_user = User.objects.filter(email=email, is_active=False).first()
-        if existing_inactive_user:
-            existing_inactive_user.delete()  
+        user = User.objects.filter(email=email).first()
 
+        if user:
+            if not user.is_verified:
+                user.delete()
+                
+            else:
+                return Response({"email": "User with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+                
         return super().post(request, *args, **kwargs)
     
     def perform_create(self, serializer):
@@ -505,6 +515,54 @@ class CreatePatientView(generics.CreateAPIView, PublicGenericAPIView):
             ),
             recipient=user.email,
         )
+        
+@extend_schema(tags=["Auth"], summary="Resend verification OTP on signup")
+class ResendOTPView(PublicGenericAPIView):
+    serializer_class = ResendOTPSerializer
+
+    @transaction.atomic()
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        email = serializer.validated_data.get('email')
+        verify_url = serializer.validated_data.get('verify_url')
+        
+        user = User.objects.filter(email=email).first()
+        
+        existing_otp = OTP.objects.filter(user=user).first()
+        if existing_otp:
+            cooldown_period = timedelta(seconds=60)
+            time_since_last = timezone.now() - existing_otp.created_at
+            
+            if time_since_last < cooldown_period:
+                seconds_left = int((cooldown_period - time_since_last).total_seconds())
+                return Response({
+                    "error": f"Please wait {seconds_left} seconds before requesting a new OTP.",
+                    "seconds_left": seconds_left
+                }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+        otp_instance = OTP.generate_otp(user)
+        otp_code = otp_instance.otp
+
+        body = (
+            f"Enter the OTP below into the required field \n"
+            f"The OTP will expire in 10 mins\n\n"
+            f"OTP: {otp_code}\n\n"
+        )
+
+        if verify_url:
+            body += f"Please use the link below to enter your OTP: \n{verify_url}\n\n"
+
+        body += "If you did not initiate this request, please contact support@docuhealthservices.com\n\nFrom the Docuhealth Team"
+
+        mailer.send(
+            subject="Verify your email - New OTP",
+            body=body,
+            recipient=user.email,
+        )
+
+        return Response({"message": "A new OTP has been sent to your email."}, status=status.HTTP_200_OK)
         
 @extend_schema(tags=["Patient"])
 class UpdatePatientView(generics.UpdateAPIView):
@@ -634,7 +692,7 @@ class TeamMemberCreateView(generics.CreateAPIView):
         hospital = self.request.user.hospital_profile
         invitation_message = serializer.validated_data.pop("invitation_message")
         login_url = serializer.validated_data.pop("login_url")
-        user = serializer.save(is_active=True)
+        user = serializer.save(is_active=True, is_verified=True)
         
         mailer.send(
                 subject=f"Welcome to {hospital.name} hospital",
@@ -849,16 +907,19 @@ class ReceptionistCreatePatientView(generics.CreateAPIView):
     serializer_class = ReceptionistCreatePatientSerializer
     permission_classes = [IsAuthenticatedReceptionist]
     
+    @transaction.atomic()
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
-        
-        existing_inactive_user = User.objects.filter(email=email, is_active=False).first()
-        if existing_inactive_user:
-            existing_inactive_user.delete()  
+        user = User.objects.filter(email=email).first()
 
+        if user:
+            if not user.is_verified:
+                user.delete()
+            else:
+                return Response({"email": "User with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+                
         return super().post(request, *args, **kwargs)
     
-    @transaction.atomic
     def perform_create(self, serializer):
         staff = self.request.user.hospital_staff_profile
         hospital = staff.hospital
@@ -930,3 +991,81 @@ class GetStaffByRoleView(generics.ListAPIView):
         
         return Response(self.get_serializer(staff_qs, many=True).data, status=status.HTTP_200_OK)
     
+# class HospitalAnalyticsView(generics.GenericAPIView):
+#     permission_classes = [IsAuthenticatedHospitalAdmin]
+
+#     @staticmethod
+#     def format_trend(queryset):
+#         return [{"month": item['month'].strftime('%b'), "value": item['value']} for item in queryset]
+
+#     def get(self, request):
+#         hospital = request.user.hospital_profile
+#         now = timezone.now()
+#         start_of_current_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+#         start_of_last_month = (start_of_current_month - timedelta(days=1)).replace(day=1)
+
+#         # 1. Summary Metrics (Top Cards)
+#         # We calculate current totals and filter for percentage comparison
+#         summary = Appointment.objects.filter(hospital=hospital).aggregate(
+#             total_attendance=Count('id', filter=Q(status=Appointment.Status.COMPLETED)),
+#             total_discharges=Count('id', filter=Q(status=Appointment.Status.DISCHARGED)),
+            
+#             # Trends: Count for last month to calculate % increase
+#             last_month_attendance=Count('id', filter=Q(
+#                 status=Appointment.Status.COMPLETED, 
+#                 scheduled_time__range=(start_of_last_month, start_of_current_month)
+#             )),
+#         )
+
+#         # Bed Occupancy (Manual calculation based on your model logic)
+#         total_beds = hospital.total_bed_capacity or 1 # Avoid division by zero
+#         occupied_beds = PatientProfile.objects.filter(hospital=hospital, is_admitted=True).count()
+
+#         # 2. Charts (Monthly Trends)
+#         date_filter = Q(hospital=hospital, scheduled_time__year=now.year)
+
+#         attendance_trend = (
+#             Appointment.objects.filter(date_filter, status=Appointment.Status.COMPLETED)
+#             .annotate(month=TruncMonth('scheduled_time'))
+#             .values('month')
+#             .annotate(value=Count('id'))
+#             .order_by('month')
+#         )
+
+#         discharge_trend = (
+#             Appointment.objects.filter(date_filter, status=Appointment.Status.DISCHARGED)
+#             .annotate(month=TruncMonth('scheduled_time'))
+#             .values('month')
+#             .annotate(value=Count('id'))
+#             .order_by('month')
+#         )
+
+#         # Bed Occupancy Trend (Based on admission date)
+#         occupancy_trend = (
+#             PatientProfile.objects.filter(hospital=hospital, admission_date__year=now.year)
+#             .annotate(month=TruncMonth('admission_date'))
+#             .values('month')
+#             .annotate(value=Count('id'))
+#             .order_by('month')
+#         )
+
+#         return Response({
+#             "summary": {
+#                 "total_money_spent": 0, # Integrate with your Transaction/Billing model
+#                 "avg_daily_attendance": round(summary['total_attendance'] / 30, 1),
+#                 "total_discharge": summary['total_discharges'],
+#                 "bed_occupancy": f"{occupied_beds}/{total_beds}",
+#                 "attendance_increase": self.calculate_increase(summary['total_attendance'], summary['last_month_attendance'])
+#             },
+#             "charts": {
+#                 "discharged_patients": self.format_trend(discharge_trend),
+#                 "bed_occupancy_overview": self.format_trend(occupancy_trend),
+#                 "attendance_overview": self.format_trend(attendance_trend),
+#             }
+#         })
+
+#     def calculate_increase(self, current, previous):
+#         if not previous or previous == 0:
+#             return 100 if current > 0 else 0
+#         return round(((current - previous) / previous) * 100, 1)
+

@@ -1,9 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from rest_framework import serializers
+from rest_framework import serializers, exceptions
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework import serializers
 
 from docuhealth2.mixins import StrictFieldsMixin
 
@@ -22,9 +21,9 @@ class ForgotPasswordSerializer(serializers.Serializer):
         email = validated_data.get("email")
         
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email=email, is_verified=True, is_active=True)
         except User.DoesNotExist:
-            raise serializers.ValidationError({"email": "Invalid email"})
+            raise serializers.ValidationError({"email": "User with this email does not exist."})
         
         self.user = user
         self.email = email
@@ -57,11 +56,22 @@ class VerifyOTPSerializer(serializers.Serializer):
         return validated_data
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
+    # @classmethod
+    # def get_token(cls, user):
+    #     token = super().get_token(user)
 
-        return token
+    #     return token
+    
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        if not self.user.is_verified:
+            raise exceptions.PermissionDenied(
+                detail="Your email is not verified. Please verify your email to continue.",
+                code="email_unverified"
+            )
+            
+        return data
 
 class ResetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, required=True, min_length=8)
@@ -114,7 +124,7 @@ class VerifyEmailOTPSerializer(serializers.Serializer):
         user = self.context['request'].user
         
         if not EmailChange.objects.filter(user=user, is_verified=False).exists():
-            raise serializers.ValidationError({"new_email": "No email change request found for this account."})
+            raise serializers.ValidationError({"new_email": "This account has not requested change of email."})
         
         return validated_data
     
@@ -436,3 +446,22 @@ class PatientDashboardInfoSerializer(serializers.ModelSerializer):
             user=obj.user, 
             status=Subscription.SubscriptionStatus.ACTIVE
         ).exists()
+        
+class ResendOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    verify_url = serializers.URLField(required=False, allow_blank=True)
+    
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        
+        email = validated_data.get("email")
+        
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({"email": "User with this email does not exist."})
+        
+        if user.is_verified:
+            raise serializers.ValidationError({"email": "User with this email is already verified."})
+        
+        return validated_data
