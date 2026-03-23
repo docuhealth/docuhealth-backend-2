@@ -60,7 +60,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
-    is_verified = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False, db_default=False)
     
     paystack_cus_code = models.CharField(max_length=200, blank=True, null=True)
     
