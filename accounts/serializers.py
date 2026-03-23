@@ -172,6 +172,7 @@ class CreatePatientSerializer(BaseUserCreateSerializer):
     def create(self, validated_data):
         profile_data = validated_data.pop("patient_profile")
         validated_data['role'] = User.Role.PATIENT
+        validated_data['is_verified'] = False
         
         house_no = profile_data.pop("house_no", None)
         if house_no:
@@ -192,6 +193,7 @@ class ReceptionistCreatePatientSerializer(BaseUserCreateSerializer):
     def create(self, validated_data):
         profile_data = validated_data.pop("patient_profile")
         validated_data['role'] = User.Role.PATIENT
+        validated_data['is_verified'] = False
         
         house_no = profile_data.pop("house_no", None)
         if house_no:
