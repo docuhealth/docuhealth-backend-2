@@ -11,7 +11,14 @@ import uuid
 from docuhealth2.utils.generate import generate_HIN
 from docuhealth2.models import BaseModel
 
-from accounts.models import User, default_notification_settings
+from accounts.models import User
+
+def default_notification_settings():
+    return  {
+            "sign_in": { "email": True, "push": True, "dashboard": False },
+            "info_change": { "email": True, "push": False, "dashboard": True },
+            "assessment_diagnosis": { "email": True, "push": True, "dashboard": False 
+        }}
 
 class HospitalProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="hospital_profile")

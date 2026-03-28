@@ -367,10 +367,11 @@ class VerifyUserNINSerializer(serializers.Serializer):
 class CreateStaffProfileSerializer(serializers.ModelSerializer):
     ward = serializers.PrimaryKeyRelatedField(write_only=True, queryset=HospitalWard.objects.all(), required=False, allow_null=True)
     ward_info = WardNameSerializer(read_only=True, source="ward")
+    staff_id = serializers.CharField(read_only=True)
     
     class Meta:
         model = HospitalStaffProfile
-        fields = ['firstname', 'lastname', 'phone_num', 'role', 'specialization', 'ward', 'gender', "ward_info"]
+        fields = ['firstname', 'lastname', 'phone_num', 'role', 'specialization', 'ward', 'gender', "ward_info", "staff_id"]
         
     # def get_fields(self):
     #     fields = super().get_fields()

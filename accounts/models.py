@@ -1,11 +1,11 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.timezone import now, timedelta
 
 from cloudinary.models import CloudinaryField
 
-from docuhealth2.utils.generate import generate_HIN, generate_otp, generate_staff_id
+from docuhealth2.utils.generate import generate_HIN, generate_otp, generate_staff_id, get_next_staff_id
 from docuhealth2.models import BaseModel
 
 def default_notification_settings():
@@ -285,7 +285,7 @@ class HospitalStaffProfile(BaseModel):
     
     def save(self, *args, **kwargs):
         if not self.staff_id:
-            self.staff_id = generate_staff_id(self.hospital.name, self.role)
+            self.staff_id = get_next_staff_id(self.hospital, self.role)
         super().save(*args, **kwargs)
         
     class Meta:
@@ -298,3 +298,11 @@ class HospitalStaffProfile(BaseModel):
     def full_name(self):
         return f"{self.firstname} {self.lastname}"
 
+class StaffCounter(models.Model):
+    hospital = models.ForeignKey("organizations.HospitalProfile", on_delete=models.CASCADE, related_name="staff_counters")
+    role = models.CharField(max_length=20, choices=HospitalStaffProfile.StaffRole.choices)
+
+    current_value = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ("hospital", "role")
